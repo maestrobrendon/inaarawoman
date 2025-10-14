@@ -411,31 +411,57 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
-      <section className="py-20 px-4 bg-gradient-to-br from-rose-50 to-amber-50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900 mb-6">
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900 mb-16 text-center">
             Our Promise
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <div className="p-6">
-              <div className="text-4xl mb-4">✨</div>
-              <h3 className="font-semibold text-lg mb-2 text-neutral-900">Timeless Quality</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <h3 className="font-medium text-lg mb-2 text-neutral-900">Free Shipping</h3>
               <p className="text-sm text-neutral-600">
-                Crafted with care using premium materials that last
+                You will love at great low prices
               </p>
             </div>
-            <div className="p-6">
-              <div className="text-4xl mb-4">🌍</div>
-              <h3 className="font-semibold text-lg mb-2 text-neutral-900">Global Shipping</h3>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="font-medium text-lg mb-2 text-neutral-900">Flexible Payment</h3>
               <p className="text-sm text-neutral-600">
-                Free shipping on orders over $150 worldwide
+                Pay with Multiple Credit Cards
               </p>
             </div>
-            <div className="p-6">
-              <div className="text-4xl mb-4">💝</div>
-              <h3 className="font-semibold text-lg mb-2 text-neutral-900">Easy Returns</h3>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                </svg>
+              </div>
+              <h3 className="font-medium text-lg mb-2 text-neutral-900">Fast Delivery</h3>
               <p className="text-sm text-neutral-600">
-                30-day return policy for your peace of mind
+                Experience the joy of fast shipping
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="font-medium text-lg mb-2 text-neutral-900">Premium Support</h3>
+              <p className="text-sm text-neutral-600">
+                Outstanding premium support
               </p>
             </div>
           </div>
