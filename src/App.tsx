@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
+import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
 import EnhancedHeader from './components/layout/EnhancedHeader';
 import EnhancedFooter from './components/layout/EnhancedFooter';
 import EnhancedHomePage from './pages/EnhancedHomePage';
@@ -17,12 +18,79 @@ import NotFoundPage from './pages/NotFoundPage';
 import CustomCursor from './components/ui/CustomCursor';
 import PageTransition from './components/animations/PageTransition';
 import LoadingBar from './components/ui/LoadingBar';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminLayout from './components/admin/AdminLayout';
+import Dashboard from './pages/admin/Dashboard';
+import ProductList from './pages/admin/ProductList';
+import ProductForm from './pages/admin/ProductForm';
+import HomepageManager from './pages/admin/HomepageManager';
 
-type Page = 'home' | 'shop' | 'product' | 'wishlist' | 'about' | 'contact' | 'faq' | 'lookbook' | 'checkout' | '404';
+type Page = 'home' | 'shop' | 'product' | 'wishlist' | 'about' | 'contact' | 'faq' | 'lookbook' | 'checkout' | '404' | 'admin-login' | 'admin-dashboard' | 'admin-products' | 'admin-product-form' | 'admin-homepage';
 
 interface NavigationState {
   page: Page;
   data?: any;
+}
+
+function AdminApp() {
+  const [adminPage, setAdminPage] = useState('dashboard');
+  const [adminData, setAdminData] = useState<any>(null);
+  const { isAdmin, loading } = useAdminAuth();
+  const [navigation, setNavigation] = useState<NavigationState>({ page: 'admin-login' });
+
+  useEffect(() => {
+    if (isAdmin && navigation.page === 'admin-login') {
+      setNavigation({ page: 'admin-dashboard' });
+    }
+  }, [isAdmin]);
+
+  const handleAdminNavigate = (page: string, data?: any) => {
+    setAdminPage(page);
+    setAdminData(data);
+  };
+
+  const handleLoginSuccess = () => {
+    setNavigation({ page: 'admin-dashboard' });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <p className="text-neutral-600">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  const renderAdminPage = () => {
+    switch (adminPage) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'products':
+        return <ProductList onNavigate={handleAdminNavigate} />;
+      case 'product-form':
+        return (
+          <ProductForm
+            mode={adminData?.mode || 'new'}
+            productId={adminData?.id}
+            onNavigate={handleAdminNavigate}
+          />
+        );
+      case 'homepage':
+        return <HomepageManager />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
+  return (
+    <AdminLayout currentPage={adminPage} onNavigate={handleAdminNavigate}>
+      {renderAdminPage()}
+    </AdminLayout>
+  );
 }
 
 function App() {
@@ -30,6 +98,10 @@ function App() {
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = 'smooth';
+    const path = window.location.pathname;
+    if (path.startsWith('/admin')) {
+      setNavigation({ page: 'admin-login' });
+    }
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
     };
@@ -45,6 +117,10 @@ function App() {
   };
 
   const renderPage = () => {
+    if (navigation.page.startsWith('admin')) {
+      return <AdminApp />;
+    }
+
     switch (navigation.page) {
       case 'home':
         return <EnhancedHomePage onNavigate={handleNavigate} />;
@@ -71,24 +147,36 @@ function App() {
     }
   };
 
+  const isAdminRoute = navigation.page.startsWith('admin');
+
   return (
-    <ToastProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <div className="min-h-screen bg-white">
-            <CustomCursor />
-            <LoadingBar />
-            <EnhancedHeader onNavigate={handleNavigate} currentPage={navigation.page} />
-            <main>
-              <PageTransition pageKey={navigation.page}>
-                {renderPage()}
-              </PageTransition>
-            </main>
-            <EnhancedFooter onNavigate={handleNavigate} />
-          </div>
-        </WishlistProvider>
-      </CartProvider>
-    </ToastProvider>
+    <AdminAuthProvider>
+      <ToastProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <div className="min-h-screen bg-white">
+              {!isAdminRoute && (
+                <>
+                  <CustomCursor />
+                  <LoadingBar />
+                  <EnhancedHeader onNavigate={handleNavigate} currentPage={navigation.page} />
+                </>
+              )}
+              <main>
+                {isAdminRoute ? (
+                  renderPage()
+                ) : (
+                  <PageTransition pageKey={navigation.page}>
+                    {renderPage()}
+                  </PageTransition>
+                )}
+              </main>
+              {!isAdminRoute && <EnhancedFooter onNavigate={handleNavigate} />}
+            </div>
+          </WishlistProvider>
+        </CartProvider>
+      </ToastProvider>
+    </AdminAuthProvider>
   );
 }
 
