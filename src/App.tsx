@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
-import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
+import EnhancedHeader from './components/layout/EnhancedHeader';
+import EnhancedFooter from './components/layout/EnhancedFooter';
 import HomePage from './pages/HomePage';
 import ShopPage from './pages/ShopPage';
 import ProductDetailPage from './pages/ProductDetailPage';
@@ -59,9 +59,9 @@ function App() {
       <CartProvider>
         <WishlistProvider>
           <div className="min-h-screen bg-white">
-            <Header onNavigate={handleNavigate} currentPage={navigation.page} />
+            <EnhancedHeader onNavigate={handleNavigate} currentPage={navigation.page} />
             <main>{renderPage()}</main>
-            <Footer onNavigate={handleNavigate} />
+            <EnhancedFooter onNavigate={handleNavigate} />
           </div>
         </WishlistProvider>
       </CartProvider>
