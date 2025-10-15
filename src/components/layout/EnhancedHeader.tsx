@@ -19,8 +19,10 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
   const [cartBounce, setCartBounce] = useState(false);
 
   const { itemCount } = useCart();
-  const { items: wishlistItems } = useWishlist();
+  const { wishlistIds } = useWishlist();
   const { scrollY } = useScroll();
+
+  if (!wishlistIds) return null;
 
   const headerHeight = useTransform(scrollY, [0, 100], [80, 64]);
   const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.98]);
@@ -154,15 +156,15 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <Heart size={20} className={wishlistItems.length > 0 ? 'fill-red-500 text-red-500' : ''} />
-                {wishlistItems.length > 0 && (
+                <Heart size={20} className={wishlistIds.size > 0 ? 'fill-red-500 text-red-500' : ''} />
+                {wishlistIds.size > 0 && (
                   <motion.span
                     className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 15 }}
                   >
-                    {wishlistItems.length}
+                    {wishlistIds.size}
                   </motion.span>
                 )}
               </motion.button>
