@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Collection, ProductWithImages } from '../types';
+import { ProductWithImages } from '../types';
 import Button from '../components/ui/Button';
 import ProductCard from '../components/product/ProductCard';
 import Input from '../components/ui/Input';
 import HeroSection from '../components/home/HeroSection';
+import StaticProductCard from '../components/product/StaticProductCard';
 
 interface HomePageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
 export default function HomePage({ onNavigate }: HomePageProps) {
-  const [featuredCollections, setFeaturedCollections] = useState<Collection[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithImages[]>([]);
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -21,15 +22,6 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   }, []);
 
   const loadFeaturedData = async () => {
-    const { data: collections } = await supabase
-      .from('collections')
-      .select('*')
-      .eq('is_featured', true)
-      .order('display_order')
-      .limit(3);
-
-    if (collections) setFeaturedCollections(collections);
-
     const { data: products } = await supabase
       .from('products')
       .select(`
