@@ -9,7 +9,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  FolderOpen
 } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
@@ -28,6 +29,7 @@ export default function AdminLayout({ children, currentPage, onNavigate }: Admin
     { name: 'Products', icon: Package, page: 'products' },
     { name: 'Orders', icon: ShoppingBag, page: 'orders' },
     { name: 'Customers', icon: Users, page: 'customers' },
+    { name: 'Collections', icon: FolderOpen, page: 'collections' },
     { name: 'Homepage', icon: Home, page: 'homepage' },
     { name: 'Settings', icon: Settings, page: 'settings' },
   ];

@@ -27,6 +27,10 @@ import HomepageManager from './pages/admin/HomepageManager';
 import OrdersList from './pages/admin/OrdersList';
 import OrderDetails from './pages/admin/OrderDetails';
 import CustomersList from './pages/admin/CustomersList';
+import CustomerDetails from './pages/admin/CustomerDetails';
+import CollectionsList from './pages/admin/CollectionsList';
+import CollectionForm from './pages/admin/CollectionForm';
+import Settings from './pages/admin/Settings';
 
 type Page = 'home' | 'shop' | 'product' | 'wishlist' | 'about' | 'contact' | 'faq' | 'lookbook' | 'checkout' | '404' | 'admin-login' | 'admin-dashboard' | 'admin-products' | 'admin-product-form' | 'admin-homepage';
 
@@ -90,6 +94,20 @@ function AdminApp() {
         return <OrderDetails orderId={adminData?.id} onNavigate={handleAdminNavigate} />;
       case 'customers':
         return <CustomersList onNavigate={handleAdminNavigate} />;
+      case 'customer-details':
+        return <CustomerDetails customerId={adminData?.id} onNavigate={handleAdminNavigate} />;
+      case 'collections':
+        return <CollectionsList onNavigate={handleAdminNavigate} />;
+      case 'collection-form':
+        return (
+          <CollectionForm
+            mode={adminData?.mode || 'new'}
+            collectionId={adminData?.id}
+            onNavigate={handleAdminNavigate}
+          />
+        );
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard />;
     }
