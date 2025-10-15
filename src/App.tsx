@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
 import EnhancedHeader from './components/layout/EnhancedHeader';
 import EnhancedFooter from './components/layout/EnhancedFooter';
-import HomePage from './pages/HomePage';
+import EnhancedHomePage from './pages/EnhancedHomePage';
 import ShopPage from './pages/ShopPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import WishlistPage from './pages/WishlistPage';
@@ -24,6 +24,13 @@ interface NavigationState {
 function App() {
   const [navigation, setNavigation] = useState<NavigationState>({ page: 'home' });
 
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
+    };
+  }, []);
+
   const handleNavigate = (page: string, data?: any) => {
     setNavigation({ page: page as Page, data });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -32,7 +39,7 @@ function App() {
   const renderPage = () => {
     switch (navigation.page) {
       case 'home':
-        return <HomePage onNavigate={handleNavigate} />;
+        return <EnhancedHomePage onNavigate={handleNavigate} />;
       case 'shop':
         return <ShopPage onNavigate={handleNavigate} initialFilters={navigation.data} />;
       case 'product':
@@ -50,7 +57,7 @@ function App() {
       case 'checkout':
         return <CheckoutPage onNavigate={handleNavigate} />;
       default:
-        return <HomePage onNavigate={handleNavigate} />;
+        return <EnhancedHomePage onNavigate={handleNavigate} />;
     }
   };
 
