@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Instagram, Facebook, Twitter } from 'lucide-react';
 
 interface EnhancedFooterProps {
@@ -7,6 +7,8 @@ interface EnhancedFooterProps {
 
 export default function EnhancedFooter({ onNavigate }: EnhancedFooterProps) {
   const year = new Date().getFullYear();
+  const { scrollYProgress } = useScroll();
+  const footerY = useTransform(scrollYProgress, [0.85, 1], [100, 0]);
 
   const linkVariants = {
     rest: { x: 0 },
@@ -25,7 +27,10 @@ export default function EnhancedFooter({ onNavigate }: EnhancedFooterProps) {
   };
 
   return (
-    <footer className="bg-neutral-50 border-t border-neutral-200 mt-20">
+    <motion.footer
+      className="bg-neutral-50 border-t border-neutral-200 mt-20"
+      style={{ y: footerY }}
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -205,6 +210,6 @@ export default function EnhancedFooter({ onNavigate }: EnhancedFooterProps) {
           </div>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }

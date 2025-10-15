@@ -19,13 +19,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           className={classNames(
             'w-full px-4 py-3 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all duration-200',
-            error && 'border-red-500 focus:ring-red-500',
+            'focus:scale-[1.01] focus:shadow-lg',
+            error && 'border-red-500 focus:ring-red-500 animate-shake',
             className
           )}
           {...props}
         />
         {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+          <p className="mt-1 text-sm text-red-600 animate-fadeIn">{error}</p>
         )}
       </div>
     );

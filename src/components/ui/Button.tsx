@@ -39,6 +39,7 @@ export default function Button({
         variants[variant],
         sizes[size],
         fullWidth && 'w-full',
+        'active:scale-95 hover:scale-[1.02]',
         className
       )}
       disabled={disabled}

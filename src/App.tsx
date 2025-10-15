@@ -13,8 +13,12 @@ import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
 import LookbookPage from './pages/LookbookPage';
 import CheckoutPage from './pages/CheckoutPage';
+import NotFoundPage from './pages/NotFoundPage';
+import CustomCursor from './components/ui/CustomCursor';
+import PageTransition from './components/animations/PageTransition';
+import LoadingBar from './components/ui/LoadingBar';
 
-type Page = 'home' | 'shop' | 'product' | 'wishlist' | 'about' | 'contact' | 'faq' | 'lookbook' | 'checkout';
+type Page = 'home' | 'shop' | 'product' | 'wishlist' | 'about' | 'contact' | 'faq' | 'lookbook' | 'checkout' | '404';
 
 interface NavigationState {
   page: Page;
@@ -32,8 +36,12 @@ function App() {
   }, []);
 
   const handleNavigate = (page: string, data?: any) => {
+    window.dispatchEvent(new Event('pageTransitionStart'));
     setNavigation({ page: page as Page, data });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      window.dispatchEvent(new Event('pageTransitionComplete'));
+    }, 500);
   };
 
   const renderPage = () => {
@@ -56,8 +64,10 @@ function App() {
         return <LookbookPage onNavigate={handleNavigate} />;
       case 'checkout':
         return <CheckoutPage onNavigate={handleNavigate} />;
+      case '404':
+        return <NotFoundPage onNavigate={handleNavigate} />;
       default:
-        return <EnhancedHomePage onNavigate={handleNavigate} />;
+        return <NotFoundPage onNavigate={handleNavigate} />;
     }
   };
 
@@ -66,8 +76,14 @@ function App() {
       <CartProvider>
         <WishlistProvider>
           <div className="min-h-screen bg-white">
+            <CustomCursor />
+            <LoadingBar />
             <EnhancedHeader onNavigate={handleNavigate} currentPage={navigation.page} />
-            <main>{renderPage()}</main>
+            <main>
+              <PageTransition pageKey={navigation.page}>
+                {renderPage()}
+              </PageTransition>
+            </main>
             <EnhancedFooter onNavigate={handleNavigate} />
           </div>
         </WishlistProvider>
