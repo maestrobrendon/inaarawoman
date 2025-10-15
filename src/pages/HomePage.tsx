@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Collection, ProductWithImages } from '../types';
 import Button from '../components/ui/Button';
 import ProductCard from '../components/product/ProductCard';
 import Input from '../components/ui/Input';
+import HeroSection from '../components/home/HeroSection';
 
 interface HomePageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -73,34 +73,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
   return (
     <div className="min-h-screen">
-      <section className="relative h-[90vh] flex items-end md:items-center justify-center overflow-hidden bg-neutral-100">
-        <div className="absolute inset-0">
-          <img
-            src="/hero-1.jpg"
-            alt="Two women in elegant patterned skirts at coastal cliffs"
-            className="w-full h-full object-cover scale-125 object-[center_40%] md:scale-100 md:object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        </div>
-        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full pb-16 md:pb-0">
-          <div className="max-w-3xl mx-auto">
-            <p className="hidden md:block text-xs uppercase tracking-widest text-white mb-4 font-light">
-              New Arrivals Await You
-            </p>
-            <h1 className="font-serif text-5xl md:text-6xl font-bold text-white mb-6 md:mb-8 leading-tight drop-shadow-2xl">
-              Radiate Your Light
-            </h1>
-            <p className="text-lg md:hidden text-white mb-8 leading-relaxed drop-shadow-lg">
-              Timeless elegance meets modern femininity. Every woman deserves to shine in her own light.
-            </p>
-            <Button size="lg" onClick={() => onNavigate('shop')} variant="secondary">
-              <span className="md:hidden">Discover Collection</span>
-              <span className="hidden md:inline">View Collection</span>
-              <ArrowRight className="ml-2 inline md:hidden" size={20} />
-            </Button>
-          </div>
-        </div>
-      </section>
+      <HeroSection onNavigate={onNavigate} />
 
       <section className="py-20 px-4 bg-stone-100">
         <div className="max-w-7xl mx-auto">
