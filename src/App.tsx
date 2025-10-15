@@ -24,6 +24,9 @@ import Dashboard from './pages/admin/Dashboard';
 import ProductList from './pages/admin/ProductList';
 import ProductForm from './pages/admin/ProductForm';
 import HomepageManager from './pages/admin/HomepageManager';
+import OrdersList from './pages/admin/OrdersList';
+import OrderDetails from './pages/admin/OrderDetails';
+import CustomersList from './pages/admin/CustomersList';
 
 type Page = 'home' | 'shop' | 'product' | 'wishlist' | 'about' | 'contact' | 'faq' | 'lookbook' | 'checkout' | '404' | 'admin-login' | 'admin-dashboard' | 'admin-products' | 'admin-product-form' | 'admin-homepage';
 
@@ -81,6 +84,12 @@ function AdminApp() {
         );
       case 'homepage':
         return <HomepageManager />;
+      case 'orders':
+        return <OrdersList onNavigate={handleAdminNavigate} />;
+      case 'order-details':
+        return <OrderDetails orderId={adminData?.id} onNavigate={handleAdminNavigate} />;
+      case 'customers':
+        return <CustomersList onNavigate={handleAdminNavigate} />;
       default:
         return <Dashboard />;
     }

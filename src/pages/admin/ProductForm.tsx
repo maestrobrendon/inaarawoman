@@ -4,6 +4,7 @@ import { Save, ArrowLeft, Home, Star, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import ImageUpload from '../../components/admin/ImageUpload';
 
 interface ProductFormProps {
   mode: 'new' | 'edit';
@@ -14,6 +15,7 @@ interface ProductFormProps {
 export default function ProductForm({ mode, productId, onNavigate }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [productImages, setProductImages] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -203,6 +205,16 @@ export default function ProductForm({ mode, productId, onNavigate }: ProductForm
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Product Images */}
+        <div className="bg-white rounded-lg shadow p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-neutral-900">Product Images</h2>
+          <ImageUpload
+            productId={productId}
+            existingImages={productImages}
+            onImagesChange={setProductImages}
+          />
+        </div>
+
         {/* Basic Information */}
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-neutral-900">Basic Information</h2>
