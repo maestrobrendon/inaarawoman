@@ -32,7 +32,6 @@ export default function EnhancedHeader() {
   const navigation = [
     { name: 'Shop', path: '/shop' },
     { name: 'Collections', path: '/shop', isDropdown: true },
-    { name: 'Lookbook', path: '/lookbook' },
     { name: 'About', path: '/about' }
   ];
 
