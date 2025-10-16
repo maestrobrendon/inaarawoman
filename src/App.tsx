@@ -206,3 +206,8 @@ function App() {
 }
 
 export default App;
+
+
+<button onClick={() => handleNavigate('admin-login')}>
+  Go to Admin
+</button>
