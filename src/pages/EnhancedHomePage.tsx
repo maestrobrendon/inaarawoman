@@ -68,7 +68,7 @@ export default function EnhancedHomePage() {
 
   return (
     <div className="min-h-screen">
-      <HeroSection onNavigate={onNavigate} />
+      <HeroSection />
 
       <section className="py-20 px-4 bg-stone-100">
         <div className="max-w-7xl mx-auto">
@@ -120,7 +120,7 @@ export default function EnhancedHomePage() {
           </StaggerContainer>
 
           <ScrollReveal className="text-center" delay={0.4}>
-            <Button variant="primary" size="lg" onClick={() => onNavigate('shop')}>
+            <Button variant="primary" size="lg" onClick={() => navigate('/shop')}>
               View all
             </Button>
           </ScrollReveal>
@@ -147,7 +147,7 @@ export default function EnhancedHomePage() {
                 </p>
               </ScrollReveal>
               <ScrollReveal delay={0.4}>
-                <Button variant="primary" size="lg" onClick={() => onNavigate('about')}>
+                <Button variant="primary" size="lg" onClick={() => navigate('/about')}>
                   ABOUT US
                 </Button>
               </ScrollReveal>
@@ -235,7 +235,7 @@ export default function EnhancedHomePage() {
                 key={item.id}
                 variants={staggerItemVariants}
                 className="group cursor-pointer"
-                onClick={() => onNavigate('shop')}
+                onClick={() => navigate('/shop')}
               >
                 <ImageReveal
                   src={item.image}
@@ -249,7 +249,7 @@ export default function EnhancedHomePage() {
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onNavigate('shop');
+                    navigate('/shop');
                   }}
                   className="w-full"
                 >
@@ -297,7 +297,7 @@ export default function EnhancedHomePage() {
               <motion.button
                 key={index}
                 variants={staggerItemVariants}
-                onClick={() => onNavigate('shop')}
+                onClick={() => navigate('/shop')}
                 className="group relative overflow-hidden bg-white rounded-sm shadow-sm hover:shadow-xl transition-all duration-500"
               >
                 <div className="aspect-[3/4] overflow-hidden">
@@ -321,7 +321,7 @@ export default function EnhancedHomePage() {
           </StaggerContainer>
 
           <ScrollReveal className="text-center mt-12" delay={0.5}>
-            <Button onClick={() => onNavigate('shop')} variant="outline" className="px-8 py-3 text-sm font-medium tracking-wide">
+            <Button onClick={() => navigate('/shop')} variant="outline" className="px-8 py-3 text-sm font-medium tracking-wide">
               VIEW ALL COLLECTIONS
             </Button>
           </ScrollReveal>

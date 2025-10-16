@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Collection } from '../types';
 import Button from '../components/ui/Button';
 
-interface LookbookPageProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function LookbookPage({ onNavigate }: LookbookPageProps) {
+export default function LookbookPage() {
+  const navigate = useNavigate();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +67,7 @@ export default function LookbookPage({ onNavigate }: LookbookPageProps) {
                   <div className={`grid grid-cols-1 ${index % 2 === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-8`}>
                     {collection.image_url && (
                       <div className={`relative ${index % 2 === 0 ? 'md:col-span-1' : 'md:col-span-2'} aspect-[4/5] overflow-hidden rounded-sm bg-neutral-100 group cursor-pointer`}
-                        onClick={() => onNavigate('shop', { collection: collection.id })}
+                        onClick={() => navigate(`/collection/${collection.slug}`)}
                       >
                         <img
                           src={collection.image_url}

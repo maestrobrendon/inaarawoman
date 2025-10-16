@@ -1,12 +1,10 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Home, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Button from '../components/ui/Button';
 
-interface NotFoundPageProps {
-  onNavigate: (page: string) => void;
-}
-
-export default function NotFoundPage({ onNavigate }: NotFoundPageProps) {
+export default function NotFoundPage() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex items-center justify-center px-6 bg-gradient-to-br from-neutral-50 to-amber-50/30">
       <div className="max-w-2xl w-full text-center">
@@ -58,7 +56,7 @@ export default function NotFoundPage({ onNavigate }: NotFoundPageProps) {
             transition={{ delay: 0.4 }}
           >
             <Button
-              onClick={() => onNavigate('home')}
+              onClick={() => navigate('/')}
               className="gap-2"
             >
               <Home size={20} />
@@ -66,7 +64,7 @@ export default function NotFoundPage({ onNavigate }: NotFoundPageProps) {
             </Button>
 
             <Button
-              onClick={() => onNavigate('shop')}
+              onClick={() => navigate('/shop')}
               variant="outline"
               className="gap-2"
             >

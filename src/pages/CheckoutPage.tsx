@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
@@ -8,11 +9,8 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 
-interface CheckoutPageProps {
-  onNavigate: (page: string) => void;
-}
-
-export default function CheckoutPage({ onNavigate }: CheckoutPageProps) {
+export default function CheckoutPage() {
+  const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const [step, setStep] = useState<'shipping' | 'payment' | 'success'>('shipping');
   const [orderNumber, setOrderNumber] = useState('');
@@ -105,7 +103,7 @@ export default function CheckoutPage({ onNavigate }: CheckoutPageProps) {
       <div className="min-h-screen flex items-center justify-center py-12">
         <div className="text-center">
           <p className="text-lg text-neutral-600 mb-4">Your cart is empty</p>
-          <Button onClick={() => onNavigate('shop')}>Continue Shopping</Button>
+          <Button onClick={() => navigate('/shop')}>Continue Shopping</Button>
         </div>
       </div>
     );
@@ -129,10 +127,10 @@ export default function CheckoutPage({ onNavigate }: CheckoutPageProps) {
             We've sent a confirmation email with your order details and tracking information.
           </p>
           <div className="space-y-3">
-            <Button fullWidth onClick={() => onNavigate('shop')}>
+            <Button fullWidth onClick={() => navigate('/shop')}>
               Continue Shopping
             </Button>
-            <Button fullWidth variant="outline" onClick={() => onNavigate('home')}>
+            <Button fullWidth variant="outline" onClick={() => navigate('/')}>
               Return to Home
             </Button>
           </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { ProductWithImages } from '../types';
@@ -8,11 +9,8 @@ import Input from '../components/ui/Input';
 import HeroSection from '../components/home/HeroSection';
 import StaticProductCard from '../components/product/StaticProductCard';
 
-interface HomePageProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function HomePage({ onNavigate }: HomePageProps) {
+export default function HomePage() {
+  const navigate = useNavigate();
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithImages[]>([]);
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -65,7 +63,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
   return (
     <div className="min-h-screen">
-      <HeroSection onNavigate={onNavigate} />
+      <HeroSection />
 
       <section className="py-20 px-4 bg-stone-100">
         <div className="max-w-7xl mx-auto">
@@ -130,7 +128,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             <Button
               variant="primary"
               size="lg"
-              onClick={() => onNavigate('shop')}
+              onClick={() => navigate('/shop')}
             >
               View all
             </Button>
@@ -159,7 +157,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 <Button
                   variant="primary"
                   size="lg"
-                  onClick={() => onNavigate('about')}
+                  onClick={() => navigate('/about')}
                 >
                   ABOUT US
                 </Button>
@@ -230,7 +228,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 image: '/Gemini_Generated_Image_f24zqwf24zqwf24z copy.png',
               },
             ].map((item) => (
-              <div key={item.id} className="group cursor-pointer" onClick={() => onNavigate('shop')}>
+              <div key={item.id} className="group cursor-pointer" onClick={() => navigate('/shop')}>
                 <div className="relative aspect-[3/4] bg-neutral-100 mb-4 overflow-hidden">
                   <img
                     src={item.image}
@@ -245,7 +243,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onNavigate('shop');
+                    navigate('/shop');
                   }}
                   className="w-full"
                 >
@@ -286,7 +284,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             ].map((collection, index) => (
               <button
                 key={index}
-                onClick={() => onNavigate('shop')}
+                onClick={() => navigate('/shop')}
                 className="group relative overflow-hidden bg-white rounded-sm shadow-sm hover:shadow-xl transition-all duration-500"
               >
                 <div className="aspect-[3/4] overflow-hidden">
@@ -311,7 +309,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
           <div className="text-center mt-12">
             <Button
-              onClick={() => onNavigate('shop')}
+              onClick={() => navigate('/shop')}
               variant="outline"
               className="px-8 py-3 text-sm font-medium tracking-wide"
             >
@@ -338,13 +336,13 @@ export default function HomePage({ onNavigate }: HomePageProps) {
               <ProductCard
                 key={product.id}
                 product={product}
-                onClick={() => onNavigate('product', { id: product.id })}
+                onClick={() => navigate(`/product/${product.id}`)}
               />
             ))}
           </div>
 
           <div className="text-center mt-10">
-            <Button variant="outline" onClick={() => onNavigate('shop')}>
+            <Button variant="outline" onClick={() => navigate('/shop')}>
               View All Products
             </Button>
           </div>

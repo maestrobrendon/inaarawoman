@@ -1,10 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 
-interface AboutPageProps {
-  onNavigate: (page: string) => void;
-}
-
-export default function AboutPage({ onNavigate }: AboutPageProps) {
+export default function AboutPage() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen">
       <section className="relative h-[60vh] flex items-center justify-center bg-gradient-to-br from-amber-50 to-rose-50">
@@ -93,7 +91,7 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
             Discover pieces that resonate with your soul and celebrate your light.
             We're honored to be part of your story.
           </p>
-          <Button size="lg" onClick={() => onNavigate('shop')}>
+          <Button size="lg" onClick={() => navigate('/shop')}>
             Explore Our Collection
           </Button>
         </div>
