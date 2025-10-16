@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Package, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 
-interface OrderDetailsProps {
-  orderId: string;
-  onNavigate: (page: string) => void;
-}
-
-export default function OrderDetails({ orderId, onNavigate }: OrderDetailsProps) {
+export default function OrderDetails() {
+  const navigate = useNavigate();
+  const { id: orderId } = useParams();
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +67,7 @@ export default function OrderDetails({ orderId, onNavigate }: OrderDetailsProps)
   return (
     <div className="space-y-6 max-w-4xl">
       <button
-        onClick={() => onNavigate('orders')}
+        onClick={() => navigate('/admin/orders')}
         className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900"
       >
         <ArrowLeft size={20} />

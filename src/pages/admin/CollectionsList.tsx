@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FolderOpen, Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
@@ -14,11 +15,8 @@ interface Collection {
   product_count?: number;
 }
 
-interface CollectionsListProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function CollectionsList({ onNavigate }: CollectionsListProps) {
+export default function CollectionsList() {
+  const navigate = useNavigate();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +85,7 @@ export default function CollectionsList({ onNavigate }: CollectionsListProps) {
           <p className="text-neutral-600 mt-1">{filteredCollections.length} collections</p>
         </div>
         <Button
-          onClick={() => onNavigate('collection-form', { mode: 'new' })}
+          onClick={() => navigate('/admin/collections/new')}
           className="gap-2"
         >
           <Plus size={16} />
@@ -115,7 +113,7 @@ export default function CollectionsList({ onNavigate }: CollectionsListProps) {
           <div className="p-12 text-center">
             <FolderOpen className="mx-auto text-neutral-400 mb-4" size={48} />
             <p className="text-neutral-600 mb-4">No collections found</p>
-            <Button onClick={() => onNavigate('collection-form', { mode: 'new' })}>
+            <Button onClick={() => navigate('/admin/collections/new')}>
               Create Your First Collection
             </Button>
           </div>
@@ -160,7 +158,7 @@ export default function CollectionsList({ onNavigate }: CollectionsListProps) {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => onNavigate('collection-form', { mode: 'edit', id: collection.id })}
+                          onClick={() => navigate(`/admin/collections/edit/${collection.id}`)}
                           className="p-2 text-neutral-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                           title="Edit"
                         >

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
@@ -6,8 +7,6 @@ import Input from '../../components/ui/Input';
 
 interface CollectionFormProps {
   mode: 'new' | 'edit';
-  collectionId?: string;
-  onNavigate: (page: string) => void;
 }
 
 interface Product {
@@ -17,7 +16,9 @@ interface Product {
   image_url: string;
 }
 
-export default function CollectionForm({ mode, collectionId, onNavigate }: CollectionFormProps) {
+export default function CollectionForm({ mode }: CollectionFormProps) {
+  const navigate = useNavigate();
+  const { id: collectionId } = useParams();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -138,7 +139,7 @@ export default function CollectionForm({ mode, collectionId, onNavigate }: Colle
       }
 
       alert('Collection saved successfully!');
-      onNavigate('collections');
+      navigate('/admin/collections');
     } catch (error) {
       console.error('Error saving collection:', error);
       alert('Failed to save collection');
@@ -173,7 +174,7 @@ export default function CollectionForm({ mode, collectionId, onNavigate }: Colle
     <div className="space-y-6 max-w-4xl">
       <div className="space-y-4">
         <button
-          onClick={() => onNavigate('collections')}
+          onClick={() => navigate('/admin/collections')}
           className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900"
         >
           <ArrowLeft size={20} />
@@ -359,7 +360,7 @@ export default function CollectionForm({ mode, collectionId, onNavigate }: Colle
           <Button
             type="button"
             variant="outline"
-            onClick={() => onNavigate('collections')}
+            onClick={() => navigate('/admin/collections')}
           >
             Cancel
           </Button>

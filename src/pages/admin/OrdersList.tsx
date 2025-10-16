@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Search, Eye, Package, Truck, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
@@ -13,11 +14,8 @@ interface Order {
   created_at: string;
 }
 
-interface OrdersListProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function OrdersList({ onNavigate }: OrdersListProps) {
+export default function OrdersList() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -159,7 +157,7 @@ export default function OrdersList({ onNavigate }: OrdersListProps) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => onNavigate('order-details', { id: order.id })}
+                        onClick={() => navigate(`/admin/orders/${order.id}`)}
                         className="p-2 text-neutral-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                       >
                         <Eye size={16} />

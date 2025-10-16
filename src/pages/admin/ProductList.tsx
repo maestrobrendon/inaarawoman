@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Search, Filter, Home, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -19,11 +20,8 @@ interface Product {
   created_at: string;
 }
 
-interface ProductListProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function ProductList({ onNavigate }: ProductListProps) {
+export default function ProductList() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,7 +104,7 @@ export default function ProductList({ onNavigate }: ProductListProps) {
           <p className="text-neutral-600 mt-1">{filteredProducts.length} products</p>
         </div>
         <Button
-          onClick={() => onNavigate('product-form', { mode: 'new' })}
+          onClick={() => navigate('/admin/products/new')}
           className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
         >
           <Plus size={20} />
@@ -167,7 +165,7 @@ export default function ProductList({ onNavigate }: ProductListProps) {
         ) : filteredProducts.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-neutral-600 mb-4">No products found</p>
-            <Button onClick={() => onNavigate('product-form', { mode: 'new' })}>
+            <Button onClick={() => navigate('/admin/products/new')}>
               Add Your First Product
             </Button>
           </div>
@@ -244,7 +242,7 @@ export default function ProductList({ onNavigate }: ProductListProps) {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => onNavigate('product-form', { mode: 'edit', id: product.id })}
+                          onClick={() => navigate(`/admin/products/edit/${product.id}`)}
                           className="p-2 text-neutral-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                         >
                           <Edit size={16} />

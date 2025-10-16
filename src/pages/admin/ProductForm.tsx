@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Save, ArrowLeft, Home, Star, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -8,11 +9,11 @@ import ImageUpload from '../../components/admin/ImageUpload';
 
 interface ProductFormProps {
   mode: 'new' | 'edit';
-  productId?: string;
-  onNavigate: (page: string) => void;
 }
 
-export default function ProductForm({ mode, productId, onNavigate }: ProductFormProps) {
+export default function ProductForm({ mode }: ProductFormProps) {
+  const navigate = useNavigate();
+  const { id: productId } = useParams();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [productImages, setProductImages] = useState<any[]>([]);
@@ -168,7 +169,7 @@ export default function ProductForm({ mode, productId, onNavigate }: ProductForm
       }
 
       alert(`Product ${mode === 'edit' ? 'updated' : 'created'} successfully!`);
-      onNavigate('products');
+      navigate('/admin/products');
     } catch (error: any) {
       console.error('Error saving product:', error);
       alert('Failed to save product: ' + error.message);
@@ -193,7 +194,7 @@ export default function ProductForm({ mode, productId, onNavigate }: ProductForm
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <button
-          onClick={() => onNavigate('products')}
+          onClick={() => navigate('/admin/products')}
           className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4"
         >
           <ArrowLeft size={20} />
@@ -476,7 +477,7 @@ export default function ProductForm({ mode, productId, onNavigate }: ProductForm
           <Button
             type="button"
             variant="outline"
-            onClick={() => onNavigate('products')}
+            onClick={() => navigate('/admin/products')}
             disabled={saving}
           >
             Cancel

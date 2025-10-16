@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, User, Mail, Phone, Calendar, ShoppingBag, DollarSign, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-
-interface CustomerDetailsProps {
-  customerId: string;
-  onNavigate: (page: string, data?: any) => void;
-}
 
 interface Order {
   id: string;
@@ -17,7 +13,9 @@ interface Order {
   created_at: string;
 }
 
-export default function CustomerDetails({ customerId, onNavigate }: CustomerDetailsProps) {
+export default function CustomerDetails() {
+  const navigate = useNavigate();
+  const { id: customerId } = useParams();
   const [customer, setCustomer] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +101,7 @@ export default function CustomerDetails({ customerId, onNavigate }: CustomerDeta
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
         <button
-          onClick={() => onNavigate('customers')}
+          onClick={() => navigate('/admin/customers')}
           className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900"
         >
           <ArrowLeft size={20} />
@@ -212,7 +210,7 @@ export default function CustomerDetails({ customerId, onNavigate }: CustomerDeta
                 {orders.map((order) => (
                   <div
                     key={order.id}
-                    onClick={() => onNavigate('order-details', { id: order.id })}
+                    onClick={() => navigate(`/admin/orders/${order.id}`)}
                     className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
                   >
                     <div>

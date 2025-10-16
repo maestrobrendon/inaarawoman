@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Search, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -12,11 +13,8 @@ interface Customer {
   created_at: string;
 }
 
-interface CustomersListProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function CustomersList({ onNavigate }: CustomersListProps) {
+export default function CustomersList() {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,7 +95,7 @@ export default function CustomersList({ onNavigate }: CustomersListProps) {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      onClick={() => onNavigate('customer-details', { id: customer.id })}
+                      onClick={() => navigate(`/admin/customers/${customer.id}`)}
                       className="p-2 text-neutral-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                     >
                       <Eye size={16} />
