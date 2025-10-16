@@ -3,6 +3,7 @@ import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import AnnouncementBanner from './components/ui/AnnouncementBanner';
 import EnhancedHeader from './components/layout/EnhancedHeader';
 import EnhancedFooter from './components/layout/EnhancedFooter';
 import EnhancedHomePage from './pages/EnhancedHomePage';
@@ -43,6 +44,7 @@ function PublicLayout() {
   return (
     <>
       <LoadingBar />
+      <AnnouncementBanner />
       <EnhancedHeader />
       <main>
         <PageTransition pageKey={location.pathname}>

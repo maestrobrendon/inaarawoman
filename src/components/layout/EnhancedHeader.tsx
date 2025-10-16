@@ -23,7 +23,7 @@ export default function EnhancedHeader() {
 
   if (!wishlistIds) return null;
 
-  const headerHeight = useTransform(scrollY, [0, 100], [80, 64]);
+  const headerHeight = useTransform(scrollY, [0, 100], [60, 60]);
   const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.98]);
 
   const navigation = [
@@ -64,25 +64,25 @@ export default function EnhancedHeader() {
         }`}
         style={{ height: headerHeight, opacity: headerOpacity }}
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full py-3 md:py-0">
           <div className="flex h-full items-center justify-between">
             <button
-              className="lg:hidden p-2 -ml-2 relative z-10"
+              className="lg:hidden p-1 -ml-1 relative z-10"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <motion.div
                 animate={{ rotate: isMobileMenuOpen ? 90 : 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </motion.div>
             </button>
 
             <div className="flex items-center gap-8">
               <Link to="/">
                 <motion.div
-                  className="font-serif text-2xl font-semibold tracking-wide text-neutral-900 hover:text-neutral-700 transition-colors"
-                  animate={{ scale: scrolled ? 0.9 : 1 }}
+                  className="font-serif text-base md:text-xl lg:text-2xl font-semibold tracking-wide text-neutral-900 hover:text-neutral-700 transition-colors"
+                  animate={{ scale: 1 }}
                   transition={{ duration: 0.3 }}
                 >
                   INAARA WOMAN
@@ -114,7 +114,7 @@ export default function EnhancedHeader() {
               </nav>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <AnimatePresence mode="wait">
                 {isSearchExpanded ? (
                   <motion.div
@@ -122,7 +122,7 @@ export default function EnhancedHeader() {
                     animate={{ width: 200, opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
+                    className="overflow-hidden hidden md:block"
                   >
                     <input
                       type="text"
@@ -139,7 +139,7 @@ export default function EnhancedHeader() {
                 ) : (
                   <motion.button
                     onClick={() => setIsSearchExpanded(true)}
-                    className="p-2 text-neutral-600 hover:text-[#D4AF37] transition-colors"
+                    className="p-1.5 md:p-2 text-neutral-600 hover:text-[#D4AF37] transition-colors hidden md:block"
                     aria-label="Search"
                     whileHover={{ scale: 1.1, rotate: 15 }}
                     whileTap={{ scale: 0.9 }}
@@ -151,7 +151,7 @@ export default function EnhancedHeader() {
 
               <motion.div
                 onClick={() => navigate('/wishlist')}
-                className="relative p-2 text-neutral-600 hover:text-red-500 transition-colors cursor-pointer"
+                className="relative p-1.5 md:p-2 text-neutral-600 hover:text-red-500 transition-colors cursor-pointer"
                 aria-label="Wishlist"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -159,7 +159,7 @@ export default function EnhancedHeader() {
                 <Heart size={20} className={wishlistIds.size > 0 ? 'fill-red-500 text-red-500' : ''} />
                 {wishlistIds.size > 0 && (
                   <motion.span
-                    className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                    className="absolute -top-0.5 -right-0.5 md:-top-1 md:-right-1 bg-red-500 text-white text-[10px] md:text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -171,7 +171,7 @@ export default function EnhancedHeader() {
 
               <motion.button
                 onClick={() => setIsCartOpen(true)}
-                className="relative p-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+                className="relative p-1.5 md:p-2 text-neutral-600 hover:text-neutral-900 transition-colors"
                 aria-label="Shopping cart"
                 animate={cartBounce ? {
                   y: [0, -10, 0],
@@ -183,7 +183,7 @@ export default function EnhancedHeader() {
                 <ShoppingBag size={20} />
                 {itemCount > 0 && (
                   <motion.span
-                    className="absolute -top-1 -right-1 bg-neutral-900 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                    className="absolute -top-0.5 -right-0.5 md:-top-1 md:-right-1 bg-neutral-900 text-white text-[10px] md:text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center"
                     key={itemCount}
                     initial={{ scale: 0, rotate: -180 }}
                     animate={{ scale: 1, rotate: 0 }}
@@ -206,7 +206,7 @@ export default function EnhancedHeader() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
-                style={{ top: scrolled ? '64px' : '80px' }}
+                style={{ top: '60px' }}
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
@@ -216,7 +216,7 @@ export default function EnhancedHeader() {
                 exit={{ x: '100%' }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                 className="fixed right-0 top-0 bottom-0 w-3/4 max-w-sm bg-white shadow-2xl lg:hidden overflow-y-auto"
-                style={{ top: scrolled ? '64px' : '80px' }}
+                style={{ top: '60px' }}
               >
                 <nav className="px-6 py-8 space-y-1">
                   {navigation.map((item, index) => (
