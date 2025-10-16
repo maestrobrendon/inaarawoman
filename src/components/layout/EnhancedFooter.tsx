@@ -186,7 +186,7 @@ export default function EnhancedFooter() {
                 © {year} Inaara Woman. All rights reserved.
               </p>
               <motion.button
-                onClick={() => navigate('/admin-login')}
+                onClick={() => navigate('/admin/login')}
                 className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-xs font-semibold rounded-md hover:bg-neutral-800 transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

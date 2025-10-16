@@ -12,7 +12,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <p className="text-neutral-600">Loading...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-neutral-600">Verifying authentication...</p>
+        </div>
       </div>
     );
   }
