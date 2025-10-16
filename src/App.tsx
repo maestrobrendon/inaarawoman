@@ -15,7 +15,6 @@ import FAQPage from './pages/FAQPage';
 import LookbookPage from './pages/LookbookPage';
 import CheckoutPage from './pages/CheckoutPage';
 import NotFoundPage from './pages/NotFoundPage';
-import CustomCursor from './components/ui/CustomCursor';
 import PageTransition from './components/animations/PageTransition';
 import LoadingBar from './components/ui/LoadingBar';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -184,7 +183,6 @@ function App() {
             <div className="min-h-screen bg-white">
               {!isAdminRoute && (
                 <>
-                  <CustomCursor />
                   <LoadingBar />
                   <EnhancedHeader onNavigate={handleNavigate} currentPage={navigation.page} />
                 </>
