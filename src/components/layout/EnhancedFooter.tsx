@@ -31,16 +31,16 @@ export default function EnhancedFooter() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-serif text-xl font-semibold mb-4 text-neutral-900">
+            <h3 className="text-[18px] font-bold mb-4 text-neutral-900 tracking-wider uppercase">
               INAARA WOMAN
             </h3>
-            <p className="text-sm text-neutral-600 leading-relaxed">
+            <p className="text-[14px] font-normal text-neutral-600 leading-relaxed">
               Timeless elegance meets modern femininity. Every woman deserves to shine in her own light.
             </p>
           </div>
 
           <div>
-            <h4 className="font-medium mb-4 text-neutral-900">Shop</h4>
+            <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">Shop</h4>
             <ul className="space-y-2">
               {[
                 { name: 'All Products', path: '/shop' },
@@ -51,7 +51,7 @@ export default function EnhancedFooter() {
                 <li key={item.name}>
                   <Link to={item.path}>
                     <motion.div
-                      className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
+                      className="text-[13px] md:text-[14px] font-normal text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
                       initial="rest"
                       whileHover="hover"
                       variants={linkVariants}
@@ -71,7 +71,7 @@ export default function EnhancedFooter() {
           </div>
 
           <div>
-            <h4 className="font-medium mb-4 text-neutral-900">About</h4>
+            <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">About</h4>
             <ul className="space-y-2">
               {[
                 { name: 'Our Story', path: '/about' },
@@ -81,7 +81,7 @@ export default function EnhancedFooter() {
                 <li key={item.name}>
                   <Link to={item.path}>
                     <motion.div
-                      className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
+                      className="text-[13px] md:text-[14px] font-normal text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
                       initial="rest"
                       whileHover="hover"
                       variants={linkVariants}

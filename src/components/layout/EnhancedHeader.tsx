@@ -81,7 +81,7 @@ export default function EnhancedHeader() {
             <div className="flex items-center gap-8">
               <Link to="/">
                 <motion.div
-                  className="font-serif text-base md:text-xl lg:text-2xl font-semibold tracking-wide text-neutral-900 hover:text-neutral-700 transition-colors"
+                  className="text-[18px] md:text-[20px] font-bold tracking-wider uppercase text-neutral-900 hover:text-neutral-700 transition-colors"
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.3 }}
                 >
@@ -93,7 +93,7 @@ export default function EnhancedHeader() {
                 {navigation.map((item) => (
                   <Link key={item.name} to={item.path}>
                     <motion.div
-                      className={`text-sm font-medium transition-colors relative group ${
+                      className={`text-[14px] md:text-[15px] font-medium transition-colors relative group ${
                         currentPage === item.path
                           ? 'text-neutral-900'
                           : 'text-neutral-600 hover:text-[#D4AF37]'

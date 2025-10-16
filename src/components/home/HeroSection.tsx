@@ -129,7 +129,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-[11px] md:text-xs uppercase tracking-widest text-white mb-3 md:mb-4 font-light"
+            className="text-[11px] md:text-xs uppercase tracking-widest text-white mb-3 md:mb-4 font-medium"
           >
             New Collection 2024
           </motion.p>
@@ -138,9 +138,10 @@ export default function HeroSection() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="font-serif text-[32px] leading-[1.2] md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 lg:mb-8 tracking-tight"
+            className="text-[32px] leading-[1.1] md:text-[56px] font-bold text-white mb-4 md:mb-6 tracking-tight"
             style={{
-              textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2)'
+              textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2)',
+              letterSpacing: '-0.03em'
             }}
           >
             {titleWords.map((word, index) => (
@@ -158,7 +159,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="text-sm md:text-base lg:text-lg text-white mb-6 md:mb-8 leading-relaxed max-w-[85%] md:max-w-full mx-auto"
+            className="text-[14px] md:text-[18px] font-normal text-white mb-6 md:mb-8 leading-relaxed max-w-[85%] md:max-w-full mx-auto"
             style={{
               textShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}
@@ -189,7 +190,7 @@ export default function HeroSection() {
                 size="lg"
                 onClick={() => navigate('/shop')}
                 variant="secondary"
-                className="relative shadow-lg group-hover:shadow-2xl transition-shadow duration-300 h-11 md:h-12 px-6 md:px-8 text-sm md:text-base"
+                className="relative shadow-lg group-hover:shadow-2xl transition-shadow duration-300 h-11 md:h-12 px-6 md:px-8 text-[14px] md:text-[16px] font-semibold"
               >
                 <span className="md:hidden">Discover Collection</span>
                 <span className="hidden md:inline">View Collection</span>
