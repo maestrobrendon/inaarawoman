@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Instagram, Facebook, Twitter } from 'lucide-react';
+import { Instagram, Facebook, Twitter, ShieldCheck } from 'lucide-react';
 
 export default function EnhancedFooter() {
   const year = new Date().getFullYear();
+  const navigate = useNavigate();
   const { scrollYProgress } = useScroll();
   const footerY = useTransform(scrollYProgress, [0.85, 1], [100, 0]);
 
@@ -180,9 +181,20 @@ export default function EnhancedFooter() {
 
         <div className="mt-12 pt-8 border-t border-neutral-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-neutral-600">
-              © {year} Inaara Woman. All rights reserved.
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-neutral-600">
+                © {year} Inaara Woman. All rights reserved.
+              </p>
+              <motion.button
+                onClick={() => navigate('/admin-login')}
+                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-xs font-semibold rounded-md hover:bg-neutral-800 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ShieldCheck size={14} />
+                Admin Login
+              </motion.button>
+            </div>
             <div className="flex gap-6">
               {[
                 { name: 'Privacy Policy', path: '/' },
