@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -13,11 +14,8 @@ import { CounterAnimation } from '../components/animations/CounterAnimation';
 import { LetterReveal, TextReveal } from '../components/animations/TextReveal';
 import { ParallaxImage } from '../components/animations/ParallaxSection';
 
-interface HomePageProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function EnhancedHomePage({ onNavigate }: HomePageProps) {
+export default function EnhancedHomePage() {
+  const navigate = useNavigate();
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithImages[]>([]);
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -340,13 +338,13 @@ export default function EnhancedHomePage({ onNavigate }: HomePageProps) {
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6" staggerDelay={0.1}>
             {featuredProducts.map((product) => (
               <motion.div key={product.id} variants={staggerItemVariants}>
-                <ProductCard product={product} onClick={() => onNavigate('product', { id: product.id })} />
+                <ProductCard product={product} onClick={() => navigate(`/product/${product.id}`)} />
               </motion.div>
             ))}
           </StaggerContainer>
 
           <ScrollReveal className="text-center mt-10" delay={0.4}>
-            <Button variant="outline" onClick={() => onNavigate('shop')}>
+            <Button variant="outline" onClick={() => navigate('/shop')}>
               View All Products
             </Button>
           </ScrollReveal>

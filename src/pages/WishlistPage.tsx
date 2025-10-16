@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { ProductWithImages } from '../types';
@@ -6,11 +7,8 @@ import { generateSessionId } from '../lib/utils';
 import ProductCard from '../components/product/ProductCard';
 import Button from '../components/ui/Button';
 
-interface WishlistPageProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function WishlistPage({ onNavigate }: WishlistPageProps) {
+export default function WishlistPage() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<ProductWithImages[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,7 +84,7 @@ export default function WishlistPage({ onNavigate }: WishlistPageProps) {
             <p className="text-neutral-500 mb-6">
               Save your favorite pieces to easily find them later
             </p>
-            <Button onClick={() => onNavigate('shop')}>Explore Collection</Button>
+            <Button onClick={() => navigate('/shop')}>Explore Collection</Button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -94,7 +92,7 @@ export default function WishlistPage({ onNavigate }: WishlistPageProps) {
               <ProductCard
                 key={product.id}
                 product={product}
-                onClick={() => onNavigate('product', { id: product.id })}
+                onClick={() => navigate(`/product/${product.id}`)}
               />
             ))}
           </div>

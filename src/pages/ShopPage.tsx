@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Collection, ProductWithImages } from '../types';
@@ -8,11 +9,11 @@ import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 
 interface ShopPageProps {
-  onNavigate: (page: string, data?: any) => void;
   initialFilters?: { collection?: string };
 }
 
-export default function ShopPage({ onNavigate, initialFilters }: ShopPageProps) {
+export default function ShopPage({ initialFilters }: ShopPageProps) {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<ProductWithImages[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -289,7 +290,7 @@ export default function ShopPage({ onNavigate, initialFilters }: ShopPageProps) 
                   <ProductCard
                     key={product.id}
                     product={product}
-                    onClick={() => onNavigate('product', { id: product.id })}
+                    onClick={() => navigate(`/product/${product.id}`)}
                   />
                 ))}
               </div>
