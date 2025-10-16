@@ -94,8 +94,8 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
       >
         <div className="absolute inset-0 w-full h-[120%]">
           <img
-            src="/hero-1.jpg"
-            alt="Two women in elegant patterned skirts at coastal cliffs"
+            src="/hero.jpg"
+            alt="Two women in elegant white tops and patterned skirts"
             className={`w-full h-full object-cover scale-125 object-[center_40%] md:scale-100 md:object-center transition-opacity duration-1000 ${
               isLoaded ? 'opacity-100' : 'opacity-0'
             }`}
