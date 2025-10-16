@@ -16,16 +16,18 @@ import { ParallaxImage } from '../components/animations/ParallaxSection';
 
 export default function EnhancedHomePage() {
   const navigate = useNavigate();
+  const [bestSellers, setBestSellers] = useState<ProductWithImages[]>([]);
+  const [newArrivals, setNewArrivals] = useState<ProductWithImages[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithImages[]>([]);
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
-    loadFeaturedData();
+    loadAllProducts();
   }, []);
 
-  const loadFeaturedData = async () => {
-    const { data: products } = await supabase
+  const loadAllProducts = async () => {
+    const { data: bestSellerData } = await supabase
       .from('products')
       .select(`
         *,
@@ -33,9 +35,34 @@ export default function EnhancedHomePage() {
         collection:collections(*)
       `)
       .eq('is_bestseller', true)
+      .eq('is_active', true)
       .limit(4);
 
-    if (products) setFeaturedProducts(products as any);
+    const { data: newArrivalData } = await supabase
+      .from('products')
+      .select(`
+        *,
+        images:product_images(*),
+        collection:collections(*)
+      `)
+      .eq('is_new', true)
+      .eq('is_active', true)
+      .limit(4);
+
+    const { data: featuredData } = await supabase
+      .from('products')
+      .select(`
+        *,
+        images:product_images(*),
+        collection:collections(*)
+      `)
+      .eq('is_featured', true)
+      .eq('is_active', true)
+      .limit(4);
+
+    if (bestSellerData) setBestSellers(bestSellerData as any);
+    if (newArrivalData) setNewArrivals(newArrivalData as any);
+    if (featuredData) setFeaturedProducts(featuredData as any);
   };
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -81,42 +108,33 @@ export default function EnhancedHomePage() {
           </ScrollReveal>
 
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8" staggerDelay={0.1}>
-            {[
-              {
-                image: '/Gemini_Generated_Image_vre75gvre75gvre7 copy copy.png',
-                name: 'Zurié Dress - Long',
-                price: '₦458,990.00 NGN',
-              },
-              {
-                image: '/Gemini_Generated_Image_gmfzi0gmfzi0gmfz (1).png',
-                name: 'Buzu Skirt Set',
-                price: '₦499,900.00 NGN',
-              },
-              {
-                image: '/Gemini_Generated_Image_nobba7nobba7nobb.png',
-                name: 'Adioba Set',
-                price: '₦359,990.00 NGN',
-              },
-              {
-                image: '/Gemini_Generated_Image_28wvm128wvm128wv.png',
-                name: 'Zyma Dress',
-                price: '₦249,990.00 NGN',
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                variants={staggerItemVariants}
-                className="group cursor-pointer"
-              >
-                <ImageReveal
-                  src={item.image}
-                  alt={item.name}
-                  className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200"
-                />
-                <h3 className="font-medium text-neutral-900 mb-1">{item.name}</h3>
-                <p className="text-neutral-600 text-sm">{item.price}</p>
-              </motion.div>
-            ))}
+            {bestSellers.length > 0 ? (
+              bestSellers.map((product) => {
+                const primaryImage = product.images?.find((img: any) => img.is_primary)?.image_url ||
+                                    product.images?.[0]?.image_url ||
+                                    product.image_url;
+                return (
+                  <motion.div
+                    key={product.id}
+                    variants={staggerItemVariants}
+                    className="group cursor-pointer"
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
+                    <ImageReveal
+                      src={primaryImage}
+                      alt={product.name}
+                      className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200"
+                    />
+                    <h3 className="font-medium text-neutral-900 mb-1">{product.name}</h3>
+                    <p className="text-neutral-600 text-sm">₦{parseFloat(product.price).toLocaleString()} NGN</p>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="col-span-4 text-center py-8 text-neutral-600">
+                No best sellers available. Add products in the admin dashboard.
+              </div>
+            )}
           </StaggerContainer>
 
           <ScrollReveal className="text-center" delay={0.4}>
@@ -205,58 +223,44 @@ export default function EnhancedHomePage() {
           </ScrollReveal>
 
           <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" staggerDelay={0.15}>
-            {[
-              {
-                id: 1,
-                name: 'Elegant Black Dress',
-                price: 189.0,
-                image: '/Gemini_Generated_Image_mtsv62mtsv62mtsv copy.png',
-              },
-              {
-                id: 2,
-                name: 'Monochrome Print Gown',
-                price: 249.0,
-                image: '/Gemini_Generated_Image_ehszg6ehszg6ehsz copy.png',
-              },
-              {
-                id: 3,
-                name: 'Black One-Shoulder Dress',
-                price: 169.0,
-                image: '/Gemini_Generated_Image_c0aiz1c0aiz1c0ai copy.png',
-              },
-              {
-                id: 4,
-                name: 'Black Jumpsuit',
-                price: 159.0,
-                image: '/Gemini_Generated_Image_f24zqwf24zqwf24z copy.png',
-              },
-            ].map((item) => (
-              <motion.div
-                key={item.id}
-                variants={staggerItemVariants}
-                className="group cursor-pointer"
-                onClick={() => navigate('/shop')}
-              >
-                <ImageReveal
-                  src={item.image}
-                  alt={item.name}
-                  className="relative aspect-[3/4] bg-neutral-100 mb-4 overflow-hidden rounded-sm"
-                />
-                <h3 className="text-neutral-900 font-medium mb-2 text-sm">{item.name}</h3>
-                <p className="text-neutral-600 mb-4">${item.price.toFixed(2)}</p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate('/shop');
-                  }}
-                  className="w-full"
-                >
-                  SHOP
-                </Button>
-              </motion.div>
-            ))}
+            {newArrivals.length > 0 ? (
+              newArrivals.map((product) => {
+                const primaryImage = product.images?.find((img: any) => img.is_primary)?.image_url ||
+                                    product.images?.[0]?.image_url ||
+                                    product.image_url;
+                return (
+                  <motion.div
+                    key={product.id}
+                    variants={staggerItemVariants}
+                    className="group cursor-pointer"
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
+                    <ImageReveal
+                      src={primaryImage}
+                      alt={product.name}
+                      className="relative aspect-[3/4] bg-neutral-100 mb-4 overflow-hidden rounded-sm"
+                    />
+                    <h3 className="text-neutral-900 font-medium mb-2 text-sm">{product.name}</h3>
+                    <p className="text-neutral-600 mb-4">₦{parseFloat(product.price).toLocaleString()} NGN</p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/product/${product.id}`);
+                      }}
+                      className="w-full"
+                    >
+                      SHOP
+                    </Button>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="col-span-4 text-center py-8 text-neutral-600">
+                No new arrivals available. Mark products as "New" in the admin dashboard.
+              </div>
+            )}
           </StaggerContainer>
         </div>
       </section>
@@ -336,11 +340,17 @@ export default function EnhancedHomePage() {
           </ScrollReveal>
 
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6" staggerDelay={0.1}>
-            {featuredProducts.map((product) => (
-              <motion.div key={product.id} variants={staggerItemVariants}>
-                <ProductCard product={product} onClick={() => navigate(`/product/${product.id}`)} />
-              </motion.div>
-            ))}
+            {featuredProducts.length > 0 ? (
+              featuredProducts.map((product) => (
+                <motion.div key={product.id} variants={staggerItemVariants}>
+                  <ProductCard product={product} onClick={() => navigate(`/product/${product.id}`)} />
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-4 text-center py-8 text-neutral-600">
+                No featured products available. Mark products as "Featured" in the admin dashboard.
+              </div>
+            )}
           </StaggerContainer>
 
           <ScrollReveal className="text-center mt-10" delay={0.4}>
