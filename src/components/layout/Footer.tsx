@@ -92,7 +92,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             <h4 className="font-medium mb-4 text-neutral-900">Connect</h4>
             <div className="flex gap-4 mb-4">
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/inaarawoman_/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-neutral-600 hover:text-neutral-900 transition-colors"
@@ -119,9 +119,9 @@ export default function Footer({ onNavigate }: FooterProps) {
                 <Twitter size={20} />
               </a>
             </div>
-            <p className="text-sm text-neutral-600">
-              hello@inaarawoman.com
-            </p>
+            <a href="mailto:info@inaarawoman.com" className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors">
+              info@inaarawoman.com
+            </a>
           </div>
         </div>
 

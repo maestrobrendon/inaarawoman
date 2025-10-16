@@ -105,7 +105,7 @@ export default function EnhancedFooter() {
             <h4 className="font-medium mb-4 text-neutral-900">Connect</h4>
             <div className="flex gap-4 mb-4">
               <motion.a
-                href="https://instagram.com"
+                href="https://www.instagram.com/inaarawoman_/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-neutral-600 hover:text-transparent bg-clip-text transition-all duration-300"
@@ -173,9 +173,9 @@ export default function EnhancedFooter() {
                 </motion.div>
               </motion.a>
             </div>
-            <p className="text-sm text-neutral-600">
-              hello@inaarawoman.com
-            </p>
+            <a href="mailto:info@inaarawoman.com" className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors">
+              info@inaarawoman.com
+            </a>
           </div>
         </div>
 

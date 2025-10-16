@@ -93,10 +93,10 @@ export default function ContactPage() {
                   <div>
                     <p className="font-medium text-neutral-900">Email</p>
                     <a
-                      href="mailto:hello@inaarawoman.com"
+                      href="mailto:info@inaarawoman.com"
                       className="text-neutral-600 hover:text-neutral-900 transition-colors"
                     >
-                      hello@inaarawoman.com
+                      info@inaarawoman.com
                     </a>
                   </div>
                 </div>
@@ -109,7 +109,7 @@ export default function ContactPage() {
               </h3>
               <div className="flex gap-4">
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/inaarawoman_/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-3 border border-neutral-300 rounded-full hover:bg-neutral-900 hover:text-white hover:border-neutral-900 transition-all"
