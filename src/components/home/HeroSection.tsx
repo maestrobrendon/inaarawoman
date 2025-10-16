@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -9,14 +9,6 @@ export default function HeroSection() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showScrollIndicator, setShowScrollIndicator] = useState(true);
   const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
-
-  const parallaxY = useTransform(scrollY, [0, 800], [0, 400]);
-  const smoothParallax = useSpring(parallaxY, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
@@ -86,11 +78,8 @@ export default function HeroSection() {
 
   return (
     <section ref={heroRef} className="relative min-h-[70vh] md:h-[90vh] flex items-end md:items-center justify-center overflow-hidden bg-neutral-100">
-      <motion.div
-        className="absolute inset-0"
-        style={{ y: smoothParallax }}
-      >
-        <div className="absolute inset-0 w-full h-full md:h-[120%]">
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 w-full h-full">
           <img
             src="/hero.jpg"
             alt="Two women in elegant white tops and patterned skirts"
@@ -121,7 +110,7 @@ export default function HeroSection() {
             }}
           />
         </div>
-      </motion.div>
+      </div>
 
       <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full pb-12 md:pb-0">
         <div className="max-w-3xl mx-auto">
