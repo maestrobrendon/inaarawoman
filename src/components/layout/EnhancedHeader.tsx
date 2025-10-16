@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { ShoppingBag, Heart, Search, Menu, X } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, ChevronDown } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import CartDrawer from '../cart/CartDrawer';
@@ -16,6 +17,8 @@ export default function EnhancedHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
+  const [isCollectionsOpen, setIsCollectionsOpen] = useState(false);
+  const [collections, setCollections] = useState<Array<{ id: string; name: string; slug: string }>>([]);
 
   const { itemCount } = useCart();
   const { wishlistIds } = useWishlist();
@@ -28,10 +31,22 @@ export default function EnhancedHeader() {
 
   const navigation = [
     { name: 'Shop', path: '/shop' },
-    { name: 'Collections', path: '/shop' },
+    { name: 'Collections', path: '/shop', isDropdown: true },
     { name: 'Lookbook', path: '/lookbook' },
     { name: 'About', path: '/about' }
   ];
+
+  useEffect(() => {
+    const fetchCollections = async () => {
+      const { data } = await supabase
+        .from('collections')
+        .select('id, name, slug')
+        .eq('is_active', true)
+        .order('name');
+      if (data) setCollections(data);
+    };
+    fetchCollections();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -91,25 +106,67 @@ export default function EnhancedHeader() {
 
               <nav className="hidden lg:flex items-center gap-8">
                 {navigation.map((item) => (
-                  <Link key={item.name} to={item.path}>
-                    <motion.div
-                      className={`text-[14px] md:text-[15px] font-medium transition-colors relative group ${
-                        currentPage === item.path
-                          ? 'text-neutral-900'
-                          : 'text-neutral-600 hover:text-[#D4AF37]'
-                      }`}
-                      whileHover={{ y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {item.name}
-                      <motion.span
-                        className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                        initial={{ width: 0 }}
-                        whileHover={{ width: '100%' }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </motion.div>
-                  </Link>
+                  item.isDropdown ? (
+                    <div key={item.name} className="relative">
+                      <motion.button
+                        onMouseEnter={() => setIsCollectionsOpen(true)}
+                        onMouseLeave={() => setIsCollectionsOpen(false)}
+                        className="text-[14px] md:text-[15px] font-medium text-neutral-600 hover:text-[#D4AF37] transition-colors flex items-center gap-1"
+                        whileHover={{ y: -2 }}
+                      >
+                        {item.name}
+                        <ChevronDown size={16} />
+                      </motion.button>
+                      <AnimatePresence>
+                        {isCollectionsOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            transition={{ duration: 0.2 }}
+                            onMouseEnter={() => setIsCollectionsOpen(true)}
+                            onMouseLeave={() => setIsCollectionsOpen(false)}
+                            className="absolute top-full left-0 mt-4 w-56 bg-white border border-neutral-200 shadow-xl rounded-sm py-2 z-50"
+                          >
+                            {collections.map((collection) => (
+                              <Link
+                                key={collection.id}
+                                to={`/collection/${collection.slug}`}
+                                onClick={() => setIsCollectionsOpen(false)}
+                              >
+                                <motion.div
+                                  className="px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-[#D4AF37] transition-colors"
+                                  whileHover={{ x: 4 }}
+                                >
+                                  {collection.name}
+                                </motion.div>
+                              </Link>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <Link key={item.name} to={item.path}>
+                      <motion.div
+                        className={`text-[14px] md:text-[15px] font-medium transition-colors relative group ${
+                          currentPage === item.path
+                            ? 'text-neutral-900'
+                            : 'text-neutral-600 hover:text-[#D4AF37]'
+                        }`}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {item.name}
+                        <motion.span
+                          className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
+                          initial={{ width: 0 }}
+                          whileHover={{ width: '100%' }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </motion.div>
+                    </Link>
+                  )
                 ))}
               </nav>
             </div>

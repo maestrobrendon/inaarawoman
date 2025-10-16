@@ -9,6 +9,7 @@ import EnhancedFooter from './components/layout/EnhancedFooter';
 import EnhancedHomePage from './pages/EnhancedHomePage';
 import ShopPage from './pages/ShopPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import CollectionPage from './pages/CollectionPage';
 import WishlistPage from './pages/WishlistPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
@@ -51,6 +52,7 @@ function PublicLayout() {
           <Routes>
             <Route path="/" element={<EnhancedHomePage />} />
             <Route path="/shop" element={<ShopPage />} />
+            <Route path="/collection/:slug" element={<CollectionPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/about" element={<AboutPage />} />
