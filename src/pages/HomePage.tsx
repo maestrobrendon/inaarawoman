@@ -80,8 +80,8 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             <div className="group cursor-pointer">
               <div className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200">
                 <img
-                  src="/Gemini_Generated_Image_13mwoj13mwoj13mw.png"
-                  alt="Elegant white off-shoulder dress"
+                  src="/Gemini_Generated_Image_vre75gvre75gvre7 copy copy.png"
+                  alt="Two women in elegant vests and black pants"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>

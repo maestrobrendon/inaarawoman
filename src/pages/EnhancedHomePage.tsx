@@ -85,7 +85,7 @@ export default function EnhancedHomePage({ onNavigate }: HomePageProps) {
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8" staggerDelay={0.1}>
             {[
               {
-                image: '/Gemini_Generated_Image_13mwoj13mwoj13mw.png',
+                image: '/Gemini_Generated_Image_vre75gvre75gvre7 copy copy.png',
                 name: 'Zurié Dress - Long',
                 price: '₦458,990.00 NGN',
               },
