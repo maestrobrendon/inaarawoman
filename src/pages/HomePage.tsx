@@ -209,25 +209,25 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 id: 1,
                 name: 'Elegant Black Dress',
                 price: 189.00,
-                image: '/Gemini_Generated_Image_mtsv62mtsv62mtsv.png',
+                image: '/Gemini_Generated_Image_mtsv62mtsv62mtsv copy.png',
               },
               {
                 id: 2,
                 name: 'Monochrome Print Gown',
                 price: 249.00,
-                image: '/Gemini_Generated_Image_ehszg6ehszg6ehsz.png',
+                image: '/Gemini_Generated_Image_ehszg6ehszg6ehsz copy.png',
               },
               {
                 id: 3,
                 name: 'Black One-Shoulder Dress',
                 price: 169.00,
-                image: '/Gemini_Generated_Image_c0aiz1c0aiz1c0ai.png',
+                image: '/Gemini_Generated_Image_c0aiz1c0aiz1c0ai copy.png',
               },
               {
                 id: 4,
                 name: 'Black Jumpsuit',
                 price: 159.00,
-                image: '/Gemini_Generated_Image_f24zqwf24zqwf24z.png',
+                image: '/Gemini_Generated_Image_f24zqwf24zqwf24z copy.png',
               },
             ].map((item) => (
               <div key={item.id} className="group cursor-pointer" onClick={() => onNavigate('shop')}>
