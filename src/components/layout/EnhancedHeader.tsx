@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { ShoppingBag, Heart, Search, Menu, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import CartDrawer from '../cart/CartDrawer';
 
-interface EnhancedHeaderProps {
-  onNavigate: (page: string) => void;
-  currentPage: string;
-}
-
-export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHeaderProps) {
+export default function EnhancedHeader() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPage = location.pathname;
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -28,10 +27,10 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
   const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.98]);
 
   const navigation = [
-    { name: 'Shop', page: 'shop' },
-    { name: 'Collections', page: 'shop' },
-    { name: 'Lookbook', page: 'lookbook' },
-    { name: 'About', page: 'about' }
+    { name: 'Shop', path: '/shop' },
+    { name: 'Collections', path: '/shop' },
+    { name: 'Lookbook', path: '/lookbook' },
+    { name: 'About', path: '/about' }
   ];
 
   useEffect(() => {
@@ -80,36 +79,37 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
             </button>
 
             <div className="flex items-center gap-8">
-              <motion.button
-                onClick={() => onNavigate('home')}
-                className="font-serif text-2xl font-semibold tracking-wide text-neutral-900 hover:text-neutral-700 transition-colors"
-                animate={{ scale: scrolled ? 0.9 : 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                INAARA WOMAN
-              </motion.button>
+              <Link to="/">
+                <motion.div
+                  className="font-serif text-2xl font-semibold tracking-wide text-neutral-900 hover:text-neutral-700 transition-colors"
+                  animate={{ scale: scrolled ? 0.9 : 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  INAARA WOMAN
+                </motion.div>
+              </Link>
 
               <nav className="hidden lg:flex items-center gap-8">
                 {navigation.map((item) => (
-                  <motion.button
-                    key={item.name}
-                    onClick={() => onNavigate(item.page)}
-                    className={`text-sm font-medium transition-colors relative group ${
-                      currentPage === item.page
-                        ? 'text-neutral-900'
-                        : 'text-neutral-600 hover:text-[#D4AF37]'
-                    }`}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {item.name}
-                    <motion.span
-                      className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                      initial={{ width: 0 }}
-                      whileHover={{ width: '100%' }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </motion.button>
+                  <Link key={item.name} to={item.path}>
+                    <motion.div
+                      className={`text-sm font-medium transition-colors relative group ${
+                        currentPage === item.path
+                          ? 'text-neutral-900'
+                          : 'text-neutral-600 hover:text-[#D4AF37]'
+                      }`}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {item.name}
+                      <motion.span
+                        className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
+                        initial={{ width: 0 }}
+                        whileHover={{ width: '100%' }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </motion.div>
+                  </Link>
                 ))}
               </nav>
             </div>
@@ -149,9 +149,9 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
                 )}
               </AnimatePresence>
 
-              <motion.button
-                onClick={() => onNavigate('wishlist')}
-                className="relative p-2 text-neutral-600 hover:text-red-500 transition-colors"
+              <motion.div
+                onClick={() => navigate('/wishlist')}
+                className="relative p-2 text-neutral-600 hover:text-red-500 transition-colors cursor-pointer"
                 aria-label="Wishlist"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -167,7 +167,7 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
                     {wishlistIds.size}
                   </motion.span>
                 )}
-              </motion.button>
+              </motion.div>
 
               <motion.button
                 onClick={() => setIsCartOpen(true)}
@@ -220,29 +220,30 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
               >
                 <nav className="px-6 py-8 space-y-1">
                   {navigation.map((item, index) => (
-                    <motion.button
+                    <Link
                       key={item.name}
-                      onClick={() => {
-                        onNavigate(item.page);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`block w-full text-left px-4 py-4 rounded-lg transition-colors relative group ${
-                        currentPage === item.page
-                          ? 'bg-neutral-100 text-neutral-900 font-medium'
-                          : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
-                      }`}
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileTap={{ scale: 0.98 }}
+                      to={item.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {item.name}
-                      <motion.span
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-[#D4AF37] rounded-r"
-                        whileHover={{ height: '70%' }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </motion.button>
+                      <motion.div
+                        className={`block w-full text-left px-4 py-4 rounded-lg transition-colors relative group ${
+                          currentPage === item.path
+                            ? 'bg-neutral-100 text-neutral-900 font-medium'
+                            : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                        }`}
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {item.name}
+                        <motion.span
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-[#D4AF37] rounded-r"
+                          whileHover={{ height: '70%' }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </motion.div>
+                    </Link>
                   ))}
                 </nav>
               </motion.div>
@@ -251,7 +252,7 @@ export default function EnhancedHeader({ onNavigate, currentPage }: EnhancedHead
         </AnimatePresence>
       </motion.header>
 
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onNavigate={onNavigate} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </>
   );
 }

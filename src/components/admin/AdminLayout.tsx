@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -16,28 +17,29 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
-  currentPage: string;
-  onNavigate: (page: string) => void;
 }
 
-export default function AdminLayout({ children, currentPage, onNavigate }: AdminLayoutProps) {
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { adminProfile, signOut } = useAdminAuth();
 
   const navigation = [
-    { name: 'Dashboard', icon: LayoutDashboard, page: 'dashboard' },
-    { name: 'Products', icon: Package, page: 'products' },
-    { name: 'Orders', icon: ShoppingBag, page: 'orders' },
-    { name: 'Customers', icon: Users, page: 'customers' },
-    { name: 'Collections', icon: FolderOpen, page: 'collections' },
-    { name: 'Homepage', icon: Home, page: 'homepage' },
-    { name: 'Settings', icon: Settings, page: 'settings' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+    { name: 'Products', icon: Package, path: '/admin/products' },
+    { name: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
+    { name: 'Customers', icon: Users, path: '/admin/customers' },
+    { name: 'Collections', icon: FolderOpen, path: '/admin/collections' },
+    { name: 'Homepage', icon: Home, path: '/admin/homepage' },
+    { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      onNavigate('login');
+      navigate('/admin/login');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -67,15 +69,13 @@ export default function AdminLayout({ children, currentPage, onNavigate }: Admin
         <nav className="p-4 space-y-1">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPage === item.page;
+            const isActive = currentPath === item.path;
 
             return (
-              <button
+              <Link
                 key={item.name}
-                onClick={() => {
-                  onNavigate(item.page);
-                  setSidebarOpen(false);
-                }}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-amber-500 text-white'
@@ -84,7 +84,7 @@ export default function AdminLayout({ children, currentPage, onNavigate }: Admin
               >
                 <Icon size={20} />
                 <span className="font-medium">{item.name}</span>
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -113,7 +113,7 @@ export default function AdminLayout({ children, currentPage, onNavigate }: Admin
                 {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
               <h2 className="text-xl font-semibold text-neutral-900 capitalize">
-                {currentPage}
+                {navigation.find(item => item.path === currentPath)?.name || 'Admin'}
               </h2>
             </div>
 

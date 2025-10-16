@@ -1,11 +1,8 @@
+import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Instagram, Facebook, Twitter } from 'lucide-react';
 
-interface EnhancedFooterProps {
-  onNavigate: (page: string) => void;
-}
-
-export default function EnhancedFooter({ onNavigate }: EnhancedFooterProps) {
+export default function EnhancedFooter() {
   const year = new Date().getFullYear();
   const { scrollYProgress } = useScroll();
   const footerY = useTransform(scrollYProgress, [0.85, 1], [100, 0]);
@@ -46,27 +43,28 @@ export default function EnhancedFooter({ onNavigate }: EnhancedFooterProps) {
             <h4 className="font-medium mb-4 text-neutral-900">Shop</h4>
             <ul className="space-y-2">
               {[
-                { name: 'All Products', page: 'shop' },
-                { name: 'New Arrivals', page: 'shop' },
-                { name: 'Bestsellers', page: 'shop' },
-                { name: 'Lookbook', page: 'lookbook' }
+                { name: 'All Products', path: '/shop' },
+                { name: 'New Arrivals', path: '/shop' },
+                { name: 'Bestsellers', path: '/shop' },
+                { name: 'Lookbook', path: '/lookbook' }
               ].map((item) => (
                 <li key={item.name}>
-                  <motion.button
-                    onClick={() => onNavigate(item.page)}
-                    className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
-                    initial="rest"
-                    whileHover="hover"
-                    variants={linkVariants}
-                  >
-                    <span className="relative">
-                      {item.name}
-                      <motion.span
-                        className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                        variants={underlineVariants}
-                      />
-                    </span>
-                  </motion.button>
+                  <Link to={item.path}>
+                    <motion.div
+                      className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
+                      initial="rest"
+                      whileHover="hover"
+                      variants={linkVariants}
+                    >
+                      <span className="relative">
+                        {item.name}
+                        <motion.span
+                          className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
+                          variants={underlineVariants}
+                        />
+                      </span>
+                    </motion.div>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -76,26 +74,27 @@ export default function EnhancedFooter({ onNavigate }: EnhancedFooterProps) {
             <h4 className="font-medium mb-4 text-neutral-900">About</h4>
             <ul className="space-y-2">
               {[
-                { name: 'Our Story', page: 'about' },
-                { name: 'Contact Us', page: 'contact' },
-                { name: 'FAQ', page: 'faq' }
+                { name: 'Our Story', path: '/about' },
+                { name: 'Contact Us', path: '/contact' },
+                { name: 'FAQ', path: '/faq' }
               ].map((item) => (
                 <li key={item.name}>
-                  <motion.button
-                    onClick={() => onNavigate(item.page)}
-                    className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
-                    initial="rest"
-                    whileHover="hover"
-                    variants={linkVariants}
-                  >
-                    <span className="relative">
-                      {item.name}
-                      <motion.span
-                        className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                        variants={underlineVariants}
-                      />
-                    </span>
-                  </motion.button>
+                  <Link to={item.path}>
+                    <motion.div
+                      className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
+                      initial="rest"
+                      whileHover="hover"
+                      variants={linkVariants}
+                    >
+                      <span className="relative">
+                        {item.name}
+                        <motion.span
+                          className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
+                          variants={underlineVariants}
+                        />
+                      </span>
+                    </motion.div>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -186,25 +185,25 @@ export default function EnhancedFooter({ onNavigate }: EnhancedFooterProps) {
             </p>
             <div className="flex gap-6">
               {[
-                { name: 'Privacy Policy', page: 'home' },
-                { name: 'Terms of Service', page: 'home' },
-                { name: 'Shipping & Returns', page: 'home' }
+                { name: 'Privacy Policy', path: '/' },
+                { name: 'Terms of Service', path: '/' },
+                { name: 'Shipping & Returns', path: '/' }
               ].map((item) => (
-                <motion.button
-                  key={item.name}
-                  onClick={() => onNavigate(item.page)}
-                  className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative"
-                  initial="rest"
-                  whileHover="hover"
-                >
-                  <span className="relative">
-                    {item.name}
-                    <motion.span
-                      className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                      variants={underlineVariants}
-                    />
-                  </span>
-                </motion.button>
+                <Link key={item.name} to={item.path}>
+                  <motion.div
+                    className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative"
+                    initial="rest"
+                    whileHover="hover"
+                  >
+                    <span className="relative">
+                      {item.name}
+                      <motion.span
+                        className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
+                        variants={underlineVariants}
+                      />
+                    </span>
+                  </motion.div>
+                </Link>
               ))}
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import Button from '../ui/Button';
@@ -7,10 +8,10 @@ import { formatPrice } from '../../lib/utils';
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (page: string) => void;
 }
 
-export default function CartDrawer({ isOpen, onClose, onNavigate }: CartDrawerProps) {
+export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+  const navigate = useNavigate();
   const { items, removeItem, updateQuantity, subtotal } = useCart();
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function CartDrawer({ isOpen, onClose, onNavigate }: CartDrawerPr
                   </p>
                   <Button
                     onClick={() => {
-                      onNavigate('shop');
+                      navigate('/shop');
                       onClose();
                     }}
                   >
@@ -153,7 +154,7 @@ export default function CartDrawer({ isOpen, onClose, onNavigate }: CartDrawerPr
                     <Button
                       fullWidth
                       onClick={() => {
-                        onNavigate('checkout');
+                        navigate('/checkout');
                         onClose();
                       }}
                     >
@@ -164,7 +165,7 @@ export default function CartDrawer({ isOpen, onClose, onNavigate }: CartDrawerPr
                       variant="ghost"
                       className="mt-3"
                       onClick={() => {
-                        onNavigate('shop');
+                        navigate('/shop');
                         onClose();
                       }}
                     >

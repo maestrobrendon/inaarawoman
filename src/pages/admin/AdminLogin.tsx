@@ -1,20 +1,18 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
-interface AdminLoginProps {
-  onLoginSuccess: () => void;
-}
-
-export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
+export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAdminAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +21,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
     try {
       await signIn(email, password);
-      onLoginSuccess();
+      navigate('/admin');
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
-import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import EnhancedHeader from './components/layout/EnhancedHeader';
 import EnhancedFooter from './components/layout/EnhancedFooter';
 import EnhancedHomePage from './pages/EnhancedHomePage';
@@ -30,184 +30,98 @@ import CustomerDetails from './pages/admin/CustomerDetails';
 import CollectionsList from './pages/admin/CollectionsList';
 import CollectionForm from './pages/admin/CollectionForm';
 import Settings from './pages/admin/Settings';
+import ProtectedRoute from './components/ProtectedRoute';
+import { useEffect } from 'react';
 
-type Page = 'home' | 'shop' | 'product' | 'wishlist' | 'about' | 'contact' | 'faq' | 'lookbook' | 'checkout' | '404' | 'admin-login' | 'admin-dashboard' | 'admin-products' | 'admin-product-form' | 'admin-homepage';
-
-interface NavigationState {
-  page: Page;
-  data?: any;
-}
-
-function AdminApp() {
-  const [adminPage, setAdminPage] = useState('dashboard');
-  const [adminData, setAdminData] = useState<any>(null);
-  const { isAdmin, loading } = useAdminAuth();
-  const [navigation, setNavigation] = useState<NavigationState>({ page: 'admin-login' });
+function PublicLayout() {
+  const location = useLocation();
 
   useEffect(() => {
-    if (isAdmin && navigation.page === 'admin-login') {
-      setNavigation({ page: 'admin-dashboard' });
-    }
-  }, [isAdmin]);
-
-  const handleAdminNavigate = (page: string, data?: any) => {
-    setAdminPage(page);
-    setAdminData(data);
-  };
-
-  const handleLoginSuccess = () => {
-    setNavigation({ page: 'admin-dashboard' });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <p className="text-neutral-600">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  const renderAdminPage = () => {
-    switch (adminPage) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'products':
-        return <ProductList onNavigate={handleAdminNavigate} />;
-      case 'product-form':
-        return (
-          <ProductForm
-            mode={adminData?.mode || 'new'}
-            productId={adminData?.id}
-            onNavigate={handleAdminNavigate}
-          />
-        );
-      case 'homepage':
-        return <HomepageManager />;
-      case 'orders':
-        return <OrdersList onNavigate={handleAdminNavigate} />;
-      case 'order-details':
-        return <OrderDetails orderId={adminData?.id} onNavigate={handleAdminNavigate} />;
-      case 'customers':
-        return <CustomersList onNavigate={handleAdminNavigate} />;
-      case 'customer-details':
-        return <CustomerDetails customerId={adminData?.id} onNavigate={handleAdminNavigate} />;
-      case 'collections':
-        return <CollectionsList onNavigate={handleAdminNavigate} />;
-      case 'collection-form':
-        return (
-          <CollectionForm
-            mode={adminData?.mode || 'new'}
-            collectionId={adminData?.id}
-            onNavigate={handleAdminNavigate}
-          />
-        );
-      case 'settings':
-        return <Settings />;
-      default:
-        return <Dashboard />;
-    }
-  };
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname]);
 
   return (
-    <AdminLayout currentPage={adminPage} onNavigate={handleAdminNavigate}>
-      {renderAdminPage()}
+    <>
+      <LoadingBar />
+      <EnhancedHeader />
+      <main>
+        <PageTransition pageKey={location.pathname}>
+          <Routes>
+            <Route path="/" element={<EnhancedHomePage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/product/:id" element={<ProductDetailPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/lookbook" element={<LookbookPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </PageTransition>
+      </main>
+      <EnhancedFooter />
+    </>
+  );
+}
+
+function AdminRoutes() {
+  return (
+    <AdminLayout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/products" element={<ProductList />} />
+        <Route path="/products/new" element={<ProductForm mode="new" />} />
+        <Route path="/products/edit/:id" element={<ProductForm mode="edit" />} />
+        <Route path="/homepage" element={<HomepageManager />} />
+        <Route path="/orders" element={<OrdersList />} />
+        <Route path="/orders/:id" element={<OrderDetails />} />
+        <Route path="/customers" element={<CustomersList />} />
+        <Route path="/customers/:id" element={<CustomerDetails />} />
+        <Route path="/collections" element={<CollectionsList />} />
+        <Route path="/collections/new" element={<CollectionForm mode="new" />} />
+        <Route path="/collections/edit/:id" element={<CollectionForm mode="edit" />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Routes>
     </AdminLayout>
   );
 }
 
 function App() {
-  const [navigation, setNavigation] = useState<NavigationState>({ page: 'home' });
-
   useEffect(() => {
     document.documentElement.style.scrollBehavior = 'smooth';
-    const path = window.location.pathname;
-    if (path.startsWith('/admin')) {
-      setNavigation({ page: 'admin-login' });
-    }
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
     };
   }, []);
 
-  const handleNavigate = (page: string, data?: any) => {
-    window.dispatchEvent(new Event('pageTransitionStart'));
-    setNavigation({ page: page as Page, data });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      window.dispatchEvent(new Event('pageTransitionComplete'));
-    }, 500);
-  };
-
-  const renderPage = () => {
-    if (navigation.page.startsWith('admin')) {
-      return <AdminApp />;
-    }
-
-    switch (navigation.page) {
-      case 'home':
-        return <EnhancedHomePage onNavigate={handleNavigate} />;
-      case 'shop':
-        return <ShopPage onNavigate={handleNavigate} initialFilters={navigation.data} />;
-      case 'product':
-        return <ProductDetailPage productId={navigation.data?.id} onNavigate={handleNavigate} />;
-      case 'wishlist':
-        return <WishlistPage onNavigate={handleNavigate} />;
-      case 'about':
-        return <AboutPage onNavigate={handleNavigate} />;
-      case 'contact':
-        return <ContactPage />;
-      case 'faq':
-        return <FAQPage />;
-      case 'lookbook':
-        return <LookbookPage onNavigate={handleNavigate} />;
-      case 'checkout':
-        return <CheckoutPage onNavigate={handleNavigate} />;
-      case '404':
-        return <NotFoundPage onNavigate={handleNavigate} />;
-      default:
-        return <NotFoundPage onNavigate={handleNavigate} />;
-    }
-  };
-
-  const isAdminRoute = navigation.page.startsWith('admin');
-
   return (
-    <AdminAuthProvider>
-      <ToastProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <div className="min-h-screen bg-white">
-              {!isAdminRoute && (
-                <>
-                  <LoadingBar />
-                  <EnhancedHeader onNavigate={handleNavigate} currentPage={navigation.page} />
-                </>
-              )}
-              <main>
-                {isAdminRoute ? (
-                  renderPage()
-                ) : (
-                  <PageTransition pageKey={navigation.page}>
-                    {renderPage()}
-                  </PageTransition>
-                )}
-              </main>
-              {!isAdminRoute && <EnhancedFooter onNavigate={handleNavigate} />}
-            </div>
-          </WishlistProvider>
-        </CartProvider>
-      </ToastProvider>
-    </AdminAuthProvider>
+    <BrowserRouter>
+      <AdminAuthProvider>
+        <ToastProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <div className="min-h-screen bg-white">
+                <Routes>
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route
+                    path="/admin/*"
+                    element={
+                      <ProtectedRoute>
+                        <AdminRoutes />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/*" element={<PublicLayout />} />
+                </Routes>
+              </div>
+            </WishlistProvider>
+          </CartProvider>
+        </ToastProvider>
+      </AdminAuthProvider>
+    </BrowserRouter>
   );
 }
 
 export default App;
-
-
-<button onClick={() => handleNavigate('admin-login')}>
-  Go to Admin
-</button>

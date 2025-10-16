@@ -1,13 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import Button from '../ui/Button';
 
-interface HeroSectionProps {
-  onNavigate: (page: string, data?: any) => void;
-}
-
-export default function HeroSection({ onNavigate }: HeroSectionProps) {
+export default function HeroSection() {
+  const navigate = useNavigate();
   const [isLoaded, setIsLoaded] = useState(false);
   const [showScrollIndicator, setShowScrollIndicator] = useState(true);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -178,7 +176,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
               />
               <Button
                 size="lg"
-                onClick={() => onNavigate('shop')}
+                onClick={() => navigate('/shop')}
                 variant="secondary"
                 className="relative shadow-lg group-hover:shadow-2xl transition-shadow duration-300"
               >
