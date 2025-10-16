@@ -92,14 +92,13 @@ export default function HeroSection() {
       >
         <div className="absolute inset-0 w-full h-full md:h-[120%]">
           <img
-            src="/hero.jpg"
-            alt="Two women in elegant white tops and patterned skirts"
+            src="/Gemini_Generated_Image_vre75gvre75gvre7 copy.png"
+            alt="Two women in elegant vests and black pants"
             className={`w-full h-full object-cover transition-opacity duration-1000 ${
               isLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
-              objectPosition: 'center 30%',
-              transform: 'scale(0.95)'
+              objectPosition: 'center center'
             }}
             onLoad={() => setIsLoaded(true)}
           />
