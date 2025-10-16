@@ -1,18 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import { supabase } from '../../lib/supabase';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAdminAuth();
+  const { signIn, isAdmin } = useAdminAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in as admin
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/admin');
+    }
+  }, [isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,8 +28,31 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
+      // Sign in with Supabase Auth
       await signIn(email, password);
-      navigate('/admin');
+
+      // Wait a moment for the auth state to update
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Check if user is an admin
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: adminProfile } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (adminProfile) {
+          navigate('/admin');
+        } else {
+          // Sign out non-admin user
+          await supabase.auth.signOut();
+          setError('Access denied. You do not have admin privileges.');
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {

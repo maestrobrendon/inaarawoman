@@ -48,7 +48,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setAdminProfile(data);
