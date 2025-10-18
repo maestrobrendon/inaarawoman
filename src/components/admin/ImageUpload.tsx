@@ -1,25 +1,23 @@
 import { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon, Check } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import Button from '../ui/Button';
+import { uploadMultipleToCloudinary } from '../../utils/cloudinaryUpload';
 
-interface UploadedImage {
-  id?: string;
-  url: string;
-  storage_path: string;
+interface CloudinaryImage {
+  secure_url: string;
+  public_id: string;
   is_featured: boolean;
-  position: number;
 }
 
 interface ImageUploadProps {
-  productId?: string;
-  existingImages?: UploadedImage[];
-  onImagesChange: (images: UploadedImage[]) => void;
+  existingImages?: CloudinaryImage[];
+  onImagesChange: (images: CloudinaryImage[]) => void;
 }
 
-export default function ImageUpload({ productId, existingImages = [], onImagesChange }: ImageUploadProps) {
-  const [images, setImages] = useState<UploadedImage[]>(existingImages);
+export default function ImageUpload({ existingImages = [], onImagesChange }: ImageUploadProps) {
+  const [images, setImages] = useState<CloudinaryImage[]>(existingImages);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,70 +25,43 @@ export default function ImageUpload({ productId, existingImages = [], onImagesCh
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    setUploadProgress(`Uploading ${files.length} image${files.length > 1 ? 's' : ''}...`);
 
     try {
-      const newImages: UploadedImage[] = [];
+      const filesArray = Array.from(files);
+      const uploadResults = await uploadMultipleToCloudinary(filesArray);
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `product-images/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(filePath);
-
-        newImages.push({
-          url: publicUrl,
-          storage_path: filePath,
-          is_featured: images.length === 0 && i === 0,
-          position: images.length + i,
-        });
-      }
+      const newImages: CloudinaryImage[] = uploadResults.map((result, index) => ({
+        secure_url: result.secure_url,
+        public_id: result.public_id,
+        is_featured: images.length === 0 && index === 0,
+      }));
 
       const updatedImages = [...images, ...newImages];
       setImages(updatedImages);
       onImagesChange(updatedImages);
+      setUploadProgress('Upload complete!');
+
+      setTimeout(() => setUploadProgress(''), 2000);
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Failed to upload images');
+      alert('Failed to upload images. Please try again.');
+      setUploadProgress('');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleRemove = async (index: number) => {
-    const imageToRemove = images[index];
+  const handleRemove = (index: number) => {
+    const updatedImages = images.filter((_, i) => i !== index);
 
-    try {
-      if (imageToRemove.storage_path) {
-        await supabase.storage
-          .from('product-images')
-          .remove([imageToRemove.storage_path]);
-      }
-
-      if (imageToRemove.id && productId) {
-        await supabase
-          .from('product_images')
-          .delete()
-          .eq('id', imageToRemove.id);
-      }
-
-      const updatedImages = images.filter((_, i) => i !== index);
-      setImages(updatedImages);
-      onImagesChange(updatedImages);
-    } catch (error) {
-      console.error('Error removing image:', error);
-      alert('Failed to remove image');
+    if (images[index].is_featured && updatedImages.length > 0) {
+      updatedImages[0].is_featured = true;
     }
+
+    setImages(updatedImages);
+    onImagesChange(updatedImages);
   };
 
   const handleSetFeatured = (index: number) => {
@@ -128,6 +99,12 @@ export default function ImageUpload({ productId, existingImages = [], onImagesCh
         />
       </div>
 
+      {uploadProgress && (
+        <div className="text-sm text-amber-600 font-medium">
+          {uploadProgress}
+        </div>
+      )}
+
       {images.length === 0 ? (
         <div className="border-2 border-dashed border-neutral-300 rounded-lg p-12 text-center">
           <ImageIcon className="mx-auto text-neutral-400 mb-4" size={48} />
@@ -142,7 +119,7 @@ export default function ImageUpload({ productId, existingImages = [], onImagesCh
             <div key={index} className="relative group">
               <div className="aspect-square bg-neutral-100 rounded-lg overflow-hidden">
                 <img
-                  src={image.url}
+                  src={image.secure_url}
                   alt={`Product ${index + 1}`}
                   className="w-full h-full object-cover"
                 />

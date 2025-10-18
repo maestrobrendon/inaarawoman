@@ -25,6 +25,9 @@ export interface Product {
   stock_quantity: number;
   is_new: boolean;
   is_bestseller: boolean;
+  images?: string[];
+  image_public_ids?: string[];
+  main_image?: string;
   created_at: string;
   updated_at: string;
 }

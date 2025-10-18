@@ -16,7 +16,11 @@ export default function ProductForm({ mode }: ProductFormProps) {
   const { id: productId } = useParams();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [productImages, setProductImages] = useState<any[]>([]);
+  const [productImages, setProductImages] = useState<Array<{
+    secure_url: string;
+    public_id: string;
+    is_featured: boolean;
+  }>>([]);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -89,6 +93,15 @@ export default function ProductForm({ mode }: ProductFormProps) {
         seo_description: data.seo_description || '',
         tags: data.tags || [],
       });
+
+      if (data.images && data.images.length > 0) {
+        const formattedImages = data.images.map((url: string, index: number) => ({
+          secure_url: url,
+          public_id: data.image_public_ids?.[index] || '',
+          is_featured: data.main_image === url,
+        }));
+        setProductImages(formattedImages);
+      }
     } catch (error) {
       console.error('Error loading product:', error);
       alert('Failed to load product');
@@ -124,6 +137,10 @@ export default function ProductForm({ mode }: ProductFormProps) {
     setSaving(true);
 
     try {
+      const imageUrls = productImages.map(img => img.secure_url);
+      const imagePublicIds = productImages.map(img => img.public_id);
+      const mainImage = productImages.find(img => img.is_featured)?.secure_url || imageUrls[0] || null;
+
       const productData = {
         name: formData.name,
         slug: formData.slug || generateSlug(formData.name),
@@ -150,6 +167,9 @@ export default function ProductForm({ mode }: ProductFormProps) {
         seo_title: formData.seo_title,
         seo_description: formData.seo_description,
         tags: formData.tags,
+        images: imageUrls,
+        image_public_ids: imagePublicIds,
+        main_image: mainImage,
         updated_at: new Date().toISOString(),
       };
 
@@ -161,9 +181,11 @@ export default function ProductForm({ mode }: ProductFormProps) {
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data: newProduct, error } = await supabase
           .from('products')
-          .insert([{ ...productData, created_at: new Date().toISOString() }]);
+          .insert([{ ...productData, created_at: new Date().toISOString() }])
+          .select()
+          .single();
 
         if (error) throw error;
       }

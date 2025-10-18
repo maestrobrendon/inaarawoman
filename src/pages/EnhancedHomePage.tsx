@@ -13,6 +13,7 @@ import { ImageReveal } from '../components/animations/ImageReveal';
 import { CounterAnimation } from '../components/animations/CounterAnimation';
 import { LetterReveal, TextReveal } from '../components/animations/TextReveal';
 import { ParallaxImage } from '../components/animations/ParallaxSection';
+import { getProductImageUrl } from '../utils/cloudinaryUpload';
 
 export default function EnhancedHomePage() {
   const navigate = useNavigate();
@@ -110,9 +111,7 @@ export default function EnhancedHomePage() {
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8" staggerDelay={0.1}>
             {bestSellers.length > 0 ? (
               bestSellers.map((product) => {
-                const primaryImage = product.images?.find((img: any) => img.is_primary)?.image_url ||
-                                    product.images?.[0]?.image_url ||
-                                    product.image_url;
+                const primaryImage = product.main_image || (product.images && product.images[0]) || '';
                 return (
                   <motion.div
                     key={product.id}
@@ -121,7 +120,7 @@ export default function EnhancedHomePage() {
                     onClick={() => navigate(`/product/${product.id}`)}
                   >
                     <ImageReveal
-                      src={primaryImage}
+                      src={getProductImageUrl(primaryImage)}
                       alt={product.name}
                       className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200"
                     />
@@ -225,9 +224,7 @@ export default function EnhancedHomePage() {
           <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" staggerDelay={0.15}>
             {newArrivals.length > 0 ? (
               newArrivals.map((product) => {
-                const primaryImage = product.images?.find((img: any) => img.is_primary)?.image_url ||
-                                    product.images?.[0]?.image_url ||
-                                    product.image_url;
+                const primaryImage = product.main_image || (product.images && product.images[0]) || '';
                 return (
                   <motion.div
                     key={product.id}
@@ -236,7 +233,7 @@ export default function EnhancedHomePage() {
                     onClick={() => navigate(`/product/${product.id}`)}
                   >
                     <ImageReveal
-                      src={primaryImage}
+                      src={getProductImageUrl(primaryImage)}
                       alt={product.name}
                       className="relative aspect-[3/4] bg-neutral-100 mb-4 overflow-hidden rounded-sm"
                     />

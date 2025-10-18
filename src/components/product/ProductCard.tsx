@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
-import { ProductWithImages } from '../../types';
+import { Product } from '../../types';
 import { formatPrice } from '../../lib/utils';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
+import { getProductImageUrl } from '../../utils/cloudinaryUpload';
 
 interface ProductCardProps {
-  product: ProductWithImages;
+  product: Product;
   onClick: () => void;
 }
 
@@ -16,8 +17,8 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const { showToast } = useToast();
   const inWishlist = isInWishlist(product.id);
 
-  const primaryImage = product.images.find((img) => img.is_primary) || product.images[0];
-  const images = product.images.length > 0 ? product.images : [primaryImage];
+  const images = product.images || [];
+  const displayImages = images.length > 0 ? images : (product.main_image ? [product.main_image] : []);
 
   const handleWishlistClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,15 +41,21 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       <div
         className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm mb-4"
         onMouseEnter={() => {
-          if (images.length > 1) setCurrentImageIndex(1);
+          if (displayImages.length > 1) setCurrentImageIndex(1);
         }}
         onMouseLeave={() => setCurrentImageIndex(0)}
       >
-        <img
-          src={images[currentImageIndex]?.image_url || primaryImage?.image_url}
-          alt={images[currentImageIndex]?.alt_text || product.name}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        {displayImages[currentImageIndex] ? (
+          <img
+            src={getProductImageUrl(displayImages[currentImageIndex])}
+            alt={product.name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center text-neutral-400">
+            No image
+          </div>
+        )}
 
         <button
           onClick={handleWishlistClick}
@@ -84,9 +91,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <h3 className="text-sm font-medium text-neutral-900 group-hover:text-neutral-700 transition-colors">
           {product.name}
         </h3>
-        {product.collection && (
-          <p className="text-xs text-neutral-600">{product.collection.name}</p>
-        )}
         <p className="text-sm font-semibold text-neutral-900">{formatPrice(product.price)}</p>
       </div>
     </div>

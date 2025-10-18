@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Filter, Home, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Home, Edit, Trash2, Image } from 'lucide-react';
+import { getThumbnailUrl } from '../../utils/cloudinaryUpload';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 
@@ -15,7 +16,8 @@ interface Product {
   status: string;
   show_on_homepage: boolean;
   homepage_section: string;
-  featured_image: string;
+  main_image: string;
+  images: string[];
   category: string;
   created_at: string;
 }
@@ -193,13 +195,24 @@ export default function ProductList() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
-                          {product.featured_image && (
-                            <img
-                              src={product.featured_image}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
+                        <div className="w-12 h-12 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0 relative">
+                          {product.main_image ? (
+                            <>
+                              <img
+                                src={getThumbnailUrl(product.main_image)}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                              {product.images && product.images.length > 1 && (
+                                <div className="absolute top-0 right-0 bg-amber-500 text-white rounded-bl px-1 py-0.5">
+                                  <Image size={10} />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                              <Image size={20} />
+                            </div>
                           )}
                         </div>
                         <div>

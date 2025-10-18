@@ -5,6 +5,7 @@ import { Heart, Star, Plus, Minus, ChevronLeft, Truck, Shield, RotateCcw, Packag
 import { supabase } from '../lib/supabase';
 import { ProductWithDetails, Review } from '../types';
 import { formatPrice } from '../lib/utils';
+import { getProductImageUrl, getFullImageUrl } from '../utils/cloudinaryUpload';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
@@ -39,11 +40,7 @@ export default function ProductDetailPage() {
     try {
       const { data: productData, error: productError } = await supabase
         .from('products')
-        .select(`
-          *,
-          images:product_images(*),
-          collection:collections(*)
-        `)
+        .select('*')
         .eq('id', productId)
         .maybeSingle();
 
@@ -64,13 +61,8 @@ export default function ProductDetailPage() {
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
         : 0;
 
-      const sortedImages = (productData as any).images?.sort(
-        (a: any, b: any) => a.display_order - b.display_order
-      ) || [];
-
       setProduct({
         ...(productData as any),
-        images: sortedImages,
         reviews: reviews || [],
         averageRating,
         reviewCount: reviews?.length || 0
@@ -99,11 +91,9 @@ export default function ProductDetailPage() {
       return;
     }
 
-    const primaryImage = product.images.find((img) => img.is_primary) || product.images[0];
-
     addItem({
       product,
-      image: primaryImage?.image_url || '',
+      image: product.main_image || '',
       quantity,
       size: selectedSize || 'One Size',
       color: selectedColor || { name: 'Default', hex: '#000000' }
@@ -163,7 +153,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const displayImages = product.images.length > 0 ? product.images : [{ id: 'default', image_url: '/placeholder.jpg', display_order: 1, is_primary: true }];
+  const displayImages = product.images && product.images.length > 0 ? product.images : (product.main_image ? [product.main_image] : []);
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -196,8 +186,8 @@ export default function ProductDetailPage() {
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={selectedImage}
-                    src={displayImages[selectedImage]?.image_url}
-                    alt={displayImages[selectedImage]?.alt_text || product.name}
+                    src={getProductImageUrl(displayImages[selectedImage] || product.main_image || '')}
+                    alt={product.name}
                     className="w-full h-full object-cover"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -221,9 +211,9 @@ export default function ProductDetailPage() {
 
               {displayImages.length > 1 && (
                 <div className="grid grid-cols-4 gap-4">
-                  {displayImages.map((image, index) => (
+                  {displayImages.map((imageUrl, index) => (
                     <motion.button
-                      key={image.id}
+                      key={index}
                       onClick={() => setSelectedImage(index)}
                       className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                         selectedImage === index
@@ -234,8 +224,8 @@ export default function ProductDetailPage() {
                       whileTap={{ scale: 0.95 }}
                     >
                       <img
-                        src={image.image_url}
-                        alt={image.alt_text || ''}
+                        src={getProductImageUrl(imageUrl)}
+                        alt={product.name}
                         className="w-full h-full object-cover"
                       />
                     </motion.button>
@@ -599,7 +589,7 @@ export default function ProductDetailPage() {
               <X size={32} />
             </button>
             <motion.img
-              src={displayImages[selectedImage]?.image_url}
+              src={getFullImageUrl(displayImages[selectedImage] || product.main_image || '')}
               alt={product.name}
               className="max-w-full max-h-full object-contain"
               initial={{ scale: 0.9 }}
