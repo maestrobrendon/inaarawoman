@@ -6,7 +6,7 @@ import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import AnnouncementBanner from './components/ui/AnnouncementBanner';
 import EnhancedHeader from './components/layout/EnhancedHeader';
 import EnhancedFooter from './components/layout/EnhancedFooter';
-import EnhancedHomePage from './pages/EnhancedHomePage';
+import ClingrHomePage from './pages/ClingrHomePage';
 import ShopPage from './pages/ShopPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CollectionPage from './pages/CollectionPage';
@@ -50,7 +50,7 @@ function PublicLayout() {
       <main>
         <PageTransition pageKey={location.pathname}>
           <Routes>
-            <Route path="/" element={<EnhancedHomePage />} />
+            <Route path="/" element={<ClingrHomePage />} />
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/collection/:slug" element={<CollectionPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
