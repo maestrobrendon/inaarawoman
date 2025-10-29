@@ -39,6 +39,7 @@ export interface ProductImage {
   alt_text: string | null;
   display_order: number;
   is_primary: boolean;
+  storage_path?: string;
 }
 
 export interface Review {

@@ -40,7 +40,10 @@ export default function ProductDetailPage() {
     try {
       const { data: productData, error: productError } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          images:product_images(*)
+        `)
         .eq('id', productId)
         .maybeSingle();
 
@@ -91,9 +94,11 @@ export default function ProductDetailPage() {
       return;
     }
 
+    const firstImage = productImages.length > 0 ? productImages[0].image_url : '';
+
     addItem({
       product,
-      image: product.main_image || '',
+      image: firstImage,
       quantity,
       size: selectedSize || 'One Size',
       color: selectedColor || { name: 'Default', hex: '#000000' }
@@ -153,7 +158,8 @@ export default function ProductDetailPage() {
     );
   }
 
-  const displayImages = product.images && product.images.length > 0 ? product.images : (product.main_image ? [product.main_image] : []);
+  const productImages = product.images || [];
+  const displayImages = productImages.length > 0 ? productImages : [];
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -184,16 +190,22 @@ export default function ProductDetailPage() {
                 transition={{ duration: 0.3 }}
               >
                 <AnimatePresence mode="wait">
-                  <motion.img
-                    key={selectedImage}
-                    src={getProductImageUrl(displayImages[selectedImage] || product.main_image || '')}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  />
+                  {displayImages.length > 0 && displayImages[selectedImage] ? (
+                    <motion.img
+                      key={selectedImage}
+                      src={displayImages[selectedImage].image_url}
+                      alt={displayImages[selectedImage].alt_text || product.name}
+                      className="w-full h-full object-cover"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                      No image available
+                    </div>
+                  )}
                 </AnimatePresence>
 
                 {product.is_new && (
@@ -211,9 +223,9 @@ export default function ProductDetailPage() {
 
               {displayImages.length > 1 && (
                 <div className="grid grid-cols-4 gap-4">
-                  {displayImages.map((imageUrl, index) => (
+                  {displayImages.map((image, index) => (
                     <motion.button
-                      key={index}
+                      key={image.id}
                       onClick={() => setSelectedImage(index)}
                       className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                         selectedImage === index
@@ -224,8 +236,8 @@ export default function ProductDetailPage() {
                       whileTap={{ scale: 0.95 }}
                     >
                       <img
-                        src={getProductImageUrl(imageUrl)}
-                        alt={product.name}
+                        src={image.image_url}
+                        alt={image.alt_text || product.name}
                         className="w-full h-full object-cover"
                       />
                     </motion.button>
@@ -588,14 +600,16 @@ export default function ProductDetailPage() {
             >
               <X size={32} />
             </button>
-            <motion.img
-              src={getFullImageUrl(displayImages[selectedImage] || product.main_image || '')}
-              alt={product.name}
-              className="max-w-full max-h-full object-contain"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            />
+            {displayImages.length > 0 && displayImages[selectedImage] && (
+              <motion.img
+                src={displayImages[selectedImage].image_url}
+                alt={displayImages[selectedImage].alt_text || product.name}
+                className="max-w-full max-h-full object-contain"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.9 }}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

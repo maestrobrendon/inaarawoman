@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
-import { Product } from '../../types';
+import { Product, ProductImage } from '../../types';
 import { formatPrice } from '../../lib/utils';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
-import { getProductImageUrl } from '../../utils/cloudinaryUpload';
 
 interface ProductCardProps {
-  product: Product;
+  product: Product & { images?: ProductImage[] };
   onClick: () => void;
 }
 
@@ -17,8 +16,8 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const { showToast } = useToast();
   const inWishlist = isInWishlist(product.id);
 
-  const images = product.images || [];
-  const displayImages = images.length > 0 ? images : (product.main_image ? [product.main_image] : []);
+  const productImages = product.images || [];
+  const displayImages = productImages.length > 0 ? productImages : [];
 
   const handleWishlistClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -45,10 +44,10 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         }}
         onMouseLeave={() => setCurrentImageIndex(0)}
       >
-        {displayImages[currentImageIndex] ? (
+        {displayImages.length > 0 && displayImages[currentImageIndex] ? (
           <img
-            src={getProductImageUrl(displayImages[currentImageIndex])}
-            alt={product.name}
+            src={displayImages[currentImageIndex].image_url}
+            alt={displayImages[currentImageIndex].alt_text || product.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

@@ -51,7 +51,8 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
         .from('products')
         .select(`
           *,
-          collection:collections(*)
+          collection:collections(*),
+          images:product_images(*)
         `)
         .eq('status', 'active');
 
@@ -106,13 +107,6 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
             p.price <= parseFloat(priceRange.max)
           );
         }
-
-        // Map products to use stored images array
-        filtered = filtered.map((p: any) => ({
-          ...p,
-          image: p.main_image || p.images?.[0] || p.image_url || '',
-          images: p.images || (p.image_url ? [p.image_url] : [])
-        }));
 
         setProducts(filtered);
       }
@@ -340,17 +334,17 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   {product.images && product.images.length > 0 ? (
                     <>
-                      {/* Main Image - from Cloudinary via Supabase */}
+                      {/* Main Image */}
                       <img
-                        src={`${product.images[0].cloudinary_url}?w=600&q_auto&f_auto`}
-                        alt={product.name}
+                        src={product.images[0].image_url}
+                        alt={product.images[0].alt_text || product.name}
                         className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
                       />
                       {/* Hover Image - Second image if available */}
                       {product.images[1] && (
                         <img
-                          src={`${product.images[1].cloudinary_url}?w_600&q_auto&f_auto`}
-                          alt={`${product.name} hover`}
+                          src={product.images[1].image_url}
+                          alt={product.images[1].alt_text || `${product.name} hover`}
                           className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                         />
                       )}
