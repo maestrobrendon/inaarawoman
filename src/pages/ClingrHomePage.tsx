@@ -75,6 +75,26 @@ const ScrollProgress = () => {
   );
 };
 
+// Decorative Lines Component (like Clingr)
+const DecorativeLines = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Vertical lines */}
+      <div className="absolute left-[15%] top-0 bottom-0 w-px bg-white/10" />
+      <div className="absolute left-[30%] top-0 bottom-0 w-px bg-white/10" />
+      <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/10" />
+      <div className="absolute left-[70%] top-0 bottom-0 w-px bg-white/10" />
+      <div className="absolute left-[85%] top-0 bottom-0 w-px bg-white/10" />
+      
+      {/* Horizontal lines */}
+      <div className="absolute top-[20%] left-0 right-0 h-px bg-white/10" />
+      <div className="absolute top-[40%] left-0 right-0 h-px bg-white/10" />
+      <div className="absolute top-[60%] left-0 right-0 h-px bg-white/10" />
+      <div className="absolute top-[80%] left-0 right-0 h-px bg-white/10" />
+    </div>
+  );
+};
+
 export default function ClingrHomePage() {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
@@ -91,19 +111,25 @@ export default function ClingrHomePage() {
     <div className="bg-white">
       <ScrollProgress />
 
-      {/* Hero Section */}
+      {/* Hero Section - Updated */}
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale }}
-        className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-neutral-50 to-white"
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
+        {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          <ParallaxImage
-            src="/Gemini_Generated_Image_c0aiz1c0aiz1c0ai.png"
-            speed={0.3}
-            className="w-full h-full opacity-20"
+          <img
+            src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761658028/hero_jlpiil.jpg"
+            alt="Hero"
+            className="w-full h-full object-cover"
           />
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/40" />
         </div>
+
+        {/* Decorative Lines (like Clingr) */}
+        <DecorativeLines />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           <motion.div
@@ -112,23 +138,18 @@ export default function ClingrHomePage() {
             transition={{ duration: 1, ease: 'easeOut' }}
             className="mb-8"
           >
-            <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl font-bold text-neutral-900 mb-6 leading-tight">
-              Where Style
+            {/* Updated Hero Text - Smaller like ZEMA */}
+            <p className="text-xs md:text-sm tracking-[0.3em] text-white/80 mb-6 uppercase">
+              New Arrivals Just for You
+            </p>
+            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-8 leading-tight tracking-wide">
+              Exclusive Collections
               <br />
-              <span className="italic">Meets Elegance</span>
+              <span className="block mt-2">Just for You</span>
             </h1>
           </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="text-xl md:text-2xl text-neutral-600 mb-12 max-w-3xl mx-auto leading-relaxed"
-          >
-            Discover curated fashion that celebrates the modern woman.
-            <br />
-            Timeless pieces designed for every moment.
-          </motion.p>
+          {/* Removed subtitle as requested */}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -139,15 +160,15 @@ export default function ClingrHomePage() {
             <Button
               onClick={() => navigate('/shop')}
               size="lg"
-              className="px-12 py-6 text-lg rounded-none bg-neutral-900 hover:bg-neutral-800"
+              className="px-10 py-4 text-sm tracking-wider uppercase rounded-none bg-white text-neutral-900 hover:bg-neutral-100 border-2 border-white"
             >
-              Shop Collection
+              View Collection
             </Button>
             <button
               onClick={() => setShowVideo(true)}
-              className="flex items-center gap-3 px-8 py-6 text-lg border-2 border-neutral-900 hover:bg-neutral-900 hover:text-white transition-all"
+              className="flex items-center gap-3 px-10 py-4 text-sm tracking-wider uppercase border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all"
             >
-              <Play size={24} />
+              <Play size={20} />
               Watch Story
             </button>
           </motion.div>
@@ -162,7 +183,7 @@ export default function ClingrHomePage() {
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <ChevronDown size={32} className="text-neutral-400" />
+              <ChevronDown size={32} className="text-white/60" />
             </motion.div>
           </motion.div>
         </div>
