@@ -224,7 +224,7 @@ export default function ClingrHomePage() {
             <TextRevealOnScroll>
               <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer">
                 <ParallaxImage
-                  src="/Gemini_Generated_Image_ehszg6ehszg6ehsz.png"
+                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761654830/Gemini_Generated_Image_c0aiz1c0aiz1c0ai_yit4rx.png"
                   speed={0.2}
                   className="w-full h-full"
                 />
@@ -241,7 +241,7 @@ export default function ClingrHomePage() {
             <TextRevealOnScroll>
               <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer">
                 <ParallaxImage
-                  src="/Gemini_Generated_Image_f24zqwf24zqwf24z.png"
+                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761654824/Gemini_Generated_Image_ehszg6ehszg6ehsz_qkrfwy.png"
                   speed={0.2}
                   className="w-full h-full"
                 />
@@ -311,7 +311,7 @@ export default function ClingrHomePage() {
       {/* Large Image Showcase */}
       <section className="relative h-screen">
         <ParallaxImage
-          src="/Gemini_Generated_Image_hggw0zhggw0zhggw.png"
+          src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657297/IMG_4662_nwpdmy.jpg"
           speed={0.5}
           className="w-full h-full"
         />
