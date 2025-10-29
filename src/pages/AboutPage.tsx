@@ -11,7 +11,7 @@ export default function AboutPage() {
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-[10px] tracking-[0.4em] uppercase text-neutral-900 font-light">
-            About A.I
+            About INAARA WOMAN
           </h1>
         </div>
       </section>
