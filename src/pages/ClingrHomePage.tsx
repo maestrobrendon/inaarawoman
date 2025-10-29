@@ -111,7 +111,7 @@ export default function ClingrHomePage() {
     <div className="bg-white">
       <ScrollProgress />
 
-      {/* Hero Section - Updated */}
+      {/* Hero Section - Minimalist */}
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale }}
@@ -124,11 +124,10 @@ export default function ClingrHomePage() {
             alt="Hero"
             className="w-full h-full object-cover"
           />
-          {/* Dark overlay for better text readability */}
           <div className="absolute inset-0 bg-black/40" />
         </div>
 
-        {/* Decorative Lines (like Clingr) */}
+        {/* Decorative Lines */}
         <DecorativeLines />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -136,41 +135,39 @@ export default function ClingrHomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: 'easeOut' }}
-            className="mb-8"
+            className="mb-6"
           >
-            {/* Updated Hero Text - Smaller like ZEMA */}
-            <p className="text-xs md:text-sm tracking-[0.3em] text-white/80 mb-6 uppercase">
+            {/* Tiny elegant label */}
+            <p className="text-[10px] md:text-xs tracking-[0.4em] text-white/70 mb-4 uppercase font-light">
               New Arrivals Just for You
             </p>
-            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal text-white mb-8 leading-tight tracking-wide">
+            {/* Smaller hero title */}
+            <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-light text-white mb-6 leading-relaxed tracking-wide">
               Exclusive Collections
               <br />
-              <span className="block mt-2">Just for You</span>
+              <span className="block mt-1">Just for You</span>
             </h1>
           </motion.div>
-
-          {/* Removed subtitle as requested */}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row gap-3 justify-center items-center"
           >
-            {/* FIXED BUTTON 1 - Using standard button element with full styling */}
+            {/* Tiny buttons */}
             <button
               onClick={() => navigate('/shop')}
-              className="px-10 py-4 text-sm tracking-wider uppercase bg-white text-neutral-900 hover:bg-neutral-100 border-2 border-white transition-all duration-300 font-medium"
+              className="px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 border border-white transition-all duration-300 font-medium"
             >
               View Collection
             </button>
             
-            {/* FIXED BUTTON 2 - Watch Story button */}
             <button
               onClick={() => setShowVideo(true)}
-              className="flex items-center gap-3 px-10 py-4 text-sm tracking-wider uppercase border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 font-medium"
+              className="flex items-center gap-2 px-6 py-2 text-[10px] tracking-widest uppercase border border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 font-medium"
             >
-              <Play size={20} />
+              <Play size={12} />
               Watch Story
             </button>
           </motion.div>
@@ -185,43 +182,42 @@ export default function ClingrHomePage() {
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <ChevronDown size={32} className="text-white/60" />
+              <ChevronDown size={20} className="text-white/60" />
             </motion.div>
           </motion.div>
         </div>
       </motion.section>
 
-      {/* Best Sellers Section */}
-      <section className="py-20 px-4 bg-neutral-50">
+      {/* Best Sellers Section - Minimalist */}
+      <section className="py-16 px-4 bg-neutral-50">
         <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-16">
-            <p className="text-sm tracking-widest text-neutral-500 mb-4">BEST SELLERS</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
+          <TextRevealOnScroll className="text-center mb-12">
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Best Sellers</p>
+            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
               Customer Favorites
             </h2>
           </TextRevealOnScroll>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Product 1 */}
             <TextRevealOnScroll>
               <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761655548/A5B830C9-6BF5-4117-87BB-81014C55648B_jruhlc.jpg"
                     alt="Blaze Set Summer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  {/* Quick View Overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Blaze Set Summer</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Adeleke</p>
-                  <p className="text-neutral-900 font-medium text-sm">₦226,980.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Blaze Set Summer</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Adeleke</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦226,980.00</p>
                 </div>
               </div>
             </TextRevealOnScroll>
@@ -229,22 +225,22 @@ export default function ClingrHomePage() {
             {/* Product 2 */}
             <TextRevealOnScroll>
               <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761655938/IMG_2376_mwz41c.jpg"
                     alt="Blaze Skirt Set"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Blaze Skirt Set</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Premium Collection</p>
-                  <p className="text-neutral-900 font-medium text-sm">₦499,300.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Blaze Skirt Set</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Premium Collection</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦499,300.00</p>
                 </div>
               </div>
             </TextRevealOnScroll>
@@ -252,22 +248,22 @@ export default function ClingrHomePage() {
             {/* Product 3 */}
             <TextRevealOnScroll>
               <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761657166/Gemini_Generated_Image_ywipcvywipcvywip_dcejpx.png"
                     alt="Arewa Dress"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Arewa Dress</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Floral Beauty</p>
-                  <p className="text-neutral-900 font-medium text-sm">₦249,990.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Arewa Dress</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Floral Beauty</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦249,990.00</p>
                 </div>
               </div>
             </TextRevealOnScroll>
@@ -275,32 +271,32 @@ export default function ClingrHomePage() {
             {/* Product 4 */}
             <TextRevealOnScroll>
               <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
                     alt="Makeup Dress"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Makeup Dress</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Statement Pink</p>
-                  <p className="text-neutral-900 font-medium text-sm">₦123,493.50 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Makeup Dress</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Statement Pink</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦123,493.50</p>
                 </div>
               </div>
             </TextRevealOnScroll>
           </div>
 
-          {/* View All Button */}
-          <div className="text-center mt-12">
+          {/* Tiny View All Button */}
+          <div className="text-center mt-8">
             <button
               onClick={() => navigate('/shop')}
-              className="px-12 py-3 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-sm tracking-wider uppercase"
+              className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
             >
               View All
             </button>
@@ -308,20 +304,20 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Brand Story Section */}
-      <section className="py-32 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
+      {/* Brand Story Section - Minimalist */}
+      <section className="py-24 px-4 bg-white">
+        <div className="max-w-5xl mx-auto">
           <TextRevealOnScroll>
-            <p className="text-sm tracking-widest text-neutral-500 mb-4 text-center">OUR STORY</p>
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 text-center uppercase font-light">Our Story</p>
           </TextRevealOnScroll>
 
           <SplitTextReveal
             text="Fashion is more than clothing. It's confidence, expression, and empowerment."
-            className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold text-neutral-900 text-center mb-12 leading-tight"
+            className="font-serif text-lg md:text-xl lg:text-2xl font-light text-neutral-900 text-center mb-8 leading-relaxed"
           />
 
           <TextRevealOnScroll>
-            <p className="text-xl text-neutral-600 text-center max-w-4xl mx-auto leading-relaxed">
+            <p className="text-sm text-neutral-600 text-center max-w-3xl mx-auto leading-relaxed">
               At Inaara Woman, we believe every woman deserves to feel extraordinary. Our carefully curated collections
               blend timeless elegance with contemporary style, creating pieces that transition seamlessly from day to night.
             </p>
@@ -329,17 +325,17 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Featured Products Grid */}
-      <section className="py-20 px-4 bg-neutral-50">
+      {/* Featured Products Grid - Minimalist */}
+      <section className="py-16 px-4 bg-neutral-50">
         <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-16">
-            <p className="text-sm tracking-widest text-neutral-500 mb-4">FEATURED COLLECTION</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
+          <TextRevealOnScroll className="text-center mb-12">
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Featured Collection</p>
+            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
               This Season's Must-Haves
             </h2>
           </TextRevealOnScroll>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TextRevealOnScroll>
               <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer">
                 <ParallaxImage
@@ -348,9 +344,9 @@ export default function ClingrHomePage() {
                   className="w-full h-full"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute bottom-8 left-8 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="text-3xl font-serif font-bold mb-2">Elegant Dresses</h3>
-                  <p className="text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute bottom-6 left-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="text-xl font-serif font-light mb-1">Elegant Dresses</h3>
+                  <p className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                     From casual to formal
                   </p>
                 </div>
@@ -365,9 +361,9 @@ export default function ClingrHomePage() {
                   className="w-full h-full"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute bottom-8 left-8 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="text-3xl font-serif font-bold mb-2">Statement Pieces</h3>
-                  <p className="text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute bottom-6 left-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="text-xl font-serif font-light mb-1">Statement Pieces</h3>
+                  <p className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                     Bold and beautiful
                   </p>
                 </div>
@@ -377,24 +373,24 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-32 px-4 bg-white">
+      {/* Benefits Section - Minimalist */}
+      <section className="py-24 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-20">
-            <p className="text-sm tracking-widest text-neutral-500 mb-4">WHY CHOOSE US</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
+          <TextRevealOnScroll className="text-center mb-16">
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Why Choose Us</p>
+            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
               The Inaara Experience
             </h2>
           </TextRevealOnScroll>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <TextRevealOnScroll>
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 bg-neutral-900 rounded-full flex items-center justify-center">
-                  <Award size={40} className="text-white" />
+                <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
+                  <Award size={20} className="text-white" />
                 </div>
-                <h3 className="text-2xl font-serif font-bold mb-4">Premium Quality</h3>
-                <p className="text-neutral-600 leading-relaxed">
+                <h3 className="text-sm font-serif font-normal mb-2">Premium Quality</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
                   Every piece is carefully selected for exceptional quality, craftsmanship, and attention to detail.
                 </p>
               </div>
@@ -402,11 +398,11 @@ export default function ClingrHomePage() {
 
             <TextRevealOnScroll>
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 bg-neutral-900 rounded-full flex items-center justify-center">
-                  <Truck size={40} className="text-white" />
+                <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
+                  <Truck size={20} className="text-white" />
                 </div>
-                <h3 className="text-2xl font-serif font-bold mb-4">Fast Delivery</h3>
-                <p className="text-neutral-600 leading-relaxed">
+                <h3 className="text-sm font-serif font-normal mb-2">Fast Delivery</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
                   Nationwide shipping with tracking. Your order arrives swiftly and securely at your doorstep.
                 </p>
               </div>
@@ -414,11 +410,11 @@ export default function ClingrHomePage() {
 
             <TextRevealOnScroll>
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 bg-neutral-900 rounded-full flex items-center justify-center">
-                  <Shield size={40} className="text-white" />
+                <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
+                  <Shield size={20} className="text-white" />
                 </div>
-                <h3 className="text-2xl font-serif font-bold mb-4">Secure Shopping</h3>
-                <p className="text-neutral-600 leading-relaxed">
+                <h3 className="text-sm font-serif font-normal mb-2">Secure Shopping</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
                   Shop with confidence. Your payment information is protected with industry-leading security.
                 </p>
               </div>
@@ -427,7 +423,7 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Large Image Showcase - Crafted for You */}
+      {/* Large Image Showcase - Crafted for You - Minimalist */}
       <section className="relative h-screen">
         <div className="absolute inset-0">
           <img
@@ -435,10 +431,9 @@ export default function ClingrHomePage() {
             alt="Crafted for You"
             className="w-full h-full object-cover"
           />
-          {/* Dark overlay */}
           <div className="absolute inset-0 bg-black/40" />
           
-          {/* Large INAARA watermark text */}
+          {/* Large INAARA watermark */}
           <div className="absolute inset-0 flex items-center justify-center opacity-10">
             <h1 className="font-serif text-[20vw] font-bold text-white tracking-wider">
               INAARA
@@ -448,15 +443,15 @@ export default function ClingrHomePage() {
 
         <div className="relative z-10 h-full flex items-center justify-center">
           <div className="text-center text-white px-4">
-            <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6">
+            <h2 className="font-serif text-2xl md:text-3xl font-light mb-4">
               Crafted for You
             </h2>
-            <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+            <p className="text-xs md:text-sm mb-6 max-w-2xl mx-auto">
               Each design tells a story of elegance and sophistication
             </p>
             <button
               onClick={() => navigate('/shop')}
-              className="px-10 py-3 text-sm tracking-wider uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
+              className="px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
             >
               Explore Collection
             </button>
@@ -464,10 +459,10 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Collection Highlights */}
-      <section className="py-32 px-4 bg-neutral-50">
+      {/* Collection Highlights - Minimalist */}
+      <section className="py-24 px-4 bg-neutral-50">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
             <TextRevealOnScroll>
               <div className="relative aspect-[4/5]">
                 <ParallaxImage
@@ -480,18 +475,17 @@ export default function ClingrHomePage() {
 
             <TextRevealOnScroll>
               <div>
-                <p className="text-sm tracking-widest text-neutral-500 mb-4">VERSATILE STYLE</p>
-                <h2 className="font-serif text-3xl font-bold text-neutral-900 mb-6">
+                <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Versatile Style</p>
+                <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900 mb-4">
                   Day to Night Elegance
                 </h2>
-                <p className="text-xl text-neutral-600 mb-8 leading-relaxed">
+                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
                   Our collection seamlessly transitions from professional meetings to evening gatherings.
                   Versatile pieces designed to adapt to your dynamic lifestyle.
                 </p>
-                {/* FIXED BUTTON 4 */}
                 <button
                   onClick={() => navigate('/collections')}
-                  className="px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium"
+                  className="px-6 py-2 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
                 >
                   View Collections
                 </button>
@@ -499,21 +493,20 @@ export default function ClingrHomePage() {
             </TextRevealOnScroll>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <TextRevealOnScroll className="order-2 lg:order-1">
               <div>
-                <p className="text-sm tracking-widest text-neutral-500 mb-4">SUSTAINABLE FASHION</p>
-                <h2 className="font-serif text-3xl font-bold text-neutral-900 mb-6">
+                <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Sustainable Fashion</p>
+                <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900 mb-4">
                   Conscious Choices
                 </h2>
-                <p className="text-xl text-neutral-600 mb-8 leading-relaxed">
+                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
                   We're committed to sustainable practices and ethical sourcing. Fashion that looks good
                   and does good for our planet.
                 </p>
-                {/* FIXED BUTTON 5 */}
                 <button
                   onClick={() => navigate('/about')}
-                  className="px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium"
+                  className="px-6 py-2 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
                 >
                   Learn More
                 </button>
@@ -533,52 +526,48 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Featured Products - Scrollable Section */}
-      <section className="py-32 px-4 bg-neutral-50 overflow-hidden">
+      {/* Featured Products - Scrollable Section - Minimalist */}
+      <section className="py-24 px-4 bg-neutral-50 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-16">
-            <p className="text-sm tracking-widest text-neutral-500 mb-4">DISCOVER</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
+          <TextRevealOnScroll className="text-center mb-12">
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Discover</p>
+            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
               New Arrivals
             </h2>
           </TextRevealOnScroll>
 
-          {/* Horizontal Scrollable Container */}
           <div className="relative">
-            <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               
               {/* Product 1 */}
-              <div className="flex-none w-72 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
-                  {/* Main Image */}
+              <div className="flex-none w-64 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657117/Gemini_Generated_Image_ghl6prghl6prghl6_qvqz21.png"
                     alt="Product 1"
                     className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
                   />
-                  {/* Hover Image - Replace with actual hover image URL */}
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657117/Gemini_Generated_Image_ghl6prghl6prghl6_qvqz21.png"
                     alt="Product 1 Hover"
                     className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
-                  {/* Quick View Overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Zola Earring</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Classic Statement Piece</p>
-                  <p className="text-neutral-900 font-medium">₦277,200.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Zola Earring</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Classic Statement Piece</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦277,200.00</p>
                 </div>
               </div>
 
               {/* Product 2 */}
-              <div className="flex-none w-72 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+              <div className="flex-none w-64 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657116/Gemini_Generated_Image_13mwoj13mwoj13mw_3_nq4a88.png"
                     alt="Product 2"
@@ -590,21 +579,21 @@ export default function ClingrHomePage() {
                     className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Salle Bodysuit</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Camel Elegance</p>
-                  <p className="text-neutral-900 font-medium">₦215,800.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Salle Bodysuit</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Camel Elegance</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦215,800.00</p>
                 </div>
               </div>
 
               {/* Product 3 */}
-              <div className="flex-none w-72 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+              <div className="flex-none w-64 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657152/Gemini_Generated_Image_ezhk6aezhk6aezhk_vsvjez.png"
                     alt="Product 3"
@@ -616,21 +605,21 @@ export default function ClingrHomePage() {
                     className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Ovu Knit Cape</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Sophisticated Layering</p>
-                  <p className="text-neutral-900 font-medium">₦585,100.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Ovu Knit Cape</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Sophisticated Layering</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦585,100.00</p>
                 </div>
               </div>
 
               {/* Product 4 */}
-              <div className="flex-none w-72 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+              <div className="flex-none w-64 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
                     alt="Product 4"
@@ -642,21 +631,21 @@ export default function ClingrHomePage() {
                     className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Ovu Knit Pants</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Coffee Comfort</p>
-                  <p className="text-neutral-900 font-medium">₦369,500.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Ovu Knit Pants</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Coffee Comfort</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦369,500.00</p>
                 </div>
               </div>
 
               {/* Product 5 */}
-              <div className="flex-none w-72 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+              <div className="flex-none w-64 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657292/Gemini_Generated_Image_jc5sdejc5sdejc5s_muhame.png"
                     alt="Product 5"
@@ -668,21 +657,21 @@ export default function ClingrHomePage() {
                     className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Coral Dress</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Statement Evening Wear</p>
-                  <p className="text-neutral-900 font-medium">₦458,980.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Coral Dress</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Statement Evening Wear</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦458,980.00</p>
                 </div>
               </div>
 
               {/* Product 6 */}
-              <div className="flex-none w-72 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+              <div className="flex-none w-64 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
                   <img
                     src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657313/Gemini_Generated_Image_3g5mvf3g5mvf3g5m_ukrg1d.png"
                     alt="Product 6"
@@ -694,31 +683,31 @@ export default function ClingrHomePage() {
                     className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
                       Quick View
                     </button>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Floral Maxi Dress</h3>
-                  <p className="text-neutral-600 text-sm mb-2">Garden Party Perfect</p>
-                  <p className="text-neutral-900 font-medium">₦524,390.00 NGN</p>
+                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Floral Maxi Dress</h3>
+                  <p className="text-neutral-600 text-[10px] mb-1">Garden Party Perfect</p>
+                  <p className="text-neutral-900 font-medium text-[10px]">₦524,390.00</p>
                 </div>
               </div>
 
             </div>
 
             {/* Scroll Indicator */}
-            <div className="text-center mt-8">
-              <p className="text-sm text-neutral-500 tracking-wider">← Scroll to explore more →</p>
+            <div className="text-center mt-6">
+              <p className="text-[9px] text-neutral-500 tracking-wider">← Scroll to explore more →</p>
             </div>
           </div>
 
           {/* View All Button */}
-          <div className="text-center mt-12">
+          <div className="text-center mt-8">
             <button
               onClick={() => navigate('/shop')}
-              className="px-12 py-3 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-sm tracking-wider uppercase"
+              className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
             >
               View All
             </button>
@@ -726,31 +715,31 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-32 px-4 bg-white">
+      {/* Testimonials - Minimalist */}
+      <section className="py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-20">
-            <p className="text-sm tracking-widest text-neutral-500 mb-4">TESTIMONIALS</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
+          <TextRevealOnScroll className="text-center mb-16">
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Testimonials</p>
+            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
               What Our Customers Say
             </h2>
           </TextRevealOnScroll>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <TextRevealOnScroll key={i}>
-                <div className="bg-neutral-50 p-8 rounded-lg">
-                  <div className="flex gap-1 mb-4">
+                <div className="bg-neutral-50 p-6 rounded-lg">
+                  <div className="flex gap-0.5 mb-3">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} size={20} className="fill-neutral-900 text-neutral-900" />
+                      <Star key={j} size={14} className="fill-neutral-900 text-neutral-900" />
                     ))}
                   </div>
-                  <p className="text-neutral-600 mb-6 leading-relaxed">
+                  <p className="text-xs text-neutral-600 mb-4 leading-relaxed">
                     "Absolutely love my purchase! The quality is exceptional and the fit is perfect.
                     Inaara Woman has become my go-to for elegant fashion."
                   </p>
-                  <p className="font-semibold text-neutral-900">Customer {i}</p>
-                  <p className="text-sm text-neutral-500">Verified Purchase</p>
+                  <p className="font-medium text-neutral-900 text-xs">Customer {i}</p>
+                  <p className="text-[10px] text-neutral-500">Verified Purchase</p>
                 </div>
               </TextRevealOnScroll>
             ))}
@@ -758,8 +747,8 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="relative py-40 px-4 text-white">
+      {/* Final CTA - Minimalist */}
+      <section className="relative py-32 px-4 text-white">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
@@ -767,30 +756,28 @@ export default function ClingrHomePage() {
             alt="Background"
             className="w-full h-full object-cover"
           />
-          {/* Dark overlay for better text readability */}
           <div className="absolute inset-0 bg-black/50" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <TextRevealOnScroll>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold mb-8">
+            <h2 className="font-serif text-2xl md:text-3xl font-light mb-4">
               Ready to Elevate Your Wardrobe?
             </h2>
           </TextRevealOnScroll>
 
           <TextRevealOnScroll>
-            <p className="text-lg md:text-xl text-white/90 mb-12">
+            <p className="text-sm md:text-base text-white/90 mb-8">
               Join thousands of women who trust Inaara Woman for their fashion needs.
             </p>
           </TextRevealOnScroll>
 
           <TextRevealOnScroll>
-            {/* Smaller Button */}
             <button
               onClick={() => navigate('/shop')}
-              className="inline-flex items-center gap-2 px-8 py-3 text-sm tracking-wider uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
+              className="inline-flex items-center gap-2 px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
             >
-              <ShoppingBag size={18} />
+              <ShoppingBag size={14} />
               Start Shopping
             </button>
           </TextRevealOnScroll>
@@ -809,12 +796,12 @@ export default function ClingrHomePage() {
           <div className="relative w-full max-w-4xl aspect-video bg-neutral-900 rounded-lg">
             <button
               onClick={() => setShowVideo(false)}
-              className="absolute -top-12 right-0 text-white text-lg hover:text-neutral-300"
+              className="absolute -top-10 right-0 text-white text-sm hover:text-neutral-300"
             >
               Close
             </button>
             <div className="w-full h-full flex items-center justify-center text-white">
-              <p className="text-xl">Video placeholder - Add your brand story video here</p>
+              <p className="text-sm">Video placeholder - Add your brand story video here</p>
             </div>
           </div>
         </motion.div>
