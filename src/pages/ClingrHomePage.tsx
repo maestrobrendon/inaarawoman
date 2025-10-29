@@ -142,7 +142,7 @@ export default function ClingrHomePage() {
             <p className="text-xs md:text-sm tracking-[0.3em] text-white/80 mb-6 uppercase">
               New Arrivals Just for You
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-8 leading-tight tracking-wide">
+            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-normal text-white mb-8 leading-tight tracking-wide">
               Exclusive Collections
               <br />
               <span className="block mt-2">Just for You</span>
@@ -157,16 +157,18 @@ export default function ClingrHomePage() {
             transition={{ duration: 1, delay: 0.6 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <Button
+            {/* FIXED BUTTON 1 - Using standard button element with full styling */}
+            <button
               onClick={() => navigate('/shop')}
-              size="lg"
-              className="px-10 py-4 text-sm tracking-wider uppercase rounded-none bg-white text-neutral-900 hover:bg-neutral-100 border-2 border-white"
+              className="px-10 py-4 text-sm tracking-wider uppercase bg-white text-neutral-900 hover:bg-neutral-100 border-2 border-white transition-all duration-300 font-medium"
             >
               View Collection
-            </Button>
+            </button>
+            
+            {/* FIXED BUTTON 2 - Watch Story button */}
             <button
               onClick={() => setShowVideo(true)}
-              className="flex items-center gap-3 px-10 py-4 text-sm tracking-wider uppercase border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all"
+              className="flex items-center gap-3 px-10 py-4 text-sm tracking-wider uppercase border-2 border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 font-medium"
             >
               <Play size={20} />
               Watch Story
@@ -198,7 +200,7 @@ export default function ClingrHomePage() {
 
           <SplitTextReveal
             text="Fashion is more than clothing. It's confidence, expression, and empowerment."
-            className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-neutral-900 text-center mb-12 leading-tight"
+            className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold text-neutral-900 text-center mb-12 leading-tight"
           />
 
           <TextRevealOnScroll>
@@ -215,7 +217,7 @@ export default function ClingrHomePage() {
         <div className="max-w-7xl mx-auto">
           <TextRevealOnScroll className="text-center mb-16">
             <p className="text-sm tracking-widest text-neutral-500 mb-4">FEATURED COLLECTION</p>
-            <h2 className="font-serif text-5xl md:text-6xl font-bold text-neutral-900">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
               This Season's Must-Haves
             </h2>
           </TextRevealOnScroll>
@@ -263,7 +265,7 @@ export default function ClingrHomePage() {
         <div className="max-w-7xl mx-auto">
           <TextRevealOnScroll className="text-center mb-20">
             <p className="text-sm tracking-widest text-neutral-500 mb-4">WHY CHOOSE US</p>
-            <h2 className="font-serif text-5xl md:text-6xl font-bold text-neutral-900">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
               The Inaara Experience
             </h2>
           </TextRevealOnScroll>
@@ -318,19 +320,19 @@ export default function ClingrHomePage() {
         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
           <TextRevealOnScroll>
             <div className="text-center text-white px-4">
-              <h2 className="font-serif text-5xl md:text-7xl font-bold mb-6">
+              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-6">
                 Crafted for You
               </h2>
               <p className="text-2xl mb-8 max-w-2xl mx-auto">
                 Each design tells a story of elegance and sophistication
               </p>
-              <Button
+              {/* FIXED BUTTON 3 */}
+              <button
                 onClick={() => navigate('/shop')}
-                size="lg"
-                className="px-12 py-6 text-lg rounded-none bg-white text-neutral-900 hover:bg-neutral-100"
+                className="px-12 py-6 text-lg bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
               >
                 Explore Collection
-              </Button>
+              </button>
             </div>
           </TextRevealOnScroll>
         </div>
@@ -353,19 +355,20 @@ export default function ClingrHomePage() {
             <TextRevealOnScroll>
               <div>
                 <p className="text-sm tracking-widest text-neutral-500 mb-4">VERSATILE STYLE</p>
-                <h2 className="font-serif text-5xl font-bold text-neutral-900 mb-6">
+                <h2 className="font-serif text-3xl font-bold text-neutral-900 mb-6">
                   Day to Night Elegance
                 </h2>
                 <p className="text-xl text-neutral-600 mb-8 leading-relaxed">
                   Our collection seamlessly transitions from professional meetings to evening gatherings.
                   Versatile pieces designed to adapt to your dynamic lifestyle.
                 </p>
-                <Button
+                {/* FIXED BUTTON 4 */}
+                <button
                   onClick={() => navigate('/collections')}
-                  className="rounded-none bg-neutral-900 hover:bg-neutral-800"
+                  className="px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium"
                 >
                   View Collections
-                </Button>
+                </button>
               </div>
             </TextRevealOnScroll>
           </div>
@@ -374,19 +377,20 @@ export default function ClingrHomePage() {
             <TextRevealOnScroll className="order-2 lg:order-1">
               <div>
                 <p className="text-sm tracking-widest text-neutral-500 mb-4">SUSTAINABLE FASHION</p>
-                <h2 className="font-serif text-5xl font-bold text-neutral-900 mb-6">
+                <h2 className="font-serif text-3xl font-bold text-neutral-900 mb-6">
                   Conscious Choices
                 </h2>
                 <p className="text-xl text-neutral-600 mb-8 leading-relaxed">
                   We're committed to sustainable practices and ethical sourcing. Fashion that looks good
                   and does good for our planet.
                 </p>
-                <Button
+                {/* FIXED BUTTON 5 */}
+                <button
                   onClick={() => navigate('/about')}
-                  className="rounded-none bg-neutral-900 hover:bg-neutral-800"
+                  className="px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium"
                 >
                   Learn More
-                </Button>
+                </button>
               </div>
             </TextRevealOnScroll>
 
@@ -408,7 +412,7 @@ export default function ClingrHomePage() {
         <div className="max-w-6xl mx-auto">
           <TextRevealOnScroll className="text-center mb-20">
             <p className="text-sm tracking-widest text-neutral-500 mb-4">TESTIMONIALS</p>
-            <h2 className="font-serif text-5xl md:text-6xl font-bold text-neutral-900">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
               What Our Customers Say
             </h2>
           </TextRevealOnScroll>
@@ -439,7 +443,7 @@ export default function ClingrHomePage() {
       <section className="py-40 px-4 bg-neutral-900 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <TextRevealOnScroll>
-            <h2 className="font-serif text-5xl md:text-7xl font-bold mb-8">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold mb-8">
               Ready to Elevate Your Wardrobe?
             </h2>
           </TextRevealOnScroll>
@@ -451,14 +455,14 @@ export default function ClingrHomePage() {
           </TextRevealOnScroll>
 
           <TextRevealOnScroll>
-            <Button
+            {/* FIXED BUTTON 6 */}
+            <button
               onClick={() => navigate('/shop')}
-              size="lg"
-              className="px-16 py-8 text-lg rounded-none bg-white text-neutral-900 hover:bg-neutral-100"
+              className="inline-flex items-center gap-3 px-16 py-8 text-lg bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
             >
-              <ShoppingBag size={24} className="mr-3" />
+              <ShoppingBag size={24} />
               Start Shopping
-            </Button>
+            </button>
           </TextRevealOnScroll>
         </div>
       </section>
