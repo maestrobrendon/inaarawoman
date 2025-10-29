@@ -207,7 +207,7 @@ export default function ClingrHomePage() {
               <div className="group cursor-pointer">
                 <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
                   <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761655548/A5B830C9-6BF5-4117-87BB-81014C55648B_jruhlc.jpg"
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761655548/A5B830C9-6BF5-4117-87BB-81014C55648B_jruhlc.jpg"
                     alt="Blaze Set Summer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -231,7 +231,7 @@ export default function ClingrHomePage() {
               <div className="group cursor-pointer">
                 <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
                   <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761655938/IMG_2376_mwz41c.jpg"
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761655938/IMG_2376_mwz41c.jpg"
                     alt="Blaze Skirt Set"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -254,7 +254,7 @@ export default function ClingrHomePage() {
               <div className="group cursor-pointer">
                 <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
                   <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657166/Gemini_Generated_Image_ywipcvywipcvywip_dcejpx.png"
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761657166/Gemini_Generated_Image_ywipcvywipcvywip_dcejpx.png"
                     alt="Arewa Dress"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -277,7 +277,7 @@ export default function ClingrHomePage() {
               <div className="group cursor-pointer">
                 <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
                   <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
                     alt="Makeup Dress"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -427,31 +427,40 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Large Image Showcase */}
+      {/* Large Image Showcase - Crafted for You */}
       <section className="relative h-screen">
-        <ParallaxImage
-          src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657297/IMG_4662_nwpdmy.jpg"
-          speed={0.5}
-          className="w-full h-full"
-        />
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-          <TextRevealOnScroll>
-            <div className="text-center text-white px-4">
-              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-6">
-                Crafted for You
-              </h2>
-              <p className="text-2xl mb-8 max-w-2xl mx-auto">
-                Each design tells a story of elegance and sophistication
-              </p>
-              {/* FIXED BUTTON 3 */}
-              <button
-                onClick={() => navigate('/shop')}
-                className="px-12 py-6 text-lg bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
-              >
-                Explore Collection
-              </button>
-            </div>
-          </TextRevealOnScroll>
+        <div className="absolute inset-0">
+          <img
+            src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657297/IMG_4662_nwpdmy.jpg"
+            alt="Crafted for You"
+            className="w-full h-full object-cover"
+          />
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-black/40" />
+          
+          {/* Large INAARA watermark text */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-10">
+            <h1 className="font-serif text-[20vw] font-bold text-white tracking-wider">
+              INAARA
+            </h1>
+          </div>
+        </div>
+
+        <div className="relative z-10 h-full flex items-center justify-center">
+          <div className="text-center text-white px-4">
+            <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6">
+              Crafted for You
+            </h2>
+            <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+              Each design tells a story of elegance and sophistication
+            </p>
+            <button
+              onClick={() => navigate('/shop')}
+              className="px-10 py-3 text-sm tracking-wider uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
+            >
+              Explore Collection
+            </button>
+          </div>
         </div>
       </section>
 
@@ -750,8 +759,19 @@ export default function ClingrHomePage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-40 px-4 bg-neutral-900 text-white">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="relative py-40 px-4 text-white">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761735409/Untitled-1_3x_laltoc.jpg"
+            alt="Background"
+            className="w-full h-full object-cover"
+          />
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/50" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
           <TextRevealOnScroll>
             <h2 className="font-serif text-3xl md:text-4xl font-bold mb-8">
               Ready to Elevate Your Wardrobe?
@@ -759,18 +779,18 @@ export default function ClingrHomePage() {
           </TextRevealOnScroll>
 
           <TextRevealOnScroll>
-            <p className="text-xl md:text-2xl text-neutral-300 mb-12">
+            <p className="text-lg md:text-xl text-white/90 mb-12">
               Join thousands of women who trust Inaara Woman for their fashion needs.
             </p>
           </TextRevealOnScroll>
 
           <TextRevealOnScroll>
-            {/* FIXED BUTTON 6 */}
+            {/* Smaller Button */}
             <button
               onClick={() => navigate('/shop')}
-              className="inline-flex items-center gap-3 px-16 py-8 text-lg bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
+              className="inline-flex items-center gap-2 px-8 py-3 text-sm tracking-wider uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
             >
-              <ShoppingBag size={24} />
+              <ShoppingBag size={18} />
               Start Shopping
             </button>
           </TextRevealOnScroll>
