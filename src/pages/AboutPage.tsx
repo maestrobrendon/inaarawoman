@@ -1,101 +1,152 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../components/ui/Button';
 
 export default function AboutPage() {
   const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <div className="min-h-screen">
-      <section className="relative h-[60vh] flex items-center justify-center bg-gradient-to-br from-amber-50 to-rose-50">
-        <div className="text-center px-4 max-w-4xl mx-auto">
-          <h1 className="font-serif text-5xl md:text-6xl font-bold text-neutral-900 mb-6">
-            Our Story
+    <div className="min-h-screen bg-white">
+      {/* Tiny Header */}
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-[10px] tracking-[0.4em] uppercase text-neutral-900 font-light">
+            About A.I
           </h1>
-          <p className="text-lg text-neutral-700 leading-relaxed">
-            Where timeless elegance meets the radiance of modern femininity
-          </p>
         </div>
       </section>
 
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="prose prose-lg max-w-none">
-            <p className="text-lg text-neutral-700 leading-relaxed mb-6">
-              <span className="font-serif text-2xl font-semibold text-neutral-900 block mb-4">
-                Every woman deserves to shine in her own light.
-              </span>
-              At Inaara Woman, we believe that true beauty lies in embracing who you are. Our name,
-              "Inaara," means "ray of light" in Arabic—a reflection of our mission to help every
-              woman illuminate her unique radiance through timeless, elegant fashion.
-            </p>
+      {/* Main Content - Side by Side Layout */}
+      <section className="py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+            
+            {/* Left Side - Image with Hover Effect */}
+            <div className="w-full">
+              <div 
+                className="relative w-full aspect-[3/4] overflow-hidden cursor-pointer"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+              >
+                {/* Main Image */}
+                <img
+                  src="https://res.cloudinary.com/dusynu0kv/image/upload/w_800,q_auto,f_auto/v1761737368/IMG_7531_sje7dc.jpg"
+                  alt="Inaara Woman"
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                    isHovered ? 'opacity-0' : 'opacity-100'
+                  }`}
+                />
+                {/* Hover Image */}
+                <img
+                  src="https://res.cloudinary.com/dusynu0kv/image/upload/w_800,q_auto,f_auto/v1761737367/IMG_7530_oh18g5.jpg"
+                  alt="Inaara Woman Hover"
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                    isHovered ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              </div>
 
-            <p className="text-neutral-700 leading-relaxed mb-6">
-              Founded with a vision to bridge cultural depth with contemporary style, we create pieces
-              that celebrate the modern woman in all her forms. Each garment is thoughtfully designed
-              to embody grace, confidence, and versatility—allowing you to move through your day with
-              effortless elegance.
-            </p>
+              {/* Instagram Link */}
+              <div className="mt-4">
+                <a
+                  href="https://www.instagram.com/inaara.woman"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-[10px] tracking-[0.3em] uppercase text-neutral-900 hover:text-neutral-600 transition-colors duration-300 font-light border-b border-neutral-900 hover:border-neutral-600"
+                >
+                  @inaara.woman
+                </a>
+              </div>
+            </div>
 
-            <p className="text-neutral-700 leading-relaxed mb-6">
-              Our collections are inspired by the stories of women around the world—women who balance
-              tradition with modernity, who honor their heritage while embracing the future. We understand
-              that fashion is more than clothing; it's a form of self-expression, a celebration of
-              identity, and a connection to something larger than ourselves.
-            </p>
+            {/* Right Side - Text Content */}
+            <div className="w-full">
+              <div className="space-y-6">
+                
+                {/* Section 1 */}
+                <div>
+                  <h2 className="font-serif text-base md:text-lg font-normal text-neutral-900 mb-3">
+                    About Inaara Woman
+                  </h2>
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    Inaara Woman is a contemporary clothing brand founded by Nigerian fashion model and creative visionary Iriketoma Oghenevwede Favour — a dreamer who has always believed that every woman carries her own light within her.
+                  </p>
+                </div>
+
+                {/* Section 2 */}
+                <div>
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    Born from a simple but powerful question — "What does it mean for a woman to shine?" Inaara Woman was created to remind women that their radiance is not reserved for special occasions, but for every season of life.
+                  </p>
+                </div>
+
+                {/* Section 3 */}
+                <div>
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    The name Inaara, drawn from the Arabic word meaning "to illuminate" or "heaven-sent", embodies the very essence of the brand light, grace, and divine purpose. Each Inaara Woman piece is designed to help women express their individuality with confidence and elegance, celebrating both strength and softness.
+                  </p>
+                </div>
+
+                {/* Section 4 */}
+                <div>
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    An Inaara Woman is free-spirited. She spreads warmth and positivity wherever she goes. She isn't afraid to express herself because she knows who she is radiant, bold, and deeply loved.
+                  </p>
+                </div>
+
+                {/* Section 5 */}
+                <div>
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    Founded in 2023 and officially debuting in 2025 with the UZURI SS25 Collection, Inaara Woman continues to create timeless, figure-flattering pieces that blend contemporary design with an appreciation for detail, craftsmanship, and meaning. Every collection tells a story one that celebrates inclusivity, womanhood, and the beauty of individuality.
+                  </p>
+                </div>
+
+                {/* Section 6 */}
+                <div>
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    Behind Inaara Woman is a passionate team that believed in a dream and helped turn it into reality.
+                  </p>
+                </div>
+
+                {/* Section 7 - Dedication */}
+                <div>
+                  <p className="text-xs text-neutral-700 leading-relaxed italic">
+                    This website, and so much of what Inaara Woman has become, is dedicated to my beloved aunt, Ndomaya Gbaya whose love, encouragement, and unwavering support made this dream possible.
+                  </p>
+                </div>
+
+                {/* Section 8 - Brand Statement */}
+                <div className="pt-4">
+                  <p className="text-xs text-neutral-900 leading-relaxed font-medium mb-2">
+                    At Inaara Woman, we stand for one simple truth:
+                  </p>
+                  <p className="text-xs text-neutral-900 leading-relaxed font-medium">
+                    Every woman deserves to shine in her God-given light.
+                  </p>
+                  <p className="text-xs text-neutral-900 leading-relaxed font-medium">
+                    Don't shrink for anyone.
+                  </p>
+                  <p className="text-xs text-neutral-900 leading-relaxed font-medium">
+                    Shine in your light, always.
+                  </p>
+                </div>
+
+                {/* Section 9 - Community */}
+                <div>
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    And as you journey with us, we welcome you into the inner circle of the <span className="font-medium">Inaara Tribe</span>, a community of radiant women who inspire, uplift, and illuminate the world together.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      <section className="py-20 px-4 bg-neutral-50">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="font-serif text-3xl font-bold text-center text-neutral-900 mb-12">
-            Our Values
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-8">
-              <div className="text-5xl mb-4">✨</div>
-              <h3 className="font-serif text-xl font-semibold mb-3 text-neutral-900">
-                Timeless Elegance
-              </h3>
-              <p className="text-neutral-700">
-                We create pieces that transcend trends, designed to be cherished for years to come.
-              </p>
-            </div>
-            <div className="text-center p-8">
-              <div className="text-5xl mb-4">🌟</div>
-              <h3 className="font-serif text-xl font-semibold mb-3 text-neutral-900">
-                Quality Craftsmanship
-              </h3>
-              <p className="text-neutral-700">
-                Every garment is crafted with meticulous attention to detail using premium materials.
-              </p>
-            </div>
-            <div className="text-center p-8">
-              <div className="text-5xl mb-4">💫</div>
-              <h3 className="font-serif text-xl font-semibold mb-3 text-neutral-900">
-                Celebrate Individuality
-              </h3>
-              <p className="text-neutral-700">
-                We honor the unique beauty and story of every woman who wears our designs.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-serif text-3xl font-bold text-neutral-900 mb-6">
-            Join Our Journey
-          </h2>
-          <p className="text-lg text-neutral-700 mb-8 leading-relaxed">
-            Discover pieces that resonate with your soul and celebrate your light.
-            We're honored to be part of your story.
-          </p>
-          <Button size="lg" onClick={() => navigate('/shop')}>
-            Explore Our Collection
-          </Button>
-        </div>
-      </section>
+      {/* Bottom Spacing */}
+      <section className="py-16"></section>
     </div>
   );
 }
