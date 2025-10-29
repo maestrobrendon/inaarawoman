@@ -2,34 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-
-// Types
-interface ProductImage {
-  id: string;
-  cloudinary_url: string;
-  cloudinary_public_id?: string;
-  image_order: number;
-}
-
-interface Collection {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  compare_at_price?: number;
-  category?: string;
-  collection_id?: string;
-  is_active: boolean;
-  created_at: string;
-  images?: ProductImage[];
-  collection?: Collection;
-}
+import { Collection, ProductWithImages } from '../types';
+import ProductCard from '../components/product/ProductCard';
 
 interface ShopPageProps {
   initialFilters?: { collection?: string };
@@ -37,12 +11,11 @@ interface ShopPageProps {
 
 export default function ShopPage({ initialFilters }: ShopPageProps) {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithImages[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCollection, setSelectedCollection] = useState(initialFilters?.collection || 'all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -64,10 +37,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
         .select('*')
         .order('name');
 
-      if (error) {
-        console.error('Error loading collections:', error);
-        return;
-      }
+      if (error) throw error;
       if (data) setCollections(data);
     } catch (error) {
       console.error('Error loading collections:', error);
@@ -81,15 +51,9 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
         .from('products')
         .select(`
           *,
-          images:product_images(
-            id,
-            cloudinary_url,
-            cloudinary_public_id,
-            image_order
-          ),
           collection:collections(*)
         `)
-        .eq('is_active', true);
+        .eq('status', 'active');
 
       if (selectedCollection !== 'all') {
         query = query.eq('collection_id', selectedCollection);
@@ -99,7 +63,6 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
         query = query.eq('category', selectedCategory);
       }
 
-      // Sorting
       switch (sortBy) {
         case 'price-low':
           query = query.order('price', { ascending: true });
@@ -119,18 +82,13 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
 
       const { data, error } = await query;
 
-      if (error) {
-        console.error('Error loading products:', error);
-        setProducts([]);
-        return;
-      }
-
+      if (error) throw error;
       if (data) {
-        let filtered = data as Product[];
+        let filtered = data as any;
 
         // Search filter
         if (searchQuery) {
-          filtered = filtered.filter((p) =>
+          filtered = filtered.filter((p: ProductWithImages) =>
             p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.description?.toLowerCase().includes(searchQuery.toLowerCase())
           );
@@ -138,28 +96,28 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
 
         // Price range filters
         if (priceRange.min) {
-          filtered = filtered.filter((p) =>
+          filtered = filtered.filter((p: ProductWithImages) =>
             p.price >= parseFloat(priceRange.min)
           );
         }
 
         if (priceRange.max) {
-          filtered = filtered.filter((p) =>
+          filtered = filtered.filter((p: ProductWithImages) =>
             p.price <= parseFloat(priceRange.max)
           );
         }
 
-        // Sort images by image_order
-        filtered = filtered.map((p) => ({
+        // Map products to use stored images array
+        filtered = filtered.map((p: any) => ({
           ...p,
-          images: p.images?.sort((a, b) => a.image_order - b.image_order) || []
+          image: p.main_image || p.images?.[0] || p.image_url || '',
+          images: p.images || (p.image_url ? [p.image_url] : [])
         }));
 
         setProducts(filtered);
       }
     } catch (error) {
       console.error('Error loading products:', error);
-      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -192,20 +150,21 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header Section */}
+      {/* Header Section - Minimalist */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-8">
           <h1 className="font-serif text-2xl md:text-3xl font-light text-neutral-900 mb-3">
-            Shop Inaara Woman
+            Inaara Woman
           </h1>
           <p className="text-xs text-neutral-600 max-w-2xl mx-auto">
             Carefully crafted to help you be your most confident and stylish self.
           </p>
         </div>
 
-        {/* Filters Bar */}
+        {/* Filters Bar - Top */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-neutral-200">
           <div className="flex items-center gap-4">
+            {/* Filter Toggle for Mobile */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 text-[10px] tracking-wider uppercase text-neutral-900 hover:text-neutral-600 transition-colors"
@@ -214,20 +173,28 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
               Filter
             </button>
 
+            {/* Availability Filter */}
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="text-[10px] tracking-wider uppercase text-neutral-900 border-none bg-transparent focus:outline-none cursor-pointer"
             >
-              {categories.map((cat) => (
+              <option value="all">Availability</option>
+              {categories.slice(1).map((cat) => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
                 </option>
               ))}
             </select>
+
+            {/* Price Range */}
+            <button className="text-[10px] tracking-wider uppercase text-neutral-900 hover:text-neutral-600 transition-colors">
+              Price
+            </button>
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Sort By */}
             <div className="flex items-center gap-2">
               <span className="text-[10px] tracking-wider uppercase text-neutral-600">Sort by:</span>
               <select
@@ -243,6 +210,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
               </select>
             </div>
 
+            {/* Product Count */}
             <span className="text-[10px] tracking-wider uppercase text-neutral-600">
               {products.length} products
             </span>
@@ -320,7 +288,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Apply & Clear Buttons */}
               <div className="flex gap-2">
                 <button
                   onClick={loadProducts}
@@ -370,44 +338,30 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
               >
                 {/* Product Image */}
                 <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  {(() => {
-                    const hasValidImages = product.images && product.images.length > 0 && product.images[0].image_url;
-                    const mainImageUrl = product.main_image;
-
-                    if (hasValidImages) {
-                      return (
-                        <>
-                          <img
-                            src={product.images[0].image_url}
-                            alt={product.images[0].alt_text || product.name}
-                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                          />
-                          {product.images[1] && product.images[1].image_url && (
-                            <img
-                              src={product.images[1].image_url}
-                              alt={product.images[1].alt_text || `${product.name} hover`}
-                              className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                            />
-                          )}
-                        </>
-                      );
-                    } else if (mainImageUrl) {
-                      return (
+                  {product.images && product.images.length > 0 ? (
+                    <>
+                      {/* Main Image - from Cloudinary via Supabase */}
+                      <img
+                        src={`${product.images[0].cloudinary_url}?w=600&q_auto&f_auto`}
+                        alt={product.name}
+                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                      />
+                      {/* Hover Image - Second image if available */}
+                      {product.images[1] && (
                         <img
-                          src={mainImageUrl}
-                          alt={product.name}
-                          className="absolute inset-0 w-full h-full object-cover"
+                          src={`${product.images[1].cloudinary_url}?w_600&q_auto&f_auto`}
+                          alt={`${product.name} hover`}
+                          className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                         />
-                      );
-                    } else {
-                      return (
-                        <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
-                          No image
-                        </div>
-                      );
-                    }
-                  })()}
+                      )}
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
+                      No image
+                    </div>
+                  )}
 
+                  {/* Sale Badge */}
                   {product.compare_at_price && product.compare_at_price > product.price && (
                     <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase">
                       Sale
@@ -424,15 +378,15 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                     {product.compare_at_price && product.compare_at_price > product.price ? (
                       <>
                         <span className="text-[10px] text-neutral-500 line-through">
-                          ₦{product.compare_at_price.toLocaleString()}
+                          ₦{product.compare_at_price.toLocaleString()} NGN
                         </span>
                         <span className="text-[10px] text-neutral-900 font-medium">
-                          ₦{product.price.toLocaleString()}
+                          ₦{product.price.toLocaleString()} NGN
                         </span>
                       </>
                     ) : (
                       <span className="text-[10px] text-neutral-900">
-                        ₦{product.price.toLocaleString()}
+                        ₦{product.price.toLocaleString()} NGN
                       </span>
                     )}
                   </div>
@@ -442,7 +396,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* Pagination Placeholder */}
         {products.length > 0 && (
           <div className="flex justify-center items-center gap-2 mt-12">
             <button className="w-8 h-8 flex items-center justify-center border border-neutral-300 text-xs hover:bg-neutral-100 transition-colors">
@@ -453,6 +407,9 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
             </button>
             <button className="w-8 h-8 flex items-center justify-center border border-neutral-300 text-xs hover:bg-neutral-100 transition-colors">
               3
+            </button>
+            <button className="w-8 h-8 flex items-center justify-center border border-neutral-300 text-xs hover:bg-neutral-100 transition-colors">
+              →
             </button>
           </div>
         )}
