@@ -191,6 +191,123 @@ export default function ClingrHomePage() {
         </div>
       </motion.section>
 
+      {/* Best Sellers Section */}
+      <section className="py-20 px-4 bg-neutral-50">
+        <div className="max-w-7xl mx-auto">
+          <TextRevealOnScroll className="text-center mb-16">
+            <p className="text-sm tracking-widest text-neutral-500 mb-4">BEST SELLERS</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
+              Customer Favorites
+            </h2>
+          </TextRevealOnScroll>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {/* Product 1 */}
+            <TextRevealOnScroll>
+              <div className="group cursor-pointer">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761655548/A5B830C9-6BF5-4117-87BB-81014C55648B_jruhlc.jpg"
+                    alt="Blaze Set Summer"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  {/* Quick View Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Blaze Set Summer</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Adeleke</p>
+                  <p className="text-neutral-900 font-medium text-sm">₦226,980.00 NGN</p>
+                </div>
+              </div>
+            </TextRevealOnScroll>
+
+            {/* Product 2 */}
+            <TextRevealOnScroll>
+              <div className="group cursor-pointer">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761655938/IMG_2376_mwz41c.jpg"
+                    alt="Blaze Skirt Set"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Blaze Skirt Set</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Premium Collection</p>
+                  <p className="text-neutral-900 font-medium text-sm">₦499,300.00 NGN</p>
+                </div>
+              </div>
+            </TextRevealOnScroll>
+
+            {/* Product 3 */}
+            <TextRevealOnScroll>
+              <div className="group cursor-pointer">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657166/Gemini_Generated_Image_ywipcvywipcvywip_dcejpx.png"
+                    alt="Arewa Dress"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Arewa Dress</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Floral Beauty</p>
+                  <p className="text-neutral-900 font-medium text-sm">₦249,990.00 NGN</p>
+                </div>
+              </div>
+            </TextRevealOnScroll>
+
+            {/* Product 4 */}
+            <TextRevealOnScroll>
+              <div className="group cursor-pointer">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
+                    alt="Makeup Dress"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-xs tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-base font-medium text-neutral-900 mb-1">Makeup Dress</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Statement Pink</p>
+                  <p className="text-neutral-900 font-medium text-sm">₦123,493.50 NGN</p>
+                </div>
+              </div>
+            </TextRevealOnScroll>
+          </div>
+
+          {/* View All Button */}
+          <div className="text-center mt-12">
+            <button
+              onClick={() => navigate('/shop')}
+              className="px-12 py-3 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-sm tracking-wider uppercase"
+            >
+              View All
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Brand Story Section */}
       <section className="py-32 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
@@ -403,6 +520,199 @@ export default function ClingrHomePage() {
                 />
               </div>
             </TextRevealOnScroll>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Products - Scrollable Section */}
+      <section className="py-32 px-4 bg-neutral-50 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <TextRevealOnScroll className="text-center mb-16">
+            <p className="text-sm tracking-widest text-neutral-500 mb-4">DISCOVER</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
+              New Arrivals
+            </h2>
+          </TextRevealOnScroll>
+
+          {/* Horizontal Scrollable Container */}
+          <div className="relative">
+            <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              
+              {/* Product 1 */}
+              <div className="flex-none w-72 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  {/* Main Image */}
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657117/Gemini_Generated_Image_ghl6prghl6prghl6_qvqz21.png"
+                    alt="Product 1"
+                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                  />
+                  {/* Hover Image - Replace with actual hover image URL */}
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657117/Gemini_Generated_Image_ghl6prghl6prghl6_qvqz21.png"
+                    alt="Product 1 Hover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  />
+                  {/* Quick View Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Zola Earring</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Classic Statement Piece</p>
+                  <p className="text-neutral-900 font-medium">₦277,200.00 NGN</p>
+                </div>
+              </div>
+
+              {/* Product 2 */}
+              <div className="flex-none w-72 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657116/Gemini_Generated_Image_13mwoj13mwoj13mw_3_nq4a88.png"
+                    alt="Product 2"
+                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                  />
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657116/Gemini_Generated_Image_13mwoj13mwoj13mw_3_nq4a88.png"
+                    alt="Product 2 Hover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Salle Bodysuit</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Camel Elegance</p>
+                  <p className="text-neutral-900 font-medium">₦215,800.00 NGN</p>
+                </div>
+              </div>
+
+              {/* Product 3 */}
+              <div className="flex-none w-72 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657152/Gemini_Generated_Image_ezhk6aezhk6aezhk_vsvjez.png"
+                    alt="Product 3"
+                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                  />
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657152/Gemini_Generated_Image_ezhk6aezhk6aezhk_vsvjez.png"
+                    alt="Product 3 Hover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Ovu Knit Cape</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Sophisticated Layering</p>
+                  <p className="text-neutral-900 font-medium">₦585,100.00 NGN</p>
+                </div>
+              </div>
+
+              {/* Product 4 */}
+              <div className="flex-none w-72 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
+                    alt="Product 4"
+                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                  />
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
+                    alt="Product 4 Hover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Ovu Knit Pants</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Coffee Comfort</p>
+                  <p className="text-neutral-900 font-medium">₦369,500.00 NGN</p>
+                </div>
+              </div>
+
+              {/* Product 5 */}
+              <div className="flex-none w-72 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657292/Gemini_Generated_Image_jc5sdejc5sdejc5s_muhame.png"
+                    alt="Product 5"
+                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                  />
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657292/Gemini_Generated_Image_jc5sdejc5sdejc5s_muhame.png"
+                    alt="Product 5 Hover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Coral Dress</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Statement Evening Wear</p>
+                  <p className="text-neutral-900 font-medium">₦458,980.00 NGN</p>
+                </div>
+              </div>
+
+              {/* Product 6 */}
+              <div className="flex-none w-72 group cursor-pointer snap-start">
+                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-4">
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657313/Gemini_Generated_Image_3g5mvf3g5mvf3g5m_ukrg1d.png"
+                    alt="Product 6"
+                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                  />
+                  <img
+                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657313/Gemini_Generated_Image_3g5mvf3g5mvf3g5m_ukrg1d.png"
+                    alt="Product 6 Hover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="px-6 py-2 bg-white text-neutral-900 text-sm tracking-wider uppercase font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      Quick View
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-lg font-medium text-neutral-900 mb-2">Floral Maxi Dress</h3>
+                  <p className="text-neutral-600 text-sm mb-2">Garden Party Perfect</p>
+                  <p className="text-neutral-900 font-medium">₦524,390.00 NGN</p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Scroll Indicator */}
+            <div className="text-center mt-8">
+              <p className="text-sm text-neutral-500 tracking-wider">← Scroll to explore more →</p>
+            </div>
+          </div>
+
+          {/* View All Button */}
+          <div className="text-center mt-12">
+            <button
+              onClick={() => navigate('/shop')}
+              className="px-12 py-3 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-sm tracking-wider uppercase"
+            >
+              View All
+            </button>
           </div>
         </div>
       </section>
