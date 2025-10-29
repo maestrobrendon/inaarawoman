@@ -94,7 +94,9 @@ export default function ProductDetailPage() {
       return;
     }
 
-    const firstImage = productImages.length > 0 ? productImages[0].image_url : '';
+    const firstImage = (productImages.length > 0 && productImages[0]?.image_url)
+      ? productImages[0].image_url
+      : product.main_image || '';
 
     addItem({
       product,
@@ -190,11 +192,22 @@ export default function ProductDetailPage() {
                 transition={{ duration: 0.3 }}
               >
                 <AnimatePresence mode="wait">
-                  {displayImages.length > 0 && displayImages[selectedImage] ? (
+                  {displayImages.length > 0 && displayImages[selectedImage]?.image_url ? (
                     <motion.img
                       key={selectedImage}
                       src={displayImages[selectedImage].image_url}
                       alt={displayImages[selectedImage].alt_text || product.name}
+                      className="w-full h-full object-cover"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  ) : product.main_image ? (
+                    <motion.img
+                      key="main"
+                      src={product.main_image}
+                      alt={product.name}
                       className="w-full h-full object-cover"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -600,7 +613,7 @@ export default function ProductDetailPage() {
             >
               <X size={32} />
             </button>
-            {displayImages.length > 0 && displayImages[selectedImage] && (
+            {displayImages.length > 0 && displayImages[selectedImage]?.image_url ? (
               <motion.img
                 src={displayImages[selectedImage].image_url}
                 alt={displayImages[selectedImage].alt_text || product.name}
@@ -609,7 +622,16 @@ export default function ProductDetailPage() {
                 animate={{ scale: 1 }}
                 exit={{ scale: 0.9 }}
               />
-            )}
+            ) : product.main_image ? (
+              <motion.img
+                src={product.main_image}
+                alt={product.name}
+                className="max-w-full max-h-full object-contain"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.9 }}
+              />
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>

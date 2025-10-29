@@ -44,10 +44,16 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         }}
         onMouseLeave={() => setCurrentImageIndex(0)}
       >
-        {displayImages.length > 0 && displayImages[currentImageIndex] ? (
+        {displayImages.length > 0 && displayImages[currentImageIndex] && displayImages[currentImageIndex].image_url ? (
           <img
             src={displayImages[currentImageIndex].image_url}
             alt={displayImages[currentImageIndex].alt_text || product.name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : product.main_image ? (
+          <img
+            src={product.main_image}
+            alt={product.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

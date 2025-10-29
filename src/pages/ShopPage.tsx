@@ -370,26 +370,43 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
               >
                 {/* Product Image */}
                 <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  {product.images && product.images.length > 0 ? (
-                    <>
-                      <img
-                        src={`${product.images[0].cloudinary_url}?w=600&q=auto&f=auto`}
-                        alt={product.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                      />
-                      {product.images[1] && (
+                  {(() => {
+                    const hasValidImages = product.images && product.images.length > 0 && product.images[0].image_url;
+                    const mainImageUrl = product.main_image;
+
+                    if (hasValidImages) {
+                      return (
+                        <>
+                          <img
+                            src={product.images[0].image_url}
+                            alt={product.images[0].alt_text || product.name}
+                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                          />
+                          {product.images[1] && product.images[1].image_url && (
+                            <img
+                              src={product.images[1].image_url}
+                              alt={product.images[1].alt_text || `${product.name} hover`}
+                              className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                            />
+                          )}
+                        </>
+                      );
+                    } else if (mainImageUrl) {
+                      return (
                         <img
-                          src={`${product.images[1].cloudinary_url}?w=600&q=auto&f=auto`}
-                          alt={`${product.name} hover`}
-                          className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                          src={mainImageUrl}
+                          alt={product.name}
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
-                      )}
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
-                      No image
-                    </div>
-                  )}
+                      );
+                    } else {
+                      return (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
+                          No image
+                        </div>
+                      );
+                    }
+                  })()}
 
                   {product.compare_at_price && product.compare_at_price > product.price && (
                     <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase">
