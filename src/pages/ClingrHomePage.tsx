@@ -141,12 +141,6 @@ export default function ClingrHomePage() {
             <p className="text-[10px] md:text-xs tracking-[0.4em] text-white/70 mb-4 uppercase font-light">
               New Arrivals Just for You
             </p>
-            {/* Smaller hero title */}
-            <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-light text-white mb-6 leading-relaxed tracking-wide">
-              Exclusive Collections
-              <br />
-              <span className="block mt-1">Just for You</span>
-            </h1>
           </motion.div>
 
           <motion.div
