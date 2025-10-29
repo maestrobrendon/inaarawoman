@@ -51,15 +51,9 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
         .from('products')
         .select(`
           *,
-          images:product_images(
-            id,
-            cloudinary_url,
-            cloudinary_public_id,
-            image_order
-          ),
           collection:collections(*)
         `)
-        .eq('is_active', true);
+        .eq('status', 'active');
 
       if (selectedCollection !== 'all') {
         query = query.eq('collection_id', selectedCollection);
@@ -113,10 +107,11 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
           );
         }
 
-        // Sort images by image_order
+        // Map products to use stored images array
         filtered = filtered.map((p: any) => ({
           ...p,
-          images: p.images?.sort((a: any, b: any) => a.image_order - b.image_order) || []
+          image: p.main_image || p.images?.[0] || p.image_url || '',
+          images: p.images || (p.image_url ? [p.image_url] : [])
         }));
 
         setProducts(filtered);

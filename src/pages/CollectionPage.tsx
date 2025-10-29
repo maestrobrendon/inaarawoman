@@ -32,21 +32,16 @@ export default function CollectionPage() {
 
         const { data: productsData } = await supabase
           .from('products')
-          .select(`
-            *,
-            product_images(image_url, display_order, is_primary)
-          `)
+          .select('*')
           .eq('collection_id', collectionData.id)
-          .eq('is_active', true)
+          .eq('status', 'active')
           .order('created_at', { ascending: false });
 
         if (productsData) {
           const formattedProducts = productsData.map((product: any) => ({
             ...product,
-            image: product.product_images?.find((img: any) => img.is_primary)?.image_url ||
-                   product.product_images?.[0]?.image_url ||
-                   '/placeholder.jpg',
-            images: product.product_images?.map((img: any) => img.image_url) || []
+            image: product.main_image || product.images?.[0] || product.image_url || '/placeholder.jpg',
+            images: product.images || (product.image_url ? [product.image_url] : [])
           }));
           setProducts(formattedProducts);
         }

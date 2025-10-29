@@ -232,7 +232,6 @@ export default function ProductForm({ mode }: ProductFormProps) {
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-neutral-900">Product Images</h2>
           <ImageUpload
-            productId={productId}
             existingImages={productImages}
             onImagesChange={setProductImages}
           />
