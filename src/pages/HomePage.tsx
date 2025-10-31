@@ -1,451 +1,708 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { ProductWithImages } from '../types';
-import Button from '../components/ui/Button';
-import ProductCard from '../components/product/ProductCard';
-import Input from '../components/ui/Input';
-import HeroSection from '../components/home/HeroSection';
-import StaticProductCard from '../components/product/StaticProductCard';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function HomePage() {
-  const navigate = useNavigate();
-  const [featuredProducts, setFeaturedProducts] = useState<ProductWithImages[]>([]);
-  const [email, setEmail] = useState('');
-  const [isSubscribing, setIsSubscribing] = useState(false);
-
+const InaaraHomepage = () => {
+  const [activeReview, setActiveReview] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+  const [visibleSections, setVisibleSections] = useState({});
+  
   useEffect(() => {
-    loadFeaturedData();
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const loadFeaturedData = async () => {
-    const { data: products } = await supabase
-      .from('products')
-      .select(`
-        *,
-        images:product_images(*),
-        collection:collections(*)
-      `)
-      .eq('is_bestseller', true)
-      .limit(4);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections(prev => ({ ...prev, [entry.target.id]: true }));
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -100px 0px' }
+    );
 
-    if (products) setFeaturedProducts(products as any);
-  };
+    document.querySelectorAll('[data-animate]').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
-  const handleNewsletterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setIsSubscribing(true);
-    try {
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .insert({ email });
-
-      if (error) {
-        if (error.code === '23505') {
-          alert('This email is already subscribed!');
-        } else {
-          throw error;
-        }
-      } else {
-        alert('Thank you for subscribing!');
-        setEmail('');
-      }
-    } catch (error) {
-      console.error('Error subscribing:', error);
-      alert('Failed to subscribe. Please try again.');
-    } finally {
-      setIsSubscribing(false);
+  const reviews = [
+    {
+      name: "Corrine Bowers",
+      text: "I've been wearing Inaara for a month now. If only you knew how much time it used to take me to find the perfect outfit! Now it takes just 15 minutes to put together a stunning look after waking up. I wear it every day! Even my colleagues have noticed my impeccable style. Thank you!"
+    },
+    {
+      name: "Emma Brooks", 
+      text: "The quality of the fabrics is exceptional. Every piece feels luxurious and comfortable. I love how versatile the collection is - I can dress up or down depending on the occasion. Inaara has completely transformed my wardrobe."
+    },
+    {
+      name: "Carol Merida",
+      text: "Finally found a brand that understands modern women's needs. The fit is perfect, the designs are timeless, and I always feel confident wearing Inaara pieces."
+    },
+    {
+      name: "Gladys Bello",
+      text: "Sustainable fashion that doesn't compromise on elegance. The attention to detail in every garment is remarkable. I'm proud to support a brand that cares about both style and ethics."
     }
-  };
+  ];
+
+  const nextReview = () => setActiveReview((prev) => (prev + 1) % reviews.length);
+  const prevReview = () => setActiveReview((prev) => (prev - 1 + reviews.length) % reviews.length);
 
   return (
-    <div className="min-h-screen">
-      <HeroSection />
+    <div className="bg-white text-gray-900 overflow-x-hidden">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .fade-in-up {
+          animation: fadeInUp 0.8s ease-out forwards;
+          opacity: 0;
+        }
+        
+        @keyframes fadeInUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          from {
+            opacity: 0;
+            transform: translateY(40px);
+          }
+        }
+        
+        .animate-visible {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+        
+        .hover-scale {
+          transition: transform 0.3s ease;
+        }
+        
+        .hover-scale:hover {
+          transform: scale(1.02);
+        }
+        
+        .parallax-text {
+          will-change: transform;
+        }
 
-      <section className="py-20 px-4 bg-stone-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-sm tracking-widest text-neutral-500 mb-2">EVERYONE'S LOVING</p>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-neutral-900">
-              BEST SELLERS
-            </h2>
-          </div>
+        @media (max-width: 768px) {
+          .text-hero {
+            font-size: 2.5rem;
+            line-height: 1.1;
+          }
+        }
+      `}</style>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div className="group cursor-pointer">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200">
-                <img
-                  src="/Gemini_Generated_Image_vre75gvre75gvre7 copy copy.png"
-                  alt="Two women in elegant vests and black pants"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="font-medium text-neutral-900 mb-1">Zurié Dress - Long</h3>
-              <p className="text-neutral-600 text-sm">₦458,990.00 NGN</p>
-            </div>
-
-            <div className="group cursor-pointer">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200">
-                <img
-                  src="/Gemini_Generated_Image_gmfzi0gmfzi0gmfz (1).png"
-                  alt="Elegant white skirt and top set"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="font-medium text-neutral-900 mb-1">Buzu Skirt Set</h3>
-              <p className="text-neutral-600 text-sm">₦499,900.00 NGN</p>
-            </div>
-
-            <div className="group cursor-pointer">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200">
-                <img
-                  src="/Gemini_Generated_Image_nobba7nobba7nobb.png"
-                  alt="Patterned skirt set"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="font-medium text-neutral-900 mb-1">Adioba Set</h3>
-              <p className="text-neutral-600 text-sm">₦359,990.00 NGN</p>
-            </div>
-
-            <div className="group cursor-pointer">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-sm mb-3 bg-stone-200">
-                <img
-                  src="/Gemini_Generated_Image_28wvm128wvm128wv.png"
-                  alt="Elegant gathered dress"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="font-medium text-neutral-900 mb-1">Zyma Dress</h3>
-              <p className="text-neutral-600 text-sm">₦249,990.00 NGN</p>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => navigate('/shop')}
-            >
-              View all
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16">
-            <div className="order-2 lg:order-1">
-              <img
-                src="/freepik_edit (14).png"
-                alt="Woman in elegant white dress"
-                className="w-full h-auto rounded-sm"
-              />
-            </div>
-            <div className="order-1 lg:order-2 flex flex-col justify-center">
-              <h2 className="font-serif text-4xl md:text-5xl font-bold text-neutral-900 mb-6">
-                Find something new in every <span className="italic">Inaara</span> collection
-              </h2>
-              <p className="text-neutral-700 text-lg leading-relaxed mb-8">
-                We are passionate about timeless elegance and feminine grace. We specialize in offering a curated selection of sophisticated designs that celebrate the modern woman's strength, beauty, and individuality.
-              </p>
-              <div>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/about')}
-                >
-                  ABOUT US
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 border-t border-neutral-200 pt-16">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <svg className="w-12 h-12 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-2">500+</h3>
-                <p className="text-neutral-600">Over 500 unique curated pieces</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <svg className="w-12 h-12 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-2">40+</h3>
-                <p className="text-neutral-600">40+ talented artisans & designers</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 bg-neutral-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-sm tracking-[0.3em] text-neutral-500 mb-2">FALL WINTER 25</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900">
-              WHAT DO YOU SEE?
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                id: 1,
-                name: 'Elegant Black Dress',
-                price: 189.00,
-                image: '/Gemini_Generated_Image_mtsv62mtsv62mtsv copy.png',
-              },
-              {
-                id: 2,
-                name: 'Monochrome Print Gown',
-                price: 249.00,
-                image: '/Gemini_Generated_Image_ehszg6ehszg6ehsz copy.png',
-              },
-              {
-                id: 3,
-                name: 'Black One-Shoulder Dress',
-                price: 169.00,
-                image: '/Gemini_Generated_Image_c0aiz1c0aiz1c0ai copy.png',
-              },
-              {
-                id: 4,
-                name: 'Black Jumpsuit',
-                price: 159.00,
-                image: '/Gemini_Generated_Image_f24zqwf24zqwf24z copy.png',
-              },
-            ].map((item) => (
-              <div key={item.id} className="group cursor-pointer" onClick={() => navigate('/shop')}>
-                <div className="relative aspect-[3/4] bg-neutral-100 mb-4 overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <h3 className="text-neutral-900 font-medium mb-2 text-sm">{item.name}</h3>
-                <p className="text-neutral-600 mb-4">${item.price.toFixed(2)}</p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate('/shop');
-                  }}
-                  className="w-full"
-                >
-                  SHOP
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-8 overflow-hidden bg-neutral-900">
-        <div className="flex whitespace-nowrap animate-scroll">
-          {[...Array(3)].map((_, index) => (
-            <div key={index} className="flex items-center">
-              <span className="text-5xl md:text-6xl font-bold text-white mx-8">INAARA WOMAN</span>
-              <span className="text-5xl md:text-6xl font-bold text-white/20 mx-8" style={{ WebkitTextStroke: '1px white' }}>INAARA WOMAN</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="py-20 px-4 bg-neutral-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-sm font-medium tracking-widest text-neutral-500 mb-3">INAARA TRENDS</p>
-            <h2 className="font-serif text-4xl md:text-5xl font-bold text-neutral-900">
-              Latest Collections
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { image: '/IMG_4511 copy.JPG', title: 'Evening Elegance' },
-              { image: '/A5B830C9-6BF5-4117-87BB-81014C55648B copy.jpg', title: 'Statement Sleeves' },
-              { image: '/Gemini_Generated_Image_saz8ssaz8ssaz8ss.png', title: 'Modern Asymmetry' },
-              { image: '/Gemini_Generated_Image_hggw0zhggw0zhggw copy.png', title: 'Pure Sophistication' }
-            ].map((collection, index) => (
-              <button
-                key={index}
-                onClick={() => navigate('/shop')}
-                className="group relative overflow-hidden bg-white rounded-sm shadow-sm hover:shadow-xl transition-all duration-500"
-              >
-                <div className="aspect-[3/4] overflow-hidden">
-                  <img
-                    src={collection.image}
-                    alt={collection.title}
-                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/80 via-neutral-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                    <h3 className="font-serif text-2xl font-bold mb-2">{collection.title}</h3>
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <span>Shop Collection</span>
-                      <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button
-              onClick={() => navigate('/shop')}
-              variant="outline"
-              className="px-8 py-3 text-sm font-medium tracking-wide"
-            >
-              VIEW ALL COLLECTIONS
-            </Button>
-          </div>
-        </div>
-      </section>
-
-
-      <section className="py-20 px-4 bg-neutral-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
-              Bestsellers
-            </h2>
-            <p className="text-neutral-600 max-w-2xl mx-auto">
-              Our most loved pieces that continue to inspire
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onClick={() => navigate(`/product/${product.id}`)}
-              />
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <Button variant="outline" onClick={() => navigate('/shop')}>
-              View All Products
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
-            Join Our Community
+      {/* Kit Includes Section */}
+      <section className="py-24 px-6 lg:px-12 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-light mb-16 text-center">
+            The collection includes:
           </h2>
-          <p className="text-neutral-600 mb-8">
-            Be the first to know about new arrivals, exclusive offers, and styling inspiration
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="aspect-square bg-white rounded-lg mb-6 flex items-center justify-center p-8">
+                <img 
+                  src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=400&fit=crop&q=80"
+                  alt="Core pieces"
+                  className="w-full h-full object-cover rounded"
+                />
+              </div>
+              <h3 className="text-xl font-medium mb-2">Essential pieces</h3>
+            </div>
+            
+            <div className="text-center">
+              <div className="aspect-square bg-white rounded-lg mb-6 flex items-center justify-center p-8">
+                <img 
+                  src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&h=400&fit=crop&q=80"
+                  alt="Care instructions"
+                  className="w-full h-full object-cover rounded"
+                />
+              </div>
+              <h3 className="text-xl font-medium mb-2">Care instructions</h3>
+            </div>
+            
+            <div className="text-center">
+              <div className="aspect-square bg-white rounded-lg mb-6 flex items-center justify-center p-8">
+                <img 
+                  src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=400&h=400&fit=crop&q=80"
+                  alt="Style guide"
+                  className="w-full h-full object-cover rounded"
+                />
+              </div>
+              <h3 className="text-xl font-medium mb-2">Styling guide booklet</h3>
+            </div>
+            
+            <div className="text-center">
+              <div className="aspect-square bg-white rounded-lg mb-6 flex items-center justify-center p-8">
+                <img 
+                  src="https://images.unsplash.com/photo-1602293589930-45aad59ba3ab?w=400&h=400&fit=crop&q=80"
+                  alt="Storage bag"
+                  className="w-full h-full object-cover rounded"
+                />
+              </div>
+              <h3 className="text-xl font-medium mb-2">Premium garment bag</h3>
+            </div>
+            
+            <div className="text-center">
+              <div className="aspect-square bg-white rounded-lg mb-6 flex items-center justify-center p-8">
+                <img 
+                  src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80"
+                  alt="Warranty"
+                  className="w-full h-full object-cover rounded"
+                />
+              </div>
+              <h3 className="text-xl font-medium mb-2">Quality certificate</h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Become Partner Section */}
+      <section className="py-24 px-6 lg:px-12 bg-black text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-light mb-8">
+            Become<br />a partner
+          </h2>
+          <p className="text-lg md:text-xl leading-relaxed mb-8 opacity-90">
+            Do you want to stock our products or establish cooperation with Inaara? Email us now! We are ready to discuss any orders and arrange delivery to any location ASAP. Inaara is a quality brand. And we are your reliable partner.
           </p>
-
-          <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isSubscribing}>
-              {isSubscribing ? 'Subscribing...' : 'Subscribe'}
-            </Button>
-          </form>
+          <button className="bg-white text-black px-10 py-4 text-lg font-medium hover:bg-gray-100 transition">
+            Contact Us
+          </button>
         </div>
       </section>
 
-      <section className="relative h-[500px] md:h-[600px] overflow-hidden">
-        <img
-          src="/image copy copy copy.png"
-          alt="Discover a brand where style, quality, and craftsmanship come together"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center px-4">
-            <p className="text-white text-xl md:text-2xl lg:text-3xl font-light max-w-3xl mx-auto leading-relaxed">
-              Discover a brand where style, quality, and craftsmanship come together.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 bg-white">
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-100 py-16 px-6 lg:px-12">
         <div className="max-w-7xl mx-auto">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-neutral-900 mb-16 text-center">
-            Our Promise
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <h3 className="font-medium text-lg mb-2 text-neutral-900">Free Shipping</h3>
-              <p className="text-sm text-neutral-600">
-                You will love at great low prices
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div>
+              <h3 className="text-xl font-semibold mb-6">INAARA</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Redefining elegance for the modern woman through timeless design and exceptional quality.
               </p>
             </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 className="font-medium text-lg mb-2 text-neutral-900">Flexible Payment</h3>
-              <p className="text-sm text-neutral-600">
-                Pay with Multiple Credit Cards
-              </p>
+            
+            <div>
+              <h4 className="font-medium mb-4">Shop</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><a href="#" className="hover:text-black transition">New Arrivals</a></li>
+                <li><a href="#" className="hover:text-black transition">Collections</a></li>
+                <li><a href="#" className="hover:text-black transition">Sale</a></li>
+                <li><a href="#" className="hover:text-black transition">Gift Cards</a></li>
+              </ul>
             </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                </svg>
-              </div>
-              <h3 className="font-medium text-lg mb-2 text-neutral-900">Fast Delivery</h3>
-              <p className="text-sm text-neutral-600">
-                Experience the joy of fast shipping
-              </p>
+            
+            <div>
+              <h4 className="font-medium mb-4">Support</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><a href="#" className="hover:text-black transition">Contact</a></li>
+                <li><a href="#" className="hover:text-black transition">Shipping & Returns</a></li>
+                <li><a href="#" className="hover:text-black transition">Size Guide</a></li>
+                <li><a href="#" className="hover:text-black transition">FAQ</a></li>
+              </ul>
             </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="font-medium text-lg mb-2 text-neutral-900">Premium Support</h3>
-              <p className="text-sm text-neutral-600">
-                Outstanding premium support
-              </p>
+            
+            <div>
+              <h4 className="font-medium mb-4">Company</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><a href="#" className="hover:text-black transition">About Us</a></li>
+                <li><a href="#" className="hover:text-black transition">Sustainability</a></li>
+                <li><a href="#" className="hover:text-black transition">Careers</a></li>
+                <li><a href="#" className="hover:text-black transition">Press</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
+            <p>&copy; 2025 Inaara. All rights reserved.</p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <a href="#" className="hover:text-black transition">Privacy Policy</a>
+              <a href="#" className="hover:text-black transition">Terms of Service</a>
             </div>
           </div>
         </div>
-      </section>
+      </footer>
+
+      <style jsx>{`
+        @keyframes scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        
+        .animate-scroll {
+          animation: scroll 20s linear infinite;
+          display: flex;
+        }
+        
+        .animate-scroll > div {
+          display: flex;
+          min-width: 100%;
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+export default InaaraHomepage; Navigation */}
+      <nav className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 h-20 flex items-center justify-between">
+          <div className="text-xl font-semibold tracking-wide">INAARA</div>
+          <div className="hidden md:flex items-center space-x-10 text-sm font-medium">
+            <a href="#" className="hover:opacity-60 transition-opacity">Collection</a>
+            <a href="#" className="hover:opacity-60 transition-opacity">About</a>
+            <a href="#" className="hover:opacity-60 transition-opacity">Reviews</a>
+            <a href="#" className="hover:opacity-60 transition-opacity">Contact</a>
+          </div>
+          <button className="bg-black text-white px-6 py-2.5 text-sm font-medium hover:bg-gray-800 transition">
+            Shop Now
+          </button>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-6 lg:px-12 min-h-screen flex items-center bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="max-w-4xl">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-light leading-tight mb-6 text-hero">
+              An innovative clothing collection that elevates your style effortlessly. With it, you can achieve an impeccable look in just 10 minutes.
+            </h1>
+          </div>
+        </div>
+      </section>
+
+      {/* For Any Occasion Section */}
+      <section className="py-20 px-6 lg:px-12 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-light mb-8 max-w-3xl">
+            For any occasion
+          </h2>
+          <p className="text-xl md:text-2xl font-light text-gray-700 max-w-4xl leading-relaxed">
+            For any setting. Anywhere: at work, at events, or casual outings. Simply choose Inaara and dress like a style icon, maintaining the natural elegance of your appearance.
+          </p>
+        </div>
+      </section>
+
+      {/* Three Column Features */}
+      <section className="py-24 px-6 lg:px-12 bg-gray-50" id="features" data-animate>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+            {/* Feature 1 */}
+            <div className={`transition-all duration-1000 ${visibleSections.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+              <div className="relative mb-6">
+                <div className="text-6xl font-light text-gray-300">01</div>
+                <div className="absolute top-0 left-0 text-lg font-medium text-gray-400">/03</div>
+              </div>
+              <h3 className="text-3xl font-light mb-6">Dress, style and accessorize – all at the same time!</h3>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                Before you can complete your look, you need to find the right pieces. Now with Inaara you can style yourself while selecting. Pick the garment with one hand and accessorize with the other. Mix or match your outfit at the same time to easily create your desired aesthetic.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className={`transition-all duration-1000 delay-200 ${visibleSections.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+              <div className="relative mb-6">
+                <div className="text-6xl font-light text-gray-300">02</div>
+                <div className="absolute top-0 left-0 text-lg font-medium text-gray-400">/03</div>
+              </div>
+              <h3 className="text-3xl font-light mb-6">Ten minutes instead of 40: style your complete look like a professional every day</h3>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                Complete freedom in styling gives you better control of your appearance than even a professional stylist. With Inaara, dressing becomes a quick and easy daily ritual. It is no longer a long and stressful process, which you can manage just a few times a week, but a simple and enjoyable experience. With Inaara you will always look your best.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className={`transition-all duration-1000 delay-400 ${visibleSections.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+              <div className="relative mb-6">
+                <div className="text-6xl font-light text-gray-300">03</div>
+                <div className="absolute top-0 left-0 text-lg font-medium text-gray-400">/03</div>
+              </div>
+              <h3 className="text-3xl font-light mb-6">Healthy, radiant and beautiful confidence</h3>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                Inaara allows you to embrace quality fabrics at comfortable fits, where the garments feel natural and breathable. This ensures effortless wearing without compromising your comfort or style. With Inaara, your confidence will shine and you'll look naturally beautiful.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stylist Everywhere Section with Image */}
+      <section className="py-24 px-6 lg:px-12 bg-white" id="stylist" data-animate>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className={`transition-all duration-1000 ${visibleSections.stylist ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+              <h2 className="text-4xl md:text-5xl font-light mb-8">
+                A wardrobe<br />everywhere<br />with you
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
+                Versatile, elegant and easy to style, Inaara is easy to pack wherever you go and wear in any environment. The functionality and design of the collection are clever and timeless: everything you need to look stunning in any situation is there. Anywhere.
+              </p>
+            </div>
+            <div className={`transition-all duration-1000 delay-300 ${visibleSections.stylist ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
+              <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&h=1500&fit=crop&q=80" 
+                  alt="Fashion styling"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Three Scenarios */}
+      <section className="py-24 px-6 lg:px-12 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div>
+              <div className="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden mb-6">
+                <img 
+                  src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=1000&fit=crop&q=80"
+                  alt="At home"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-light mb-4">At home</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Use Inaara when preparing for work or getting ready to go out. Keep it in your closet or bedroom: it becomes a natural part of your daily routine.
+              </p>
+            </div>
+            <div>
+              <div className="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden mb-6">
+                <img 
+                  src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=1000&fit=crop&q=80"
+                  alt="At events"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-light mb-4">At events or gatherings</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Chic style after a morning meeting, or after a wellness session, can be a reality! The convenience and elegance of Inaara makes it possible to take with you anywhere to create the perfect look for any occasion.
+              </p>
+            </div>
+            <div>
+              <div className="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden mb-6">
+                <img 
+                  src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop&q=80"
+                  alt="On the move"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-light mb-4">On the move</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Thanks to its versatile design, Inaara can be taken on trips. Effortless style in memorable photos from faraway places – it's possible with the timeless collection!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Scrolling Text Banner */}
+      <section className="py-16 bg-black text-white overflow-hidden">
+        <div className="flex whitespace-nowrap animate-scroll">
+          <div className="flex items-center space-x-8 text-2xl md:text-3xl font-light">
+            <span>Effortless elegance</span>
+            <span>•</span>
+            <span>Effortless elegance</span>
+            <span>•</span>
+            <span>Effortless elegance</span>
+            <span>•</span>
+            <span>Effortless elegance</span>
+            <span>•</span>
+            <span>Effortless elegance</span>
+            <span>•</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Without High Temperatures Section */}
+      <section className="py-24 px-6 lg:px-12 bg-white" id="comfort" data-animate>
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-light mb-16 text-center">
+            Without uncomfortable restrictions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-16">
+            <div>
+              <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                The restrictive nature of tight-fitting or poorly designed clothing causes discomfort and affects your natural movement, making garments feel stiff and constraining.
+              </p>
+            </div>
+            <div>
+              <p className="text-lg leading-relaxed">
+                Inaara preserves the body's <strong>natural freedom</strong>, <strong>comfort</strong> and <strong>confidence</strong> by helping you wear pieces that move with you effortlessly.
+              </p>
+            </div>
+          </div>
+          
+          <div className={`transition-all duration-1000 ${visibleSections.comfort ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+            <h3 className="text-3xl font-light mb-8">Perfect fit</h3>
+            <p className="text-lg text-gray-600 leading-relaxed max-w-3xl">
+              By wearing it, you can feel the quality and know how each piece flatters your silhouette and where it should be adjusted. With Inaara you don't have to risk your comfort and confidence for style. Just select what feels right and ensure quality wearing and styling that enhances your natural beauty.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Attention Section */}
+      <section className="py-24 px-6 lg:px-12 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-light mb-8">
+                Attention and admiration because of your beautiful style
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                We understand the importance of well-styled, elegant clothing for a striking and memorable appearance that leaves a lasting impression. Unfortunately, styling at home is too time-consuming to do every day. That's why many people give up the opportunity to look the way they'd like to, 'save' their best outfits for a 'special day', or dress up just a few times a week.
+              </p>
+            </div>
+            <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1000&h=1000&fit=crop&q=80"
+                alt="Elegant style"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Care Section */}
+      <section className="py-24 px-6 lg:px-12 bg-white">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-light mb-8">
+            Care for what matters
+          </h2>
+          <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-3xl mx-auto">
+            When developing Inaara, we thought about how you can look the way you would like to look every day. Without compromise or limitation. The collection is based on extensive research into the challenges of daily styling. Comfort, quality, and elegance, saving time – these and more were the guiding principles that drove our designers to create a unique solution. And that is Inaara.
+          </p>
+          <p className="text-2xl md:text-3xl font-light">
+            With just quality pieces and your natural style, you can look beautiful and well-groomed every day.
+          </p>
+        </div>
+      </section>
+
+      {/* Using Instructions */}
+      <section className="py-24 px-6 lg:px-12 bg-gray-50" id="using" data-animate>
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-light mb-16 text-center">
+            Styling with Inaara<br />is easy
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+            {[
+              { num: "1", text: "Browse the collection" },
+              { num: "2", text: "Select your pieces" },
+              { num: "3", text: "Try the look" },
+              { num: "4", text: "Mix and match" },
+              { num: "5", text: "Ready!" }
+            ].map((step, idx) => (
+              <div 
+                key={idx}
+                className={`text-center transition-all duration-700 delay-${idx * 100} ${visibleSections.using ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+              >
+                <div className="text-5xl font-light text-gray-300 mb-4">{step.num}</div>
+                <p className="text-lg font-light">{step.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Setup Section with Details */}
+      <section className="py-24 px-6 lg:px-12 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-light mb-16 text-center">
+            Complete your look<br />with ease
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24">
+            <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1000&h=1250&fit=crop&q=80"
+                alt="Styling details"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex flex-col justify-center">
+              <p className="text-xl font-light leading-relaxed mb-8">
+                The versatile pieces work perfectly with any style preference and suit various occasions with different styling approaches.
+              </p>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                The adaptable designs fit any aesthetic effortlessly and complement wardrobes with any existing collection.
+              </p>
+            </div>
+          </div>
+
+          {/* Detail Sections */}
+          <div className="space-y-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div className="order-2 lg:order-1">
+                <h3 className="text-3xl font-light mb-6">On the mirror or closet</h3>
+                <p className="text-lg text-gray-600 leading-relaxed">
+                  The collection can be organized beautifully on any hanger, rail or any other storage solution. It can just as easily be arranged without leaving creases.
+                </p>
+              </div>
+              <div className="order-1 lg:order-2 aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1558769132-cb1aea27c7fd?w=1200&h=900&fit=crop&q=80"
+                  alt="Closet organization"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=1200&h=900&fit=crop&q=80"
+                  alt="Fabric detail"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <h3 className="text-3xl font-light mb-6">Premium materials</h3>
+                <p className="text-lg text-gray-600 leading-relaxed">
+                  Made of premium, sustainably-sourced fabrics, designed to feel luxurious and last for years with proper care.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div className="order-2 lg:order-1">
+                <h3 className="text-3xl font-light mb-6">Timeless design</h3>
+                <p className="text-lg text-gray-600 leading-relaxed">
+                  Designed to complement your style with perfect elegance, so that every piece elevates your natural beauty. The garments can also be styled casually or formally.
+                </p>
+              </div>
+              <div className="order-1 lg:order-2 aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=1200&h=900&fit=crop&q=80"
+                  alt="Timeless design"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* One Collection Many Options */}
+      <section className="py-24 px-6 lg:px-12 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-light mb-16 text-center">
+            One collection, many options
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div>
+              <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden mb-6">
+                <img 
+                  src="https://images.unsplash.com/photo-1467043237213-65f2da53396f?w=800&h=800&fit=crop&q=80"
+                  alt="Occasion wear"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-light mb-4">Perfect for any occasion</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Whether heading to a business meeting or casual weekend brunch, Inaara pieces adapt beautifully to create the perfect ensemble for every moment of your day.
+              </p>
+            </div>
+
+            <div>
+              <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden mb-6">
+                <img 
+                  src="https://images.unsplash.com/photo-1469460340997-2f854421e72f?w=800&h=800&fit=crop&q=80"
+                  alt="Travel ready"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-light mb-4">Save time and effort traveling</h3>
+              <p className="text-gray-600 leading-relaxed">
+                With Inaara you can pack light and look polished, or create multiple outfits for extended trips. You'll be ready for any adventure in minutes: style yourself beautifully and effortlessly.
+              </p>
+            </div>
+
+            <div>
+              <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden mb-6">
+                <img 
+                  src="https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=800&h=800&fit=crop&q=80"
+                  alt="Versatile styling"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="text-2xl font-light mb-4">Style with confidence</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Inaara is perfect for those who want to express their unique style effortlessly. With this versatile collection, you can create and refine looks easily, giving you the freedom to look impeccable every day.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Guarantee Banner */}
+      <section className="py-16 px-6 bg-black text-white text-center">
+        <p className="text-xl md:text-2xl font-light max-w-3xl mx-auto">
+          If you don't love Inaara, you can return it within 14 days after delivery.
+        </p>
+      </section>
+
+      {/* Reviews Section */}
+      <section className="py-24 px-6 lg:px-12 bg-white" id="reviews" data-animate>
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-light mb-16 text-center">Reviews</h2>
+          
+          <div className="relative">
+            <div className={`bg-gray-50 rounded-2xl p-8 md:p-12 transition-all duration-500 ${visibleSections.reviews ? 'opacity-100' : 'opacity-0'}`}>
+              <h3 className="text-2xl font-medium mb-4">{reviews[activeReview].name}</h3>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                {reviews[activeReview].text}
+              </p>
+            </div>
+
+            <button 
+              onClick={prevReview}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:bg-gray-50 transition"
+              aria-label="Previous review"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            
+            <button 
+              onClick={nextReview}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:bg-gray-50 transition"
+              aria-label="Next review"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="flex justify-center mt-8 space-x-2">
+            {reviews.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveReview(idx)}
+                className={`h-2 rounded-full transition-all ${
+                  idx === activeReview ? 'w-8 bg-black' : 'w-2 bg-gray-300'
+                }`}
+                aria-label={`Go to review ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/*

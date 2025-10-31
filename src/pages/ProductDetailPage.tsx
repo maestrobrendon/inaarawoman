@@ -1,27 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Star, Plus, Minus, ChevronLeft, Truck, Shield, RotateCcw, Package, X } from 'lucide-react';
+import { Heart, Star, Plus, Minus, ChevronLeft, Truck, Shield, RotateCcw, Package, Ruler } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { ProductWithDetails, Review } from '../types';
+import { Review, ColorOption, ProductMeasurements, ModelMeasurements, SizeChart } from '../types';
 import { formatPrice } from '../lib/utils';
-import { getProductImageUrl, getFullImageUrl } from '../utils/cloudinaryUpload';
+import { getProductImageUrl } from '../utils/cloudinaryUpload';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
 import Button from '../components/ui/Button';
+import ImageSlider from '../components/product/ImageSlider';
+import { ImageModal } from '../components/product/ImageSlider';
 
 export default function ProductDetailPage() {
   const { id: productId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<ProductWithDetails | null>(null);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [product, setProduct] = useState<any>(null); // Using 'any' to avoid type conflicts with database response
   const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(null);
+  const [selectedColor, setSelectedColor] = useState<ColorOption | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [showImageModal, setShowImageModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'description' | 'details' | 'reviews'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'measurements' | 'reviews'>('description');
 
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -68,8 +69,9 @@ export default function ProductDetailPage() {
         reviewCount: reviews?.length || 0
       });
 
-      if ((productData as any).colors?.length > 0) {
-        setSelectedColor((productData as any).colors[0]);
+      // Set default color if available
+      if (productData.color_options && productData.color_options.length > 0) {
+        setSelectedColor(productData.color_options[0]);
       }
     } catch (error) {
       console.error('Error loading product:', error);
@@ -86,7 +88,7 @@ export default function ProductDetailPage() {
       return;
     }
 
-    if (product.colors && product.colors.length > 0 && !selectedColor) {
+    if (product.color_options && product.color_options.length > 0 && !selectedColor) {
       showToast('Please select a color', 'error');
       return;
     }
@@ -122,10 +124,10 @@ export default function ProductDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="space-y-4">
-              <div className="aspect-[4/5] bg-neutral-200 rounded-lg animate-pulse" />
-              <div className="grid grid-cols-4 gap-4">
+              <div className="aspect-[3/4] bg-neutral-200 rounded-lg animate-pulse" />
+              <div className="flex gap-2">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="aspect-square bg-neutral-200 rounded-lg animate-pulse" />
+                  <div key={i} className="w-20 h-20 bg-neutral-200 rounded-lg animate-pulse" />
                 ))}
               </div>
             </div>
@@ -153,204 +155,165 @@ export default function ProductDetailPage() {
     );
   }
 
-  const displayImages = product.images && product.images.length > 0 ? product.images : (product.main_image ? [product.main_image] : []);
+  const displayImages = product.images && product.images.length > 0 
+    ? product.images.map((img: any) => {
+        // Handle both string URLs and ProductImage objects
+        if (typeof img === 'string') {
+          return getProductImageUrl(img);
+        } else if (img && typeof img === 'object' && 'image_url' in img) {
+          return getProductImageUrl(img.image_url);
+        }
+        return getProductImageUrl(img);
+      })
+    : (product.main_image ? [getProductImageUrl(product.main_image)] : []);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-white">
+      {/* Back Button */}
       <div className="bg-white border-b border-neutral-200 sticky top-[60px] z-30 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             to="/shop"
-            className="inline-flex items-center text-neutral-600 hover:text-[#D4AF37] transition-colors group"
+            className="inline-flex items-center text-neutral-600 hover:text-neutral-900 transition-colors group"
           >
             <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="ml-1 font-medium">Back to Shop</span>
+            <span className="ml-1 font-medium text-sm">Back to Shop</span>
           </Link>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+          {/* Left: Image Slider */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
+            className="sticky top-32"
           >
-            <div className="sticky top-32">
-              <motion.div
-                className="relative aspect-[4/5] bg-white rounded-lg overflow-hidden shadow-lg mb-6 cursor-zoom-in"
-                onClick={() => setShowImageModal(true)}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-              >
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={selectedImage}
-                    src={getProductImageUrl(displayImages[selectedImage] || product.main_image || '')}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </AnimatePresence>
-
-                {product.is_new && (
-                  <div className="absolute top-4 left-4 bg-[#D4AF37] text-white px-3 py-1 rounded-full text-xs font-semibold">
-                    NEW
-                  </div>
-                )}
-
-                {product.sale_price && (
-                  <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                    SALE
-                  </div>
-                )}
-              </motion.div>
-
-              {displayImages.length > 1 && (
-                <div className="grid grid-cols-4 gap-4">
-                  {displayImages.map((imageUrl, index) => (
-                    <motion.button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                        selectedImage === index
-                          ? 'border-[#D4AF37] shadow-md'
-                          : 'border-neutral-200 hover:border-neutral-400'
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <img
-                        src={getProductImageUrl(imageUrl)}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ImageSlider
+              images={displayImages}
+              productName={product.name}
+              onImageClick={() => setShowImageModal(true)}
+            />
           </motion.div>
 
+          {/* Right: Product Details */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-8"
+            className="space-y-6"
           >
+            {/* Product Name */}
             <div>
-              {product.collection && (
-                <Link
-                  to={`/collection/${product.collection.slug}`}
-                  className="text-sm text-[#D4AF37] hover:underline mb-2 inline-block"
-                >
-                  {product.collection.name} Collection
-                </Link>
-              )}
-              <h1 className="font-serif text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
+              <h1 className="font-serif text-2xl md:text-3xl font-light text-neutral-900 tracking-wide uppercase mb-2">
                 {product.name}
               </h1>
 
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  {product.reviewCount > 0 ? (
-                    <>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={18}
-                            className={
-                              i < Math.round(product.averageRating)
-                                ? 'fill-[#D4AF37] text-[#D4AF37]'
-                                : 'text-neutral-300'
-                            }
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-neutral-600">
-                        {product.averageRating.toFixed(1)} ({product.reviewCount} reviews)
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-neutral-500">No reviews yet</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-baseline gap-4 mb-6">
+              {/* Price */}
+              <div className="flex items-baseline gap-3 mb-4">
                 {product.sale_price ? (
                   <>
-                    <p className="text-3xl font-bold text-red-600">
+                    <p className="text-2xl font-medium text-red-600">
                       {formatPrice(product.sale_price)}
                     </p>
-                    <p className="text-2xl text-neutral-400 line-through">
+                    <p className="text-xl text-neutral-400 line-through">
                       {formatPrice(product.price)}
                     </p>
                   </>
                 ) : (
-                  <p className="text-3xl font-bold text-neutral-900">
+                  <p className="text-2xl font-medium text-neutral-900">
                     {formatPrice(product.price)}
                   </p>
                 )}
               </div>
+
+              {/* Rating */}
+              <div className="flex items-center gap-3 pb-4 border-b border-neutral-200">
+                {product.reviewCount > 0 ? (
+                  <>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={16}
+                          className={
+                            i < Math.round(product.averageRating)
+                              ? 'fill-neutral-900 text-neutral-900'
+                              : 'text-neutral-300'
+                          }
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-neutral-600">
+                      {product.averageRating.toFixed(1)} ({product.reviewCount} reviews)
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs text-neutral-500">No reviews yet</span>
+                )}
+              </div>
             </div>
 
-            {product.colors && product.colors.length > 0 && (
+            {/* Short Description */}
+            {product.description && (
               <div className="pb-6 border-b border-neutral-200">
-                <div className="flex items-center justify-between mb-4">
-                  <label className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">
-                    Color: <span className="font-normal">{selectedColor?.name}</span>
+                <p className="text-sm text-neutral-700 leading-relaxed">
+                  {product.description}
+                </p>
+              </div>
+            )}
+
+            {/* Color Selector */}
+            {product.color_options && product.color_options.length > 0 && (
+              <div className="pb-6 border-b border-neutral-200">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-neutral-900 uppercase tracking-wider">
+                    Color
                   </label>
+                  {selectedColor && (
+                    <span className="text-xs text-neutral-600">{selectedColor.name}</span>
+                  )}
                 </div>
-                <div className="flex gap-3">
-                  {product.colors.map((color: { name: string; hex: string }) => (
+                <div className="flex gap-2">
+                  {product.color_options.map((color: ColorOption) => (
                     <motion.button
                       key={color.name}
                       onClick={() => setSelectedColor(color)}
-                      className={`w-12 h-12 rounded-full border-2 transition-all relative ${
+                      className={`w-10 h-10 rounded-sm border-2 transition-all ${
                         selectedColor?.name === color.name
-                          ? 'border-[#D4AF37] shadow-lg'
+                          ? 'border-neutral-900 scale-110'
                           : 'border-neutral-300 hover:border-neutral-500'
                       }`}
                       style={{ backgroundColor: color.hex }}
                       title={color.name}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      {selectedColor?.name === color.name && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute inset-0 rounded-full border-2 border-[#D4AF37]"
-                        />
-                      )}
-                    </motion.button>
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    />
                   ))}
                 </div>
               </div>
             )}
 
+            {/* Size Selector */}
             {product.sizes && product.sizes.length > 0 && (
               <div className="pb-6 border-b border-neutral-200">
-                <label className="text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-4 block">
-                  Size: <span className="font-normal">{selectedSize || 'Select a size'}</span>
+                <label className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3 block">
+                  Size: {selectedSize && <span className="font-normal">{selectedSize}</span>}
                 </label>
-                <div className="grid grid-cols-5 gap-3">
+                <div className="grid grid-cols-5 gap-2">
                   {product.sizes.map((size: string) => (
                     <motion.button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`py-3 px-4 border-2 rounded-lg text-sm font-semibold transition-all ${
+                      className={`py-2 text-center border transition-all text-xs ${
                         selectedSize === size
-                          ? 'border-[#D4AF37] bg-[#D4AF37] text-white shadow-md'
-                          : 'border-neutral-300 hover:border-neutral-900 bg-white'
+                          ? 'border-neutral-900 bg-neutral-900 text-white'
+                          : 'border-neutral-300 hover:border-neutral-900'
                       }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                     >
                       {size}
                     </motion.button>
@@ -359,114 +322,114 @@ export default function ProductDetailPage() {
               </div>
             )}
 
+            {/* Quantity */}
             <div className="pb-6 border-b border-neutral-200">
-              <label className="text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-4 block">
+              <label className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3 block">
                 Quantity
               </label>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center border-2 border-neutral-300 rounded-lg overflow-hidden">
-                  <motion.button
+              <div className="flex items-center gap-4">
+                <div className="flex items-center border border-neutral-300">
+                  <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-3 hover:bg-neutral-100 transition-colors"
-                    whileTap={{ scale: 0.9 }}
+                    className="px-4 py-2 hover:bg-neutral-100 transition-colors"
                   >
-                    <Minus size={18} />
-                  </motion.button>
-                  <span className="px-8 text-lg font-semibold">{quantity}</span>
-                  <motion.button
+                    <Minus size={16} />
+                  </button>
+                  <span className="px-6 text-sm font-medium">{quantity}</span>
+                  <button
                     onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
-                    className="p-3 hover:bg-neutral-100 transition-colors"
+                    className="px-4 py-2 hover:bg-neutral-100 transition-colors"
                     disabled={quantity >= product.stock_quantity}
-                    whileTap={{ scale: 0.9 }}
                   >
-                    <Plus size={18} />
-                  </motion.button>
+                    <Plus size={16} />
+                  </button>
                 </div>
-                <span className={`text-sm font-medium ${product.stock_quantity < 10 ? 'text-red-600' : 'text-green-600'}`}>
-                  {product.stock_quantity} {product.stock_quantity === 1 ? 'item' : 'items'} in stock
+                <span className={`text-xs ${product.stock_quantity < 10 ? 'text-red-600' : 'text-green-600'}`}>
+                  {product.stock_quantity} in stock
                 </span>
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            {/* Add to Cart & Wishlist */}
+            <div className="flex gap-3">
+              <div className="flex-1">
                 <Button
                   fullWidth
                   onClick={handleAddToCart}
                   disabled={product.stock_quantity === 0}
-                  className="h-14 text-lg font-semibold"
+                  className="h-12 text-sm font-semibold uppercase tracking-wider"
                 >
                   {product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
-              </motion.div>
-              <motion.button
+              </div>
+              <button
                 onClick={handleToggleWishlist}
-                className="p-4 border-2 border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="px-4 border border-neutral-300 hover:bg-neutral-50 transition-colors"
               >
                 <Heart
-                  size={24}
+                  size={20}
                   className={
                     isInWishlist(product.id)
                       ? 'fill-red-500 text-red-500'
                       : 'text-neutral-600'
                   }
                 />
-              </motion.button>
+              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-6">
-              <div className="flex items-start gap-3">
-                <Truck className="text-[#D4AF37] mt-1" size={24} />
+            {/* Benefits */}
+            <div className="grid grid-cols-2 gap-4 pt-6 border-t border-neutral-200">
+              <div className="flex items-start gap-2">
+                <Truck className="text-neutral-900 mt-0.5" size={18} />
                 <div>
-                  <p className="font-semibold text-sm">Free Shipping</p>
-                  <p className="text-xs text-neutral-600">On orders over $100</p>
+                  <p className="text-xs font-semibold">Free Shipping</p>
+                  <p className="text-[10px] text-neutral-600">On orders over ₦50,000</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <RotateCcw className="text-[#D4AF37] mt-1" size={24} />
+              <div className="flex items-start gap-2">
+                <RotateCcw className="text-neutral-900 mt-0.5" size={18} />
                 <div>
-                  <p className="font-semibold text-sm">Easy Returns</p>
-                  <p className="text-xs text-neutral-600">30-day return policy</p>
+                  <p className="text-xs font-semibold">Easy Returns</p>
+                  <p className="text-[10px] text-neutral-600">30-day return policy</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <Shield className="text-[#D4AF37] mt-1" size={24} />
+              <div className="flex items-start gap-2">
+                <Shield className="text-neutral-900 mt-0.5" size={18} />
                 <div>
-                  <p className="font-semibold text-sm">Secure Payment</p>
-                  <p className="text-xs text-neutral-600">100% secure checkout</p>
+                  <p className="text-xs font-semibold">Secure Payment</p>
+                  <p className="text-[10px] text-neutral-600">100% secure checkout</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <Package className="text-[#D4AF37] mt-1" size={24} />
+              <div className="flex items-start gap-2">
+                <Package className="text-neutral-900 mt-0.5" size={18} />
                 <div>
-                  <p className="font-semibold text-sm">Premium Packaging</p>
-                  <p className="text-xs text-neutral-600">Luxury gift wrapping</p>
+                  <p className="text-xs font-semibold">Premium Packaging</p>
+                  <p className="text-[10px] text-neutral-600">Luxury gift wrapping</p>
                 </div>
               </div>
             </div>
           </motion.div>
         </div>
 
-        <div className="mt-20 bg-white rounded-lg shadow-sm p-8">
+        {/* Tabs Section */}
+        <div className="mt-16">
           <div className="border-b border-neutral-200 mb-8">
             <div className="flex gap-8">
-              {(['description', 'details', 'reviews'] as const).map((tab) => (
+              {(['description', 'measurements', 'reviews'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`pb-4 text-sm font-semibold uppercase tracking-wide transition-colors relative ${
+                  className={`pb-4 text-xs font-semibold uppercase tracking-wider transition-colors relative ${
                     activeTab === tab
-                      ? 'text-[#D4AF37]'
-                      : 'text-neutral-600 hover:text-neutral-900'
+                      ? 'text-neutral-900'
+                      : 'text-neutral-500 hover:text-neutral-900'
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'measurements' ? 'Details & Care' : tab}
                   {activeTab === tab && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900"
                     />
                   )}
                 </button>
@@ -475,54 +438,136 @@ export default function ProductDetailPage() {
           </div>
 
           <AnimatePresence mode="wait">
+            {/* Description Tab */}
             {activeTab === 'description' && (
               <motion.div
                 key="description"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="prose max-w-none"
+                className="max-w-3xl"
               >
-                <p className="text-neutral-700 leading-relaxed text-lg">
-                  {product.description || 'No description available.'}
+                <p className="text-sm text-neutral-700 leading-relaxed mb-6">
+                  {product.long_description || product.description || 'No description available.'}
                 </p>
-                {product.long_description && (
-                  <p className="text-neutral-700 leading-relaxed mt-4">
-                    {product.long_description}
-                  </p>
+
+                {product.fit_description && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-neutral-900 mb-2 uppercase tracking-wide">Fit</h3>
+                    <p className="text-sm text-neutral-700">{product.fit_description}</p>
+                  </div>
+                )}
+
+                {product.sizing_notes && (
+                  <div className="bg-neutral-50 border border-neutral-200 p-4 rounded">
+                    <p className="text-xs text-neutral-700">{product.sizing_notes}</p>
+                  </div>
                 )}
               </motion.div>
             )}
 
-            {activeTab === 'details' && (
+            {/* Measurements Tab */}
+            {activeTab === 'measurements' && (
               <motion.div
-                key="details"
+                key="measurements"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="space-y-6"
+                className="max-w-4xl space-y-8"
               >
-                {product.materials && (
+                {/* Product Measurements */}
+                {product.measurements && Object.keys(product.measurements).length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">Materials</h3>
-                    <p className="text-neutral-700">{product.materials}</p>
+                    <h3 className="text-sm font-semibold text-neutral-900 mb-4 uppercase tracking-wide flex items-center gap-2">
+                      <Ruler size={16} />
+                      Product Measurements
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {Object.entries(product.measurements as ProductMeasurements).map(([key, value]) => (
+                        value && (
+                          <div key={key} className="border border-neutral-200 p-3 text-center">
+                            <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">{key}</p>
+                            <p className="text-sm font-medium text-neutral-900">{value}</p>
+                          </div>
+                        )
+                      ))}
+                    </div>
                   </div>
                 )}
-                {product.care_instructions && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">Care Instructions</h3>
-                    <p className="text-neutral-700">{product.care_instructions}</p>
+
+                {/* Model Info */}
+                {product.model_measurements && Object.keys(product.model_measurements).length > 0 && (
+                  <div className="bg-neutral-50 border border-neutral-200 p-6 rounded">
+                    <h3 className="text-sm font-semibold text-neutral-900 mb-4 uppercase tracking-wide">Model Info</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {Object.entries(product.model_measurements as ModelMeasurements).map(([key, value]) => (
+                        value && (
+                          <div key={key}>
+                            <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">
+                              {key.replace('_', ' ')}
+                            </p>
+                            <p className="text-sm font-medium text-neutral-900">{value}</p>
+                          </div>
+                        )
+                      ))}
+                    </div>
                   </div>
                 )}
-                {product.sku && (
+
+                {/* Size Chart */}
+                {product.size_chart && Object.keys(product.size_chart).length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">SKU</h3>
-                    <p className="text-neutral-700 font-mono">{product.sku}</p>
+                    <h3 className="text-sm font-semibold text-neutral-900 mb-4 uppercase tracking-wide">Size Chart</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-neutral-100">
+                            <th className="border border-neutral-300 px-3 py-2 text-left font-semibold">Size</th>
+                            {Object.values(product.size_chart as SizeChart)[0] && 
+                              Object.keys(Object.values(product.size_chart as SizeChart)[0]).map(measurement => (
+                                <th key={measurement} className="border border-neutral-300 px-3 py-2 text-left font-semibold capitalize">
+                                  {measurement}
+                                </th>
+                              ))
+                            }
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(product.size_chart as SizeChart).map(([size, measurements]) => (
+                            <tr key={size} className="hover:bg-neutral-50">
+                              <td className="border border-neutral-300 px-3 py-2 font-medium">{size}</td>
+                              {Object.values(measurements).map((value, idx) => (
+                                <td key={idx} className="border border-neutral-300 px-3 py-2">
+                                  {value}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
+
+                {/* Material & Care */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {product.material_composition && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-neutral-900 mb-3 uppercase tracking-wide">Material</h3>
+                      <p className="text-sm text-neutral-700 whitespace-pre-line">{product.material_composition}</p>
+                    </div>
+                  )}
+                  {product.care_details && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-neutral-900 mb-3 uppercase tracking-wide">Care Instructions</h3>
+                      <p className="text-sm text-neutral-700 whitespace-pre-line">{product.care_details}</p>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
 
+            {/* Reviews Tab */}
             {activeTab === 'reviews' && (
               <motion.div
                 key="reviews"
@@ -531,41 +576,43 @@ export default function ProductDetailPage() {
                 exit={{ opacity: 0, y: -10 }}
               >
                 {product.reviews.length > 0 ? (
-                  <div className="space-y-8">
+                  <div className="space-y-6 max-w-3xl">
                     {product.reviews.map((review: Review) => (
                       <div key={review.id} className="border-b border-neutral-200 pb-6 last:border-0">
-                        <div className="flex items-center gap-4 mb-3">
+                        <div className="flex items-center gap-3 mb-2">
                           <div className="flex">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                size={16}
+                                size={14}
                                 className={
                                   i < review.rating
-                                    ? 'fill-[#D4AF37] text-[#D4AF37]'
+                                    ? 'fill-neutral-900 text-neutral-900'
                                     : 'text-neutral-300'
                                 }
                               />
                             ))}
                           </div>
-                          <span className="font-semibold text-neutral-900">{review.customer_name}</span>
+                          <span className="text-xs font-semibold text-neutral-900">{review.customer_name}</span>
                           {review.verified_purchase && (
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-                              Verified Purchase
+                            <span className="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded font-medium">
+                              Verified
                             </span>
                           )}
                         </div>
                         {review.title && (
-                          <h4 className="font-semibold text-neutral-900 mb-2">{review.title}</h4>
+                          <h4 className="text-sm font-semibold text-neutral-900 mb-1">{review.title}</h4>
                         )}
                         {review.comment && (
-                          <p className="text-neutral-700 leading-relaxed">{review.comment}</p>
+                          <p className="text-sm text-neutral-700 leading-relaxed">{review.comment}</p>
                         )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-neutral-600 text-center py-8">No reviews yet. Be the first to review this product!</p>
+                  <p className="text-sm text-neutral-600 text-center py-12">
+                    No reviews yet. Be the first to review this product!
+                  </p>
                 )}
               </motion.div>
             )}
@@ -573,30 +620,15 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
+      {/* Image Modal */}
       <AnimatePresence>
         {showImageModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowImageModal(false)}
-          >
-            <button
-              onClick={() => setShowImageModal(false)}
-              className="absolute top-4 right-4 text-white hover:text-neutral-300 transition-colors"
-            >
-              <X size={32} />
-            </button>
-            <motion.img
-              src={getFullImageUrl(displayImages[selectedImage] || product.main_image || '')}
-              alt={product.name}
-              className="max-w-full max-h-full object-contain"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            />
-          </motion.div>
+          <ImageModal
+            images={displayImages}
+            currentIndex={0}
+            onClose={() => setShowImageModal(false)}
+            productName={product.name}
+          />
         )}
       </AnimatePresence>
     </div>
