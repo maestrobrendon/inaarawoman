@@ -308,12 +308,12 @@ export default function ProductDetailPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left: Image Slider */}
+          {/* Left: Image Slider - FIXED: Only sticky on desktop */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="sticky top-32"
+            className="lg:sticky lg:top-32"
           >
             <ImageSlider
               images={displayImages}
