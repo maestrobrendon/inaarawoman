@@ -35,6 +35,14 @@ import CollectionsList from './pages/admin/CollectionsList';
 import CollectionForm from './pages/admin/CollectionForm';
 import Settings from './pages/admin/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
+
+// Policy Pages
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import ShippingReturnsPage from './pages/ShippingReturnsPage';
+import ShippingPolicyPage from './pages/ShippingPolicyPage';
+import TermsConditionsPage from './pages/TermsConditionsPage';
+import CookiePolicyPage from './pages/CookiePolicyPage';
+
 import { useEffect } from 'react';
 
 function PublicLayout() {
@@ -62,6 +70,14 @@ function PublicLayout() {
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/lookbook" element={<LookbookPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
+            
+            {/* Policy Pages */}
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/shipping-returns" element={<ShippingReturnsPage />} />
+            <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
+            <Route path="/terms-conditions" element={<TermsConditionsPage />} />
+            <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+            
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </PageTransition>

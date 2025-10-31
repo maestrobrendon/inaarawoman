@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, Variants } from 'framer-motion';
 import { Instagram, Facebook, Twitter, ShieldCheck } from 'lucide-react';
 
 export default function EnhancedFooter() {
@@ -8,7 +8,7 @@ export default function EnhancedFooter() {
   const { scrollYProgress } = useScroll();
   const footerY = useTransform(scrollYProgress, [0.85, 1], [100, 0]);
 
-  const linkVariants = {
+  const linkVariants: Variants = {
     rest: { x: 0 },
     hover: {
       x: 5,
@@ -16,7 +16,7 @@ export default function EnhancedFooter() {
     }
   };
 
-  const underlineVariants = {
+  const underlineVariants: Variants = {
     rest: { width: 0 },
     hover: {
       width: "100%",
@@ -31,6 +31,7 @@ export default function EnhancedFooter() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Brand Section */}
           <div>
             <h3 className="text-[18px] font-bold mb-4 text-neutral-900 tracking-wider uppercase">
               INAARA WOMAN
@@ -40,6 +41,7 @@ export default function EnhancedFooter() {
             </p>
           </div>
 
+          {/* Shop Section */}
           <div>
             <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">Shop</h4>
             <ul className="space-y-2">
@@ -71,6 +73,7 @@ export default function EnhancedFooter() {
             </ul>
           </div>
 
+          {/* About Section */}
           <div>
             <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">About</h4>
             <ul className="space-y-2">
@@ -101,17 +104,15 @@ export default function EnhancedFooter() {
             </ul>
           </div>
 
+          {/* Connect Section */}
           <div>
-            <h4 className="font-medium mb-4 text-neutral-900">Connect</h4>
+            <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">Connect</h4>
             <div className="flex gap-4 mb-4">
               <motion.a
                 href="https://www.instagram.com/inaarawoman_/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-600 hover:text-transparent bg-clip-text transition-all duration-300"
-                style={{
-                  backgroundImage: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)'
-                }}
+                className="text-neutral-600 hover:text-pink-600 transition-all duration-300"
                 aria-label="Instagram"
                 whileHover={{
                   scale: 1.2,
@@ -120,13 +121,7 @@ export default function EnhancedFooter() {
                 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <motion.div
-                  whileHover={{
-                    filter: 'drop-shadow(0 4px 8px rgba(188, 24, 136, 0.4))'
-                  }}
-                >
-                  <Instagram size={20} />
-                </motion.div>
+                <Instagram size={20} />
               </motion.a>
 
               <motion.a
@@ -142,13 +137,7 @@ export default function EnhancedFooter() {
                 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <motion.div
-                  whileHover={{
-                    filter: 'drop-shadow(0 4px 8px rgba(24, 119, 242, 0.4))'
-                  }}
-                >
-                  <Facebook size={20} />
-                </motion.div>
+                <Facebook size={20} />
               </motion.a>
 
               <motion.a
@@ -164,25 +153,23 @@ export default function EnhancedFooter() {
                 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <motion.div
-                  whileHover={{
-                    filter: 'drop-shadow(0 4px 8px rgba(29, 161, 242, 0.4))'
-                  }}
-                >
-                  <Twitter size={20} />
-                </motion.div>
+                <Twitter size={20} />
               </motion.a>
             </div>
-            <a href="mailto:info@inaarawoman.com" className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors">
+            <a 
+              href="mailto:info@inaarawoman.com" 
+              className="text-[13px] md:text-[14px] text-neutral-600 hover:text-[#D4AF37] transition-colors"
+            >
               info@inaarawoman.com
             </a>
           </div>
         </div>
 
+        {/* Bottom Section with Policy Links */}
         <div className="mt-12 pt-8 border-t border-neutral-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4">
-              <p className="text-sm text-neutral-600">
+              <p className="text-[13px] text-neutral-600">
                 © {year} Inaara Woman. All rights reserved.
               </p>
               <motion.button
@@ -195,15 +182,19 @@ export default function EnhancedFooter() {
                 Admin Login
               </motion.button>
             </div>
-            <div className="flex gap-6">
+            
+            {/* Policy Links */}
+            <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
               {[
-                { name: 'Privacy Policy', path: '/' },
-                { name: 'Terms of Service', path: '/' },
-                { name: 'Shipping & Returns', path: '/' }
+                { name: 'Privacy Policy', path: '/privacy-policy' },
+                { name: 'Terms & Conditions', path: '/terms-conditions' },
+                { name: 'Shipping Policy', path: '/shipping-policy' },
+                { name: 'Shipping & Returns', path: '/shipping-returns' },
+                { name: 'Cookie Policy', path: '/cookie-policy' }
               ].map((item) => (
                 <Link key={item.name} to={item.path}>
                   <motion.div
-                    className="text-sm text-neutral-600 hover:text-[#D4AF37] transition-colors relative"
+                    className="text-[13px] text-neutral-600 hover:text-[#D4AF37] transition-colors relative"
                     initial="rest"
                     whileHover="hover"
                   >
