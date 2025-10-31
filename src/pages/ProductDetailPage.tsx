@@ -3,12 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Star, Plus, Minus, ChevronLeft, Truck, Shield, RotateCcw, Package, Ruler } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Review, ColorOption, ProductMeasurements, ModelMeasurements, SizeChart } from '../types';
-import { formatPrice } from '../lib/utils';
+import { Review, ColorOption, ProductMeasurements, ModelMeasurements, SizeChart, Product } from '../types';
 import { getProductImageUrl } from '../utils/cloudinaryUpload';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 import Button from '../components/ui/Button';
 import ImageSlider from '../components/product/ImageSlider';
 import { ImageModal } from '../components/product/ImageSlider';
@@ -16,23 +16,32 @@ import { ImageModal } from '../components/product/ImageSlider';
 export default function ProductDetailPage() {
   const { id: productId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<any>(null); // Using 'any' to avoid type conflicts with database response
+  const [product, setProduct] = useState<any>(null);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState<ColorOption | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [showImageModal, setShowImageModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'description' | 'measurements' | 'reviews'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'measurements' | 'sizeguide' | 'reviews'>('description');
+  const [measurementUnit, setMeasurementUnit] = useState<'cm' | 'in'>('cm');
 
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { showToast } = useToast();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     if (productId) {
       loadProduct();
     }
   }, [productId]);
+
+  useEffect(() => {
+    if (product) {
+      loadRecommendedProducts();
+    }
+  }, [product]);
 
   const loadProduct = async () => {
     if (!productId) return;
@@ -78,6 +87,122 @@ export default function ProductDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadRecommendedProducts = async () => {
+    if (!product) return;
+
+    try {
+      // Recommendation Algorithm:
+      // Priority 1: Same category (60% weight)
+      // Priority 2: Same collection (30% weight)
+      // Priority 3: Similar price range ±30% (10% weight)
+      // Fallback: Featured/Bestsellers or Random
+
+      let recommendedItems: Product[] = [];
+
+      // Try same category first
+      if (product.category) {
+        const { data: sameCategoryProducts } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .eq('category', product.category)
+          .neq('id', product.id)
+          .limit(8);
+
+        if (sameCategoryProducts && sameCategoryProducts.length > 0) {
+          recommendedItems = [...sameCategoryProducts];
+        }
+      }
+
+      // If we don't have enough, add from same collection
+      if (recommendedItems.length < 4 && product.collection_id) {
+        const { data: sameCollectionProducts } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .eq('collection_id', product.collection_id)
+          .neq('id', product.id)
+          .limit(8);
+
+        if (sameCollectionProducts) {
+          // Merge and remove duplicates
+          const existingIds = new Set(recommendedItems.map(p => p.id));
+          const newProducts = sameCollectionProducts.filter(p => !existingIds.has(p.id));
+          recommendedItems = [...recommendedItems, ...newProducts];
+        }
+      }
+
+      // If still not enough, add similar price range
+      if (recommendedItems.length < 4) {
+        const priceMin = product.price * 0.7;
+        const priceMax = product.price * 1.3;
+
+        const { data: similarPriceProducts } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .neq('id', product.id)
+          .gte('price', priceMin)
+          .lte('price', priceMax)
+          .limit(8);
+
+        if (similarPriceProducts) {
+          const existingIds = new Set(recommendedItems.map(p => p.id));
+          const newProducts = similarPriceProducts.filter(p => !existingIds.has(p.id));
+          recommendedItems = [...recommendedItems, ...newProducts];
+        }
+      }
+
+      // If still not enough, add featured/bestsellers
+      if (recommendedItems.length < 4) {
+        const { data: featuredProducts } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .neq('id', product.id)
+          .or('is_featured.eq.true,is_bestseller.eq.true')
+          .limit(8);
+
+        if (featuredProducts) {
+          const existingIds = new Set(recommendedItems.map(p => p.id));
+          const newProducts = featuredProducts.filter(p => !existingIds.has(p.id));
+          recommendedItems = [...recommendedItems, ...newProducts];
+        }
+      }
+
+      // Last resort: get any random products
+      if (recommendedItems.length < 4) {
+        const { data: anyProducts } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .neq('id', product.id)
+          .limit(8);
+
+        if (anyProducts) {
+          const existingIds = new Set(recommendedItems.map(p => p.id));
+          const newProducts = anyProducts.filter(p => !existingIds.has(p.id));
+          recommendedItems = [...recommendedItems, ...newProducts];
+        }
+      }
+
+      // Take only 4 products and shuffle for variety
+      const shuffled = recommendedItems.sort(() => Math.random() - 0.5);
+      setRecommendedProducts(shuffled.slice(0, 4));
+    } catch (error) {
+      console.error('Error loading recommended products:', error);
+    }
+  };
+
+  const getProductImage = (product: Product, index: number = 0) => {
+    if (product.images && product.images.length > index) {
+      return getProductImageUrl(product.images[index]);
+    } else if (product.main_image) {
+      return getProductImageUrl(product.main_image);
+    }
+    return null;
   };
 
   const handleAddToCart = () => {
@@ -157,7 +282,6 @@ export default function ProductDetailPage() {
 
   const displayImages = product.images && product.images.length > 0 
     ? product.images.map((img: any) => {
-        // Handle both string URLs and ProductImage objects
         if (typeof img === 'string') {
           return getProductImageUrl(img);
         } else if (img && typeof img === 'object' && 'image_url' in img) {
@@ -211,7 +335,7 @@ export default function ProductDetailPage() {
                 {product.name}
               </h1>
 
-              {/* Price */}
+              {/* Price in NGN */}
               <div className="flex items-baseline gap-3 mb-4">
                 {product.sale_price ? (
                   <>
@@ -415,7 +539,7 @@ export default function ProductDetailPage() {
         <div className="mt-16">
           <div className="border-b border-neutral-200 mb-8">
             <div className="flex gap-8">
-              {(['description', 'measurements', 'reviews'] as const).map((tab) => (
+              {(['description', 'measurements', 'sizeguide', 'reviews'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -425,7 +549,7 @@ export default function ProductDetailPage() {
                       : 'text-neutral-500 hover:text-neutral-900'
                   }`}
                 >
-                  {tab === 'measurements' ? 'Details & Care' : tab}
+                  {tab === 'measurements' ? 'Details & Care' : tab === 'sizeguide' ? 'Size Guide' : tab}
                   {activeTab === tab && (
                     <motion.div
                       layoutId="activeTab"
@@ -567,6 +691,198 @@ export default function ProductDetailPage() {
               </motion.div>
             )}
 
+            {/* SIZE GUIDE TAB */}
+            {activeTab === 'sizeguide' && (
+              <motion.div
+                key="sizeguide"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-5xl"
+              >
+                {/* Header with Unit Toggle */}
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-lg font-serif font-light text-neutral-900 uppercase tracking-wide">
+                    Size Guide
+                  </h3>
+                  <div className="flex items-center gap-2 bg-neutral-100 rounded-sm p-1">
+                    <button
+                      onClick={() => setMeasurementUnit('cm')}
+                      className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-sm ${
+                        measurementUnit === 'cm'
+                          ? 'bg-neutral-900 text-white'
+                          : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      CM
+                    </button>
+                    <button
+                      onClick={() => setMeasurementUnit('in')}
+                      className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-sm ${
+                        measurementUnit === 'in'
+                          ? 'bg-neutral-900 text-white'
+                          : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      IN
+                    </button>
+                  </div>
+                </div>
+
+                {/* Body Measurements Table */}
+                <div className="mb-10">
+                  <h4 className="text-sm font-semibold text-neutral-900 mb-4 uppercase tracking-wide">
+                    Body Measurements
+                  </h4>
+                  <div className="overflow-x-auto bg-white border border-neutral-200 rounded-sm">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-neutral-200">
+                          <th className="text-left px-6 py-3 text-neutral-600 font-semibold uppercase tracking-wider">
+                            AU / UK
+                          </th>
+                          {['4', '6', '8', '10', '12', '14'].map((size) => (
+                            <th key={size} className="text-center px-4 py-3 text-neutral-900 font-semibold">
+                              {size}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-neutral-100 hover:bg-neutral-50">
+                          <td className="px-6 py-3 font-medium text-neutral-900 uppercase tracking-wide">Bust</td>
+                          {measurementUnit === 'cm' ? (
+                            <>
+                              <td className="text-center px-4 py-3 text-neutral-700">75.5-81</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">81-82</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">82-90</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">90-92</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">96-97</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">97-101</td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="text-center px-4 py-3 text-neutral-700">29.7-31.9</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">31.9-32.3</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">32.3-35.4</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">35.4-36.2</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">37.8-38.2</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">38.2-39.8</td>
+                            </>
+                          )}
+                        </tr>
+                        <tr className="border-b border-neutral-100 hover:bg-neutral-50">
+                          <td className="px-6 py-3 font-medium text-neutral-900 uppercase tracking-wide">Waist</td>
+                          {measurementUnit === 'cm' ? (
+                            <>
+                              <td className="text-center px-4 py-3 text-neutral-700">59-62.5</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">62-64</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">66-70</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">70-76</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">76-79</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">82-87</td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="text-center px-4 py-3 text-neutral-700">23.2-24.6</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">24.4-25.2</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">26.0-27.6</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">27.6-29.9</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">29.9-31.1</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">32.3-34.3</td>
+                            </>
+                          )}
+                        </tr>
+                        <tr className="hover:bg-neutral-50">
+                          <td className="px-6 py-3 font-medium text-neutral-900 uppercase tracking-wide">Hip</td>
+                          {measurementUnit === 'cm' ? (
+                            <>
+                              <td className="text-center px-4 py-3 text-neutral-700">82.5-90</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">90-92</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">92-97</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">97-101</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">101-102</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">102-109</td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="text-center px-4 py-3 text-neutral-700">32.5-35.4</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">35.4-36.2</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">36.2-38.2</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">38.2-39.8</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">39.8-40.2</td>
+                              <td className="text-center px-4 py-3 text-neutral-700">40.2-42.9</td>
+                            </>
+                          )}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Size Conversion Table */}
+                <div>
+                  <h4 className="text-sm font-semibold text-neutral-900 mb-4 uppercase tracking-wide">
+                    Size Conversion
+                  </h4>
+                  <div className="overflow-x-auto bg-white border border-neutral-200 rounded-sm">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-neutral-200">
+                          <th className="text-left px-6 py-3 text-neutral-600 font-semibold uppercase tracking-wider">
+                            AU / UK
+                          </th>
+                          {['4', '6', '8', '10', '12', '14'].map((size) => (
+                            <th key={size} className="text-center px-4 py-3 text-neutral-900 font-semibold">
+                              {size}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-neutral-100 hover:bg-neutral-50">
+                          <td className="px-6 py-3 font-medium text-neutral-900 uppercase tracking-wide">USA</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">0</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">2</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">4</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">6</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">8</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">10</td>
+                        </tr>
+                        <tr className="border-b border-neutral-100 hover:bg-neutral-50">
+                          <td className="px-6 py-3 font-medium text-neutral-900 uppercase tracking-wide">EU</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">32</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">34</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">36</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">38</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">40</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">42</td>
+                        </tr>
+                        <tr className="hover:bg-neutral-50">
+                          <td className="px-6 py-3 font-medium text-neutral-900 uppercase tracking-wide">INTL</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">S</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">S</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">M</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">M</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">L</td>
+                          <td className="text-center px-4 py-3 text-neutral-700">L</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Sizing Note */}
+                <div className="mt-8 bg-neutral-50 border-l-4 border-neutral-900 p-6 rounded-sm">
+                  <p className="text-xs text-neutral-700 leading-relaxed">
+                    <span className="font-semibold text-neutral-900">Need sizing assistance?</span> Our pieces are designed to flatter every body type. 
+                    If you're between sizes, we recommend sizing up for a more relaxed fit or sizing down for a fitted silhouette. 
+                    For personalized styling advice, chat with us or call <span className="font-medium">+234 888 675 0308</span>.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Reviews Tab */}
             {activeTab === 'reviews' && (
               <motion.div
@@ -618,6 +934,96 @@ export default function ProductDetailPage() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* RECOMMENDED PRODUCTS SECTION */}
+        {recommendedProducts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-24 border-t border-neutral-200 pt-16"
+          >
+            <h2 className="text-center font-serif text-xl md:text-2xl font-light text-neutral-900 tracking-wide uppercase mb-12">
+              THESE WOULD ALSO LOOK GOOD ON YOU
+            </h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {recommendedProducts.map((recommendedProduct) => {
+                const mainImage = getProductImage(recommendedProduct, 0);
+                const hoverImage = getProductImage(recommendedProduct, 1);
+
+                return (
+                  <motion.div
+                    key={recommendedProduct.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    onClick={() => navigate(`/product/${recommendedProduct.id}`)}
+                    className="group cursor-pointer"
+                  >
+                    {/* Product Image */}
+                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3 rounded-sm">
+                      {mainImage ? (
+                        <>
+                          {/* Main Image */}
+                          <img
+                            src={mainImage}
+                            alt={recommendedProduct.name}
+                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                            loading="lazy"
+                          />
+                          {/* Hover Image */}
+                          {hoverImage && hoverImage !== mainImage && (
+                            <img
+                              src={hoverImage}
+                              alt={`${recommendedProduct.name} hover`}
+                              className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                              loading="lazy"
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
+                          No image
+                        </div>
+                      )}
+
+                      {/* Sale Badge */}
+                      {recommendedProduct.compare_at_price && recommendedProduct.compare_at_price > recommendedProduct.price && (
+                        <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase">
+                          Sale
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="text-center">
+                      <h3 className="font-serif text-xs font-normal text-neutral-900 mb-1 group-hover:text-neutral-600 transition-colors line-clamp-2">
+                        {recommendedProduct.name}
+                      </h3>
+                      <div className="flex items-center justify-center gap-2">
+                        {recommendedProduct.compare_at_price && recommendedProduct.compare_at_price > recommendedProduct.price ? (
+                          <>
+                            <span className="text-[10px] text-neutral-500 line-through">
+                              {formatPrice(recommendedProduct.compare_at_price)}
+                            </span>
+                            <span className="text-[10px] text-red-600 font-medium">
+                              {formatPrice(recommendedProduct.price)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[10px] text-neutral-900">
+                            {formatPrice(recommendedProduct.price)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Image Modal */}

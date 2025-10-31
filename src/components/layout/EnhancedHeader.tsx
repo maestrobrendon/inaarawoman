@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import CartDrawer from '../cart/CartDrawer';
+import CurrencySelector from '../ui/CurrencySelector';
 
 export default function EnhancedHeader() {
   const navigate = useNavigate();
@@ -205,6 +206,11 @@ export default function EnhancedHeader() {
                 )}
               </AnimatePresence>
 
+              {/* Currency Selector - NEW! */}
+              <div className="hidden md:block">
+                <CurrencySelector />
+              </div>
+
               <motion.div
                 onClick={() => navigate('/wishlist')}
                 className="relative p-1.5 md:p-2 text-neutral-600 hover:text-red-500 transition-colors cursor-pointer"
@@ -275,6 +281,16 @@ export default function EnhancedHeader() {
                 style={{ top: '60px' }}
               >
                 <nav className="px-6 py-8 space-y-1">
+                  {/* Currency Selector in Mobile Menu - NEW! */}
+                  <div className="pb-4 mb-4 border-b border-neutral-200">
+                    <p className="text-xs text-neutral-500 uppercase tracking-wider px-4 mb-3 font-semibold">
+                      Currency
+                    </p>
+                    <div className="px-4">
+                      <CurrencySelector />
+                    </div>
+                  </div>
+
                   {navigation.map((item, index) => (
                     <Link
                       key={item.name}

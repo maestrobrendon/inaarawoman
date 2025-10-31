@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { Product } from '../../types';
-import { formatPrice } from '../../lib/utils';
+import { useCurrency } from '../../context/CurrencyContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
 import { getProductImageUrl } from '../../utils/cloudinaryUpload';
@@ -15,6 +15,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { showToast } = useToast();
+  const { formatPrice } = useCurrency();
   const inWishlist = isInWishlist(product.id);
 
   const images = product.images || [];

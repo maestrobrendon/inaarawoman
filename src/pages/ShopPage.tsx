@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Collection, ProductWithImages } from '../types';
-import ProductCard from '../components/product/ProductCard';
+import { Collection, Product } from '../types';
+import { getProductImageUrl } from '../utils/cloudinaryUpload';
 
 interface ShopPageProps {
   initialFilters?: { collection?: string };
 }
 
+const PRODUCTS_PER_PAGE = 12;
+
 export default function ShopPage({ initialFilters }: ShopPageProps) {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<ProductWithImages[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCollection, setSelectedCollection] = useState(initialFilters?.collection || 'all');
@@ -29,6 +33,11 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
   useEffect(() => {
     loadProducts();
   }, [selectedCollection, selectedCategory, sortBy]);
+
+  useEffect(() => {
+    // Update displayed products when page changes
+    updateDisplayedProducts();
+  }, [currentPage, allProducts]);
 
   const loadCollections = async () => {
     try {
@@ -46,13 +55,12 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
 
   const loadProducts = async () => {
     setLoading(true);
+    setCurrentPage(1); // Reset to page 1 when filters change
+    
     try {
       let query = supabase
         .from('products')
-        .select(`
-          *,
-          collection:collections(*)
-        `)
+        .select('*')
         .eq('status', 'active');
 
       if (selectedCollection !== 'all') {
@@ -83,12 +91,13 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
       const { data, error } = await query;
 
       if (error) throw error;
+      
       if (data) {
-        let filtered = data as any;
+        let filtered = data as Product[];
 
         // Search filter
         if (searchQuery) {
-          filtered = filtered.filter((p: ProductWithImages) =>
+          filtered = filtered.filter((p: Product) =>
             p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.description?.toLowerCase().includes(searchQuery.toLowerCase())
           );
@@ -96,25 +105,18 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
 
         // Price range filters
         if (priceRange.min) {
-          filtered = filtered.filter((p: ProductWithImages) =>
+          filtered = filtered.filter((p: Product) =>
             p.price >= parseFloat(priceRange.min)
           );
         }
 
         if (priceRange.max) {
-          filtered = filtered.filter((p: ProductWithImages) =>
+          filtered = filtered.filter((p: Product) =>
             p.price <= parseFloat(priceRange.max)
           );
         }
 
-        // Map products to use stored images array
-        filtered = filtered.map((p: any) => ({
-          ...p,
-          image: p.main_image || p.images?.[0] || p.image_url || '',
-          images: p.images || (p.image_url ? [p.image_url] : [])
-        }));
-
-        setProducts(filtered);
+        setAllProducts(filtered);
       }
     } catch (error) {
       console.error('Error loading products:', error);
@@ -123,12 +125,81 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
     }
   };
 
+  const updateDisplayedProducts = () => {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const endIndex = startIndex + PRODUCTS_PER_PAGE;
+    setDisplayedProducts(allProducts.slice(startIndex, endIndex));
+    
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedCollection('all');
     setSelectedCategory('all');
     setPriceRange({ min: '', max: '' });
     setSortBy('featured');
+    setCurrentPage(1);
+  };
+
+  const getProductImage = (product: Product, index: number = 0) => {
+    if (product.images && product.images.length > index) {
+      return getProductImageUrl(product.images[index]);
+    } else if (product.main_image) {
+      return getProductImageUrl(product.main_image);
+    }
+    return null;
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(allProducts.length / PRODUCTS_PER_PAGE);
+  const showPagination = totalPages > 1;
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+
+    if (totalPages <= maxPagesToShow) {
+      // Show all pages if total is less than max
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      // Calculate range around current page
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      // Add ellipsis if needed
+      if (startPage > 2) {
+        pages.push('...');
+      }
+
+      // Add pages around current page
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+
+      // Add ellipsis if needed
+      if (endPage < totalPages - 1) {
+        pages.push('...');
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
   };
 
   const categories = [
@@ -188,7 +259,10 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
             </select>
 
             {/* Price Range */}
-            <button className="text-[10px] tracking-wider uppercase text-neutral-900 hover:text-neutral-600 transition-colors">
+            <button 
+              onClick={() => setShowFilters(true)}
+              className="text-[10px] tracking-wider uppercase text-neutral-900 hover:text-neutral-600 transition-colors"
+            >
               Price
             </button>
           </div>
@@ -212,7 +286,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
 
             {/* Product Count */}
             <span className="text-[10px] tracking-wider uppercase text-neutral-600">
-              {products.length} products
+              {allProducts.length} products
             </span>
           </div>
         </div>
@@ -291,7 +365,10 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
               {/* Apply & Clear Buttons */}
               <div className="flex gap-2">
                 <button
-                  onClick={loadProducts}
+                  onClick={() => {
+                    loadProducts();
+                    setShowFilters(false);
+                  }}
                   className="flex-1 px-4 py-2 bg-neutral-900 text-white text-[10px] tracking-widest uppercase hover:bg-neutral-800 transition-colors"
                 >
                   Apply Filters
@@ -318,7 +395,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
               </div>
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : allProducts.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-sm text-neutral-600 mb-6">No products found</p>
             <button
@@ -329,89 +406,146 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                onClick={() => navigate(`/product/${product.id}`)}
-                className="group cursor-pointer"
-              >
-                {/* Product Image */}
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  {product.images && product.images.length > 0 ? (
-                    <>
-                      {/* Main Image - from Cloudinary via Supabase */}
-                      <img
-                        src={`${product.images[0].cloudinary_url}?w=600&q_auto&f_auto`}
-                        alt={product.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                      />
-                      {/* Hover Image - Second image if available */}
-                      {product.images[1] && (
-                        <img
-                          src={`${product.images[1].cloudinary_url}?w_600&q_auto&f_auto`}
-                          alt={`${product.name} hover`}
-                          className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                        />
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {displayedProducts.map((product) => {
+                const mainImage = getProductImage(product, 0);
+                const hoverImage = getProductImage(product, 1);
+
+                return (
+                  <div
+                    key={product.id}
+                    onClick={() => navigate(`/product/${product.id}`)}
+                    className="group cursor-pointer"
+                  >
+                    {/* Product Image */}
+                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3 rounded-sm">
+                      {mainImage ? (
+                        <>
+                          {/* Main Image */}
+                          <img
+                            src={mainImage}
+                            alt={product.name}
+                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                            loading="lazy"
+                          />
+                          {/* Hover Image */}
+                          {hoverImage && hoverImage !== mainImage && (
+                            <img
+                              src={hoverImage}
+                              alt={`${product.name} hover`}
+                              className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                              loading="lazy"
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
+                          No image
+                        </div>
                       )}
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
-                      No image
-                    </div>
-                  )}
 
-                  {/* Sale Badge */}
-                  {product.compare_at_price && product.compare_at_price > product.price && (
-                    <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase">
-                      Sale
-                    </div>
-                  )}
-                </div>
+                      {/* Sale Badge */}
+                      {product.compare_at_price && product.compare_at_price > product.price && (
+                        <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase">
+                          Sale
+                        </div>
+                      )}
 
-                {/* Product Info */}
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-1 group-hover:text-neutral-600 transition-colors">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-center gap-2">
-                    {product.compare_at_price && product.compare_at_price > product.price ? (
-                      <>
-                        <span className="text-[10px] text-neutral-500 line-through">
-                          ₦{product.compare_at_price.toLocaleString()} NGN
-                        </span>
-                        <span className="text-[10px] text-neutral-900 font-medium">
-                          ₦{product.price.toLocaleString()} NGN
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-[10px] text-neutral-900">
-                        ₦{product.price.toLocaleString()} NGN
-                      </span>
-                    )}
+                      {/* New Badge */}
+                      {product.is_new && (
+                        <div className="absolute top-3 left-3 bg-amber-500 text-white px-2 py-1 text-[9px] tracking-wider uppercase">
+                          New
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="text-center">
+                      <h3 className="font-serif text-xs font-normal text-neutral-900 mb-1 group-hover:text-neutral-600 transition-colors line-clamp-2">
+                        {product.name}
+                      </h3>
+                      <div className="flex items-center justify-center gap-2">
+                        {product.compare_at_price && product.compare_at_price > product.price ? (
+                          <>
+                            <span className="text-[10px] text-neutral-500 line-through">
+                              ₦{product.compare_at_price.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-red-600 font-medium">
+                              ₦{product.price.toLocaleString()}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[10px] text-neutral-900">
+                            ₦{product.price.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                );
+              })}
+            </div>
 
-        {/* Pagination Placeholder */}
-        {products.length > 0 && (
-          <div className="flex justify-center items-center gap-2 mt-12">
-            <button className="w-8 h-8 flex items-center justify-center border border-neutral-300 text-xs hover:bg-neutral-100 transition-colors">
-              1
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-neutral-300 text-xs hover:bg-neutral-100 transition-colors">
-              2
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-neutral-300 text-xs hover:bg-neutral-100 transition-colors">
-              3
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-neutral-300 text-xs hover:bg-neutral-100 transition-colors">
-              →
-            </button>
-          </div>
+            {/* Pagination */}
+            {showPagination && (
+              <div className="flex justify-center items-center gap-2 mt-12">
+                {/* Previous Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`w-8 h-8 flex items-center justify-center border text-xs transition-colors ${
+                    currentPage === 1
+                      ? 'border-neutral-200 text-neutral-300 cursor-not-allowed'
+                      : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                  }`}
+                >
+                  <ChevronLeft size={14} />
+                </button>
+
+                {/* Page Numbers */}
+                {getPageNumbers().map((page, index) => (
+                  <button
+                    key={index}
+                    onClick={() => typeof page === 'number' && handlePageChange(page)}
+                    disabled={page === '...'}
+                    className={`w-8 h-8 flex items-center justify-center text-xs transition-colors ${
+                      page === currentPage
+                        ? 'border border-neutral-900 bg-neutral-900 text-white font-medium'
+                        : page === '...'
+                        ? 'border-none cursor-default text-neutral-400'
+                        : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                {/* Next Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`w-8 h-8 flex items-center justify-center border text-xs transition-colors ${
+                    currentPage === totalPages
+                      ? 'border-neutral-200 text-neutral-300 cursor-not-allowed'
+                      : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                  }`}
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Page Info */}
+            {showPagination && (
+              <div className="text-center mt-4">
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                  Showing {(currentPage - 1) * PRODUCTS_PER_PAGE + 1}-
+                  {Math.min(currentPage * PRODUCTS_PER_PAGE, allProducts.length)} of {allProducts.length}
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

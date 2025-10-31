@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import { CurrencyProvider } from './context/CurrencyContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
@@ -103,27 +105,30 @@ function App() {
   return (
     <BrowserRouter>
       <AdminAuthProvider>
-        <ToastProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <div className="min-h-screen bg-white">
-                <Routes>
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route
-                    path="/admin/*"
-                    element={
-                      <ProtectedRoute>
-                        <AdminRoutes />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="/*" element={<PublicLayout />} />
-                </Routes>
-              </div>
-            </WishlistProvider>
-          </CartProvider>
-        </ToastProvider>
+        <CurrencyProvider>
+          <ToastProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <div className="min-h-screen bg-white">
+                  <Routes>
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route
+                      path="/admin/*"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoutes />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/*" element={<PublicLayout />} />
+                  </Routes>
+                </div>
+              </WishlistProvider>
+            </CartProvider>
+          </ToastProvider>
+        </CurrencyProvider>
       </AdminAuthProvider>
+      <SpeedInsights />
     </BrowserRouter>
   );
 }
