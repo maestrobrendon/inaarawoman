@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { ShoppingBag, Heart, Search, Menu, X, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, ChevronDown, Globe } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import CartDrawer from '../cart/CartDrawer';
-import CurrencySelector from '../ui/CurrencySelector';
 
 export default function EnhancedHeader() {
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ export default function EnhancedHeader() {
 
   const { itemCount } = useCart();
   const { wishlistIds } = useWishlist();
+  const { currency, setCurrency, currencies } = useCurrency();
   const { scrollY } = useScroll();
 
   if (!wishlistIds) return null;
@@ -63,6 +64,18 @@ export default function EnhancedHeader() {
       setTimeout(() => setCartBounce(false), 600);
     }
   }, [itemCount]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   const scrollProgress = useTransform(scrollY, [0, document.documentElement.scrollHeight - window.innerHeight], [0, 100]);
 
@@ -206,9 +219,34 @@ export default function EnhancedHeader() {
                 )}
               </AnimatePresence>
 
-              {/* Currency Selector - NEW! */}
-              <div className="hidden md:block">
-                <CurrencySelector />
+              {/* DESKTOP CURRENCY SELECTOR */}
+              <div className="hidden md:block relative group">
+                <motion.button
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-600 hover:text-[#D4AF37] transition-colors border border-neutral-300 rounded-sm hover:border-[#D4AF37]"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Globe size={16} />
+                  <span className="text-xs font-semibold uppercase tracking-wider">
+                    {currency.code}
+                  </span>
+                  <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
+                </motion.button>
+                {/* Currency Dropdown */}
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-neutral-200 rounded-sm shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  {currencies.map((curr) => (
+                    <button
+                      key={curr.code}
+                      onClick={() => setCurrency(curr)}
+                      className={`w-full text-left px-4 py-2.5 text-xs hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                        currency.code === curr.code ? 'bg-neutral-100 font-semibold text-[#D4AF37]' : 'text-neutral-700'
+                      }`}
+                    >
+                      <span>{curr.code}</span>
+                      <span className="text-sm">{curr.symbol}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <motion.div
@@ -259,38 +297,60 @@ export default function EnhancedHeader() {
           </div>
         </div>
 
+        {/* MOBILE MENU - FIXED POSITIONING */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
+              {/* Backdrop Overlay - Full Screen */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
-                style={{ top: '60px' }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden z-30"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
+              {/* Mobile Menu Panel - Fixed Position */}
               <motion.div
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="fixed right-0 top-0 bottom-0 w-3/4 max-w-sm bg-white shadow-2xl lg:hidden overflow-y-auto"
-                style={{ top: '60px' }}
+                className="fixed right-0 top-0 bottom-0 w-3/4 max-w-sm bg-white shadow-2xl lg:hidden overflow-y-auto z-40"
+                style={{ paddingTop: '60px' }}
               >
                 <nav className="px-6 py-8 space-y-1">
-                  {/* Currency Selector in Mobile Menu - NEW! */}
-                  <div className="pb-4 mb-4 border-b border-neutral-200">
-                    <p className="text-xs text-neutral-500 uppercase tracking-wider px-4 mb-3 font-semibold">
-                      Currency
-                    </p>
-                    <div className="px-4">
-                      <CurrencySelector />
+                  {/* MOBILE CURRENCY SELECTOR */}
+                  <div className="pb-6 mb-6 border-b border-neutral-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Globe size={16} className="text-neutral-600" />
+                      <p className="text-xs text-neutral-900 uppercase tracking-wider font-semibold">
+                        Currency
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      {currencies.map((curr) => (
+                        <motion.button
+                          key={curr.code}
+                          onClick={() => {
+                            setCurrency(curr);
+                          }}
+                          className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center justify-between ${
+                            currency.code === curr.code
+                              ? 'bg-[#D4AF37]/10 text-[#D4AF37] font-semibold border-l-4 border-[#D4AF37]'
+                              : 'text-neutral-700 hover:bg-neutral-50'
+                          }`}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span className="text-sm">{curr.name}</span>
+                          <span className="text-base font-medium">{curr.symbol}</span>
+                        </motion.button>
+                      ))}
                     </div>
                   </div>
 
+                  {/* Navigation Links */}
                   {navigation.map((item, index) => (
                     <Link
                       key={item.name}
