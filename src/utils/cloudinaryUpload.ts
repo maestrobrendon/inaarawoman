@@ -8,10 +8,29 @@ interface CloudinaryUploadResult {
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
+// Validate environment variables
+const validateCloudinaryConfig = () => {
+  if (!CLOUD_NAME || !UPLOAD_PRESET) {
+    const missingVars = [];
+    if (!CLOUD_NAME) missingVars.push('VITE_CLOUDINARY_CLOUD_NAME');
+    if (!UPLOAD_PRESET) missingVars.push('VITE_CLOUDINARY_UPLOAD_PRESET');
+    
+    throw new Error(
+      `Missing Cloudinary environment variables: ${missingVars.join(', ')}\n\n` +
+      `Please add these to your .env file:\n` +
+      `VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name\n` +
+      `VITE_CLOUDINARY_UPLOAD_PRESET=your_upload_preset`
+    );
+  }
+};
+
 export const uploadToCloudinary = async (file: File): Promise<CloudinaryUploadResult> => {
+  // Validate configuration before attempting upload
+  validateCloudinaryConfig();
+
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('upload_preset', UPLOAD_PRESET!);
   formData.append('folder', 'inaara/products');
 
   try {
@@ -24,10 +43,16 @@ export const uploadToCloudinary = async (file: File): Promise<CloudinaryUploadRe
     );
 
     if (!response.ok) {
-      throw new Error('Upload failed');
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error?.message || `Upload failed with status ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
+
+    if (!data.secure_url || !data.public_id) {
+      throw new Error('Invalid response from Cloudinary: missing required fields');
+    }
 
     return {
       secure_url: data.secure_url,
@@ -37,7 +62,16 @@ export const uploadToCloudinary = async (file: File): Promise<CloudinaryUploadRe
     };
   } catch (error) {
     console.error('Error uploading to Cloudinary:', error);
-    throw error;
+    // Re-throw with more context if it's our validation error
+    if (error instanceof Error && error.message.includes('Missing Cloudinary')) {
+      throw error;
+    }
+    // Otherwise wrap in a more user-friendly error
+    throw new Error(
+      error instanceof Error 
+        ? error.message 
+        : 'Failed to upload image. Please check your Cloudinary configuration and try again.'
+    );
   }
 };
 

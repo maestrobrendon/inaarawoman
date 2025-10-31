@@ -45,8 +45,19 @@ export default function ImageUpload({ existingImages = [], onImagesChange }: Ima
       setTimeout(() => setUploadProgress(''), 2000);
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Failed to upload images. Please try again.');
-      setUploadProgress('');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to upload images. Please try again.';
+      
+      // Show more detailed error message
+      if (errorMessage.includes('Missing Cloudinary')) {
+        setUploadProgress('Error: Cloudinary configuration is missing. Please check your environment variables.');
+      } else {
+        setUploadProgress(`Error: ${errorMessage}`);
+      }
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setUploadProgress(''), 5000);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -100,7 +111,13 @@ export default function ImageUpload({ existingImages = [], onImagesChange }: Ima
       </div>
 
       {uploadProgress && (
-        <div className="text-sm text-amber-600 font-medium">
+        <div className={`text-sm font-medium ${
+          uploadProgress.startsWith('Error:') 
+            ? 'text-red-600' 
+            : uploadProgress.startsWith('Uploading') || uploadProgress === 'Upload complete!'
+            ? 'text-amber-600'
+            : 'text-amber-600'
+        }`}>
           {uploadProgress}
         </div>
       )}
