@@ -49,15 +49,18 @@ export default function ImageUpload({ existingImages = [], onImagesChange }: Ima
         ? error.message 
         : 'Failed to upload images. Please try again.';
       
-      // Show more detailed error message
-      if (errorMessage.includes('Missing Cloudinary')) {
-        setUploadProgress('Error: Cloudinary configuration is missing. Please check your environment variables.');
+      // Show detailed error message
+      if (errorMessage.includes('Missing Cloudinary') || errorMessage.includes('environment variables')) {
+        const userFriendlyMessage = '⚠️ Cloudinary configuration missing. ' +
+          'Please ensure VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET ' +
+          'are set in Vercel environment variables and redeploy.';
+        setUploadProgress(userFriendlyMessage);
       } else {
-        setUploadProgress(`Error: ${errorMessage}`);
+        setUploadProgress(`❌ Error: ${errorMessage}`);
       }
       
-      // Clear error message after 5 seconds
-      setTimeout(() => setUploadProgress(''), 5000);
+      // Clear error message after 8 seconds (longer for important messages)
+      setTimeout(() => setUploadProgress(''), 8000);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

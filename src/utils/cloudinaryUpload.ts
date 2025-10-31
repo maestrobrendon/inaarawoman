@@ -5,42 +5,75 @@ interface CloudinaryUploadResult {
   height: number;
 }
 
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+// Read environment variables dynamically to ensure they're available
+const getCloudinaryConfig = () => {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  
+  // Debug logging (only in development)
+  if (import.meta.env.DEV) {
+    console.log('Cloudinary Config Check:', {
+      cloudName: cloudName ? '✓ Set' : '✗ Missing',
+      uploadPreset: uploadPreset ? '✓ Set' : '✗ Missing',
+      allEnvKeys: Object.keys(import.meta.env).filter(key => key.includes('CLOUDINARY'))
+    });
+  }
+  
+  return { cloudName, uploadPreset };
+};
 
 // Validate environment variables
 const validateCloudinaryConfig = () => {
-  if (!CLOUD_NAME || !UPLOAD_PRESET) {
+  const { cloudName, uploadPreset } = getCloudinaryConfig();
+  
+  if (!cloudName || !uploadPreset) {
     const missingVars = [];
-    if (!CLOUD_NAME) missingVars.push('VITE_CLOUDINARY_CLOUD_NAME');
-    if (!UPLOAD_PRESET) missingVars.push('VITE_CLOUDINARY_UPLOAD_PRESET');
+    if (!cloudName) missingVars.push('VITE_CLOUDINARY_CLOUD_NAME');
+    if (!uploadPreset) missingVars.push('VITE_CLOUDINARY_UPLOAD_PRESET');
     
-    throw new Error(
-      `Missing Cloudinary environment variables: ${missingVars.join(', ')}\n\n` +
-      `Please add these to your .env file:\n` +
-      `VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name\n` +
-      `VITE_CLOUDINARY_UPLOAD_PRESET=your_upload_preset`
-    );
+    const errorMessage = `Missing Cloudinary environment variables: ${missingVars.join(', ')}. ` +
+      `Please ensure these are set in your Vercel environment variables (Settings → Environment Variables) ` +
+      `and redeploy your application.`;
+    
+    console.error('Cloudinary Configuration Error:', {
+      missingVars,
+      allCloudinaryVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_CLOUDINARY')),
+      isProduction: import.meta.env.PROD,
+      isDevelopment: import.meta.env.DEV
+    });
+    
+    throw new Error(errorMessage);
   }
+  
+  return { cloudName, uploadPreset };
 };
 
 export const uploadToCloudinary = async (file: File): Promise<CloudinaryUploadResult> => {
   // Validate configuration before attempting upload
-  validateCloudinaryConfig();
+  const { cloudName, uploadPreset } = validateCloudinaryConfig();
 
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_PRESET!);
+  formData.append('upload_preset', uploadPreset);
   formData.append('folder', 'inaara/products');
 
   try {
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    
+    if (import.meta.env.DEV) {
+      console.log('Uploading to Cloudinary:', {
+        cloudName,
+        uploadPreset,
+        folder: 'inaara/products',
+        fileName: file.name,
+        fileSize: file.size
+      });
+    }
+    
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
