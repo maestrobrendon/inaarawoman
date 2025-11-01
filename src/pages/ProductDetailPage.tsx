@@ -13,6 +13,14 @@ import Button from '../components/ui/Button';
 import ImageSlider from '../components/product/ImageSlider';
 import { ImageModal } from '../components/product/ImageSlider';
 
+interface CustomMeasurements {
+  bust: string;
+  waist: string;
+  hips: string;
+  length: string;
+  height?: string;
+}
+
 export default function ProductDetailPage() {
   const { id: productId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -25,11 +33,24 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'description' | 'measurements' | 'sizeguide' | 'reviews'>('description');
   const [measurementUnit, setMeasurementUnit] = useState<'cm' | 'in'>('cm');
+  
+  // Custom Sizing States
+  const [isCustomSize, setIsCustomSize] = useState(false);
+  const [customMeasurements, setCustomMeasurements] = useState<CustomMeasurements>({
+    bust: '',
+    waist: '',
+    hips: '',
+    length: '',
+    height: ''
+  });
 
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { showToast } = useToast();
   const { formatPrice } = useCurrency();
+
+  // Default UK sizes
+  const defaultSizes = ['UK 6', 'UK 8', 'UK 10', 'UK 12', 'UK 14', 'UK 16'];
 
   useEffect(() => {
     if (productId) {
@@ -93,12 +114,6 @@ export default function ProductDetailPage() {
     if (!product) return;
 
     try {
-      // Recommendation Algorithm:
-      // Priority 1: Same category (60% weight)
-      // Priority 2: Same collection (30% weight)
-      // Priority 3: Similar price range ±30% (10% weight)
-      // Fallback: Featured/Bestsellers or Random
-
       let recommendedItems: Product[] = [];
 
       // Try same category first
@@ -127,7 +142,6 @@ export default function ProductDetailPage() {
           .limit(8);
 
         if (sameCollectionProducts) {
-          // Merge and remove duplicates
           const existingIds = new Set(recommendedItems.map(p => p.id));
           const newProducts = sameCollectionProducts.filter(p => !existingIds.has(p.id));
           recommendedItems = [...recommendedItems, ...newProducts];
@@ -188,7 +202,6 @@ export default function ProductDetailPage() {
         }
       }
 
-      // Take only 4 products and shuffle for variety
       const shuffled = recommendedItems.sort(() => Math.random() - 0.5);
       setRecommendedProducts(shuffled.slice(0, 4));
     } catch (error) {
@@ -205,14 +218,59 @@ export default function ProductDetailPage() {
     return null;
   };
 
+  const handleSizeClick = (size: string) => {
+    if (size === 'Custom') {
+      setIsCustomSize(true);
+      setSelectedSize('Custom');
+    } else {
+      setIsCustomSize(false);
+      setSelectedSize(size);
+      // Reset custom measurements
+      setCustomMeasurements({
+        bust: '',
+        waist: '',
+        hips: '',
+        length: '',
+        height: ''
+      });
+    }
+  };
+
+  const handleCustomMeasurementChange = (field: keyof CustomMeasurements, value: string) => {
+    setCustomMeasurements(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const validateCustomMeasurements = () => {
+    if (!isCustomSize) return true;
+    
+    const { bust, waist, hips, length } = customMeasurements;
+    
+    if (!bust || !waist || !hips || !length) {
+      showToast('Please fill in all required measurements (Bust, Waist, Hips, Length)', 'error');
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+    // Check if size is selected
+    if (!selectedSize) {
       showToast('Please select a size', 'error');
       return;
     }
 
+    // Validate custom measurements if custom size is selected
+    if (isCustomSize && !validateCustomMeasurements()) {
+      return;
+    }
+
+    // Check color selection
     if (product.color_options && product.color_options.length > 0 && !selectedColor) {
       showToast('Please select a color', 'error');
       return;
@@ -222,8 +280,9 @@ export default function ProductDetailPage() {
       product,
       image: product.main_image || '',
       quantity,
-      size: selectedSize || 'One Size',
-      color: selectedColor || { name: 'Default', hex: '#000000' }
+      size: selectedSize,
+      color: selectedColor || { name: 'Default', hex: '#000000' },
+      customMeasurements: isCustomSize ? customMeasurements : undefined
     });
 
     showToast('Added to cart successfully!', 'success');
@@ -308,7 +367,7 @@ export default function ProductDetailPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left: Image Slider - FIXED: Only sticky on desktop */}
+          {/* Left: Image Slider */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -335,7 +394,7 @@ export default function ProductDetailPage() {
                 {product.name}
               </h1>
 
-              {/* Price in NGN */}
+              {/* Price */}
               <div className="flex items-baseline gap-3 mb-4">
                 {product.sale_price ? (
                   <>
@@ -420,31 +479,161 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Size Selector */}
-            {product.sizes && product.sizes.length > 0 && (
-              <div className="pb-6 border-b border-neutral-200">
-                <label className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3 block">
-                  Size: {selectedSize && <span className="font-normal">{selectedSize}</span>}
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {product.sizes.map((size: string) => (
-                    <motion.button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`py-2 text-center border transition-all text-xs ${
-                        selectedSize === size
-                          ? 'border-neutral-900 bg-neutral-900 text-white'
-                          : 'border-neutral-300 hover:border-neutral-900'
-                      }`}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      {size}
-                    </motion.button>
-                  ))}
-                </div>
+            {/* SIZE SELECTOR WITH CUSTOM OPTION */}
+            <div className="pb-6 border-b border-neutral-200">
+              <label className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3 block">
+                Size {selectedSize && !isCustomSize && <span className="font-normal">: {selectedSize}</span>}
+                {isCustomSize && <span className="font-normal text-[#D4AF37]">: Custom</span>}
+              </label>
+              
+              {/* Size Buttons */}
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                {defaultSizes.map((size) => (
+                  <motion.button
+                    key={size}
+                    onClick={() => handleSizeClick(size)}
+                    className={`py-2.5 text-center border transition-all text-xs font-medium rounded-sm ${
+                      selectedSize === size && !isCustomSize
+                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        : 'border-neutral-300 hover:border-neutral-900 text-neutral-700'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {size}
+                  </motion.button>
+                ))}
+                
+                {/* Custom Button */}
+                <motion.button
+                  onClick={() => handleSizeClick('Custom')}
+                  className={`py-2.5 text-center border transition-all text-xs font-semibold rounded-sm ${
+                    isCustomSize
+                      ? 'border-[#D4AF37] bg-[#D4AF37] text-white'
+                      : 'border-neutral-900 hover:bg-neutral-900 hover:text-white text-neutral-900'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Custom
+                </motion.button>
               </div>
-            )}
+
+              {/* Custom Measurements Form */}
+              <AnimatePresence>
+                {isCustomSize && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-neutral-50 border border-neutral-200 rounded-sm p-4 space-y-3"
+                  >
+                    <p className="text-[10px] text-neutral-600 mb-3">
+                      Please provide your measurements in inches (in). All fields marked with * are required.
+                    </p>
+
+                    {/* Bust */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-neutral-900 mb-1 block">
+                        Bust *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={customMeasurements.bust}
+                          onChange={(e) => handleCustomMeasurementChange('bust', e.target.value)}
+                          placeholder="e.g., 34"
+                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:border-neutral-900"
+                        />
+                        <span className="text-xs text-neutral-600 w-8">in</span>
+                      </div>
+                    </div>
+
+                    {/* Waist */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-neutral-900 mb-1 block">
+                        Waist *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={customMeasurements.waist}
+                          onChange={(e) => handleCustomMeasurementChange('waist', e.target.value)}
+                          placeholder="e.g., 28"
+                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:border-neutral-900"
+                        />
+                        <span className="text-xs text-neutral-600 w-8">in</span>
+                      </div>
+                    </div>
+
+                    {/* Hips */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-neutral-900 mb-1 block">
+                        Hips *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={customMeasurements.hips}
+                          onChange={(e) => handleCustomMeasurementChange('hips', e.target.value)}
+                          placeholder="e.g., 38"
+                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:border-neutral-900"
+                        />
+                        <span className="text-xs text-neutral-600 w-8">in</span>
+                      </div>
+                    </div>
+
+                    {/* Dress/Pants Length */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-neutral-900 mb-1 block">
+                        Dress/Pants Length *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={customMeasurements.length}
+                          onChange={(e) => handleCustomMeasurementChange('length', e.target.value)}
+                          placeholder="e.g., 40"
+                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:border-neutral-900"
+                        />
+                        <span className="text-xs text-neutral-600 w-8">in</span>
+                      </div>
+                    </div>
+
+                    {/* Height (Optional) */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-neutral-900 mb-1 block">
+                        Height (Optional)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={customMeasurements.height}
+                          onChange={(e) => handleCustomMeasurementChange('height', e.target.value)}
+                          placeholder="e.g., 65"
+                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:border-neutral-900"
+                        />
+                        <span className="text-xs text-neutral-600 w-8">in</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-sm mt-3">
+                      <p className="text-[10px] text-neutral-700 leading-relaxed">
+                        <span className="font-semibold">Note:</span> Please note that custom sized garments cannot be returned or refunded unless they arrive damaged during shipping. 
+                        We do offer adjustment services for custom pieces - simply send the garment back to us and we'll make the necessary alterations. 
+                        Customers are responsible for return shipping costs in both ways.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Quantity */}
             <div className="pb-6 border-b border-neutral-200">
@@ -965,14 +1154,12 @@ export default function ProductDetailPage() {
                     <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3 rounded-sm">
                       {mainImage ? (
                         <>
-                          {/* Main Image */}
                           <img
                             src={mainImage}
                             alt={recommendedProduct.name}
                             className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
                             loading="lazy"
                           />
-                          {/* Hover Image */}
                           {hoverImage && hoverImage !== mainImage && (
                             <img
                               src={hoverImage}
@@ -988,7 +1175,6 @@ export default function ProductDetailPage() {
                         </div>
                       )}
 
-                      {/* Sale Badge */}
                       {recommendedProduct.compare_at_price && recommendedProduct.compare_at_price > recommendedProduct.price && (
                         <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase">
                           Sale
@@ -996,7 +1182,6 @@ export default function ProductDetailPage() {
                       )}
                     </div>
 
-                    {/* Product Info */}
                     <div className="text-center">
                       <h3 className="font-serif text-xs font-normal text-neutral-900 mb-1 group-hover:text-neutral-600 transition-colors line-clamp-2">
                         {recommendedProduct.name}

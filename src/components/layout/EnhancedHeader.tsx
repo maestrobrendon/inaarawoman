@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { ShoppingBag, Heart, Search, Menu, X, ChevronDown, Globe } from 'lucide-react';
@@ -15,11 +15,14 @@ export default function EnhancedHeader() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const [isCollectionsOpen, setIsCollectionsOpen] = useState(false);
   const [collections, setCollections] = useState<Array<{ id: string; name: string; slug: string }>>([]);
+  
+  const currencyRef = useRef<HTMLDivElement>(null);
 
   const { itemCount } = useCart();
   const { wishlistIds } = useWishlist();
@@ -65,15 +68,47 @@ export default function EnhancedHeader() {
     }
   }, [itemCount]);
 
+  // Close currency dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
+        setIsCurrencyOpen(false);
+      }
+    };
+
+    if (isCurrencyOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCurrencyOpen]);
+
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
+    
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
     };
   }, [isMobileMenuOpen]);
 
@@ -95,7 +130,7 @@ export default function EnhancedHeader() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full py-3 md:py-0">
           <div className="flex h-full items-center justify-between">
             <button
-              className="lg:hidden p-1 -ml-1 relative z-10"
+              className="lg:hidden p-1 -ml-1 relative z-[60]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <motion.div
@@ -219,34 +254,73 @@ export default function EnhancedHeader() {
                 )}
               </AnimatePresence>
 
-              {/* DESKTOP CURRENCY SELECTOR */}
-              <div className="hidden md:block relative group">
+              {/* DESKTOP CURRENCY TOGGLE SELECTOR */}
+              <div className="hidden md:block relative" ref={currencyRef}>
                 <motion.button
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-600 hover:text-[#D4AF37] transition-colors border border-neutral-300 rounded-sm hover:border-[#D4AF37]"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-neutral-600 hover:text-neutral-900 transition-colors border border-neutral-300 rounded-sm hover:border-neutral-400"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Globe size={16} />
-                  <span className="text-xs font-semibold uppercase tracking-wider">
+                  <span className="text-[11px] font-medium uppercase tracking-wider">
                     {currency.code}
                   </span>
-                  <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
+                  <motion.div
+                    animate={{ rotate: isCurrencyOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown size={14} />
+                  </motion.div>
                 </motion.button>
-                {/* Currency Dropdown */}
-                <div className="absolute right-0 mt-2 w-40 bg-white border border-neutral-200 rounded-sm shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  {currencies.map((curr) => (
-                    <button
-                      key={curr.code}
-                      onClick={() => setCurrency(curr)}
-                      className={`w-full text-left px-4 py-2.5 text-xs hover:bg-neutral-50 transition-colors flex items-center justify-between ${
-                        currency.code === curr.code ? 'bg-neutral-100 font-semibold text-[#D4AF37]' : 'text-neutral-700'
-                      }`}
+                
+                {/* Currency Dropdown Toggle */}
+                <AnimatePresence>
+                  {isCurrencyOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-sm shadow-xl z-50"
                     >
-                      <span>{curr.code}</span>
-                      <span className="text-sm">{curr.symbol}</span>
-                    </button>
-                  ))}
-                </div>
+                      {/* Header */}
+                      <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50">
+                        <div className="flex items-center gap-2">
+                          <Globe size={14} className="text-neutral-600" />
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900">
+                            Currency
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Currency List */}
+                      <div className="py-1 max-h-80 overflow-y-auto">
+                        {currencies.map((curr) => (
+                          <button
+                            key={curr.code}
+                            onClick={() => {
+                              setCurrency(curr);
+                              setIsCurrencyOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 transition-colors flex items-center justify-between ${
+                              currency.code === curr.code
+                                ? 'bg-[#D4AF37]/10 text-[#D4AF37] font-semibold border-l-4 border-[#D4AF37]'
+                                : 'text-neutral-700 hover:bg-neutral-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-[11px] font-medium text-neutral-500">
+                                {curr.code}
+                              </span>
+                              <span className="text-[13px]">{curr.name}</span>
+                            </div>
+                            <span className="text-sm font-medium">{curr.symbol}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <motion.div
@@ -297,28 +371,29 @@ export default function EnhancedHeader() {
           </div>
         </div>
 
-        {/* MOBILE MENU - FIXED POSITIONING */}
+        {/* MOBILE MENU - PERMANENTLY FIXED FOR ALL SCROLL POSITIONS */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Backdrop Overlay - Full Screen */}
+              {/* Backdrop Overlay */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden z-30"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
+                style={{ zIndex: 45 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Mobile Menu Panel - Fixed Position */}
+              {/* Mobile Menu Panel */}
               <motion.div
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="fixed right-0 top-0 bottom-0 w-3/4 max-w-sm bg-white shadow-2xl lg:hidden overflow-y-auto z-40"
-                style={{ paddingTop: '60px' }}
+                className="fixed right-0 top-0 bottom-0 w-3/4 max-w-sm bg-white shadow-2xl lg:hidden overflow-y-auto"
+                style={{ zIndex: 50, paddingTop: '60px' }}
               >
                 <nav className="px-6 py-8 space-y-1">
                   {/* MOBILE CURRENCY SELECTOR */}
@@ -333,9 +408,7 @@ export default function EnhancedHeader() {
                       {currencies.map((curr) => (
                         <motion.button
                           key={curr.code}
-                          onClick={() => {
-                            setCurrency(curr);
-                          }}
+                          onClick={() => setCurrency(curr)}
                           className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center justify-between ${
                             currency.code === curr.code
                               ? 'bg-[#D4AF37]/10 text-[#D4AF37] font-semibold border-l-4 border-[#D4AF37]'

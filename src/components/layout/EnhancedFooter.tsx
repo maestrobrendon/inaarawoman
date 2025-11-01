@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform, Variants } from 'framer-motion';
-import { Instagram, Facebook, Twitter, ShieldCheck } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { Instagram, Facebook, Twitter, ShieldCheck, Mail, ArrowRight } from 'lucide-react';
 
 export default function EnhancedFooter() {
   const year = new Date().getFullYear();
@@ -8,118 +8,125 @@ export default function EnhancedFooter() {
   const { scrollYProgress } = useScroll();
   const footerY = useTransform(scrollYProgress, [0.85, 1], [100, 0]);
 
-  const linkVariants: Variants = {
-    rest: { x: 0 },
-    hover: {
-      x: 5,
-      transition: { duration: 0.3, ease: "easeOut" }
-    }
-  };
-
-  const underlineVariants: Variants = {
-    rest: { width: 0 },
-    hover: {
-      width: "100%",
-      transition: { duration: 0.3, ease: "easeOut" }
-    }
-  };
-
   return (
     <motion.footer
       className="bg-neutral-50 border-t border-neutral-200 mt-20"
       style={{ y: footerY }}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand Section */}
+      {/* Main Footer Content */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-8">
+          {/* Customer Care */}
           <div>
-            <h3 className="text-[18px] font-bold mb-4 text-neutral-900 tracking-wider uppercase">
-              INAARA WOMAN
-            </h3>
-            <p className="text-[14px] font-normal text-neutral-600 leading-relaxed">
-              Timeless elegance meets modern femininity. Every woman deserves to shine in her own light.
-            </p>
-          </div>
-
-          {/* Shop Section */}
-          <div>
-            <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">Shop</h4>
-            <ul className="space-y-2">
+            <h4 className="text-[13px] font-bold mb-6 text-neutral-900 uppercase tracking-wider">
+              Customer Care
+            </h4>
+            <ul className="space-y-3">
               {[
-                { name: 'All Products', path: '/shop' },
-                { name: 'New Arrivals', path: '/shop' },
-                { name: 'Bestsellers', path: '/shop' },
-                { name: 'Lookbook', path: '/lookbook' }
-              ].map((item) => (
-                <li key={item.name}>
-                  <Link to={item.path}>
-                    <motion.div
-                      className="text-[13px] md:text-[14px] font-normal text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
-                      initial="rest"
-                      whileHover="hover"
-                      variants={linkVariants}
-                    >
-                      <span className="relative">
-                        {item.name}
-                        <motion.span
-                          className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                          variants={underlineVariants}
-                        />
-                      </span>
-                    </motion.div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* About Section */}
-          <div>
-            <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">About</h4>
-            <ul className="space-y-2">
-              {[
-                { name: 'Our Story', path: '/about' },
                 { name: 'Contact Us', path: '/contact' },
-                { name: 'FAQ', path: '/faq' }
+                { name: 'Delivery', path: '/shipping-policy' },
+                { name: 'Size Guide', path: '/size-guide' },
+                { name: 'Returns', path: '/shipping-returns' },
+                { name: 'Initiate Your Return', path: '/returns' },
+                { name: 'Click & Collect', path: '/click-collect' },
+                { name: 'FAQs', path: '/faq' }
               ].map((item) => (
                 <li key={item.name}>
-                  <Link to={item.path}>
-                    <motion.div
-                      className="text-[13px] md:text-[14px] font-normal text-neutral-600 hover:text-[#D4AF37] transition-colors relative inline-block"
-                      initial="rest"
-                      whileHover="hover"
-                      variants={linkVariants}
-                    >
-                      <span className="relative">
-                        {item.name}
-                        <motion.span
-                          className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                          variants={underlineVariants}
-                        />
-                      </span>
-                    </motion.div>
+                  <Link 
+                    to={item.path}
+                    className="text-[13px] text-neutral-600 hover:text-neutral-900 transition-colors inline-block hover:translate-x-1 duration-200"
+                  >
+                    {item.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Connect Section */}
+          {/* Important Info */}
           <div>
-            <h4 className="text-[14px] font-semibold mb-4 text-neutral-900 uppercase tracking-wider">Connect</h4>
+            <h4 className="text-[13px] font-bold mb-6 text-neutral-900 uppercase tracking-wider">
+              Important Info
+            </h4>
+            <ul className="space-y-3">
+              {[
+                { name: 'Terms & Conditions', path: '/terms-conditions' },
+                { name: 'Collection Statement', path: '/collection-statement' },
+                { name: 'Privacy', path: '/privacy-policy' },
+                { name: 'Cookie Policy', path: '/cookie-policy' },
+                { name: 'Online Safety', path: '/online-safety' }
+              ].map((item) => (
+                <li key={item.name}>
+                  <Link 
+                    to={item.path}
+                    className="text-[13px] text-neutral-600 hover:text-neutral-900 transition-colors inline-block hover:translate-x-1 duration-200"
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* More */}
+          <div>
+            <h4 className="text-[13px] font-bold mb-6 text-neutral-900 uppercase tracking-wider">
+              More
+            </h4>
+            <ul className="space-y-3">
+              {[
+                { name: 'About Us', path: '/about' },
+                { name: 'Careers', path: '/careers' },
+                { name: 'Boutiques', path: '/boutiques' },
+                { name: 'Lookbook', path: '/lookbook' },
+                { name: 'All Products', path: '/shop' },
+                { name: 'New Arrivals', path: '/shop' }
+              ].map((item) => (
+                <li key={item.name}>
+                  <Link 
+                    to={item.path}
+                    className="text-[13px] text-neutral-600 hover:text-neutral-900 transition-colors inline-block hover:translate-x-1 duration-200"
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Connect With Us */}
+          <div>
+            <h4 className="text-[13px] font-bold mb-6 text-neutral-900 uppercase tracking-wider">
+              Connect With Us
+            </h4>
+            <p className="text-[12px] text-neutral-600 mb-4 leading-relaxed">
+              Join our members list to receive the latest access to new arrivals, VIP events and sale previews.
+            </p>
+            
+            {/* Email Newsletter Signup */}
+            <div className="mb-6">
+              <div className="relative">
+                <input
+                  type="email"
+                  placeholder="Email address..."
+                  className="w-full px-4 py-2.5 pr-12 text-[13px] border border-neutral-300 rounded-sm focus:outline-none focus:border-neutral-900 transition-colors"
+                />
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-900 transition-colors">
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Social Icons */}
             <div className="flex gap-4 mb-4">
               <motion.a
                 href="https://www.instagram.com/inaarawoman_/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-600 hover:text-pink-600 transition-all duration-300"
+                className="text-neutral-600 hover:text-pink-600 transition-colors"
                 aria-label="Instagram"
-                whileHover={{
-                  scale: 1.2,
-                  rotate: 5,
-                  y: -3
-                }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <Instagram size={20} />
               </motion.a>
@@ -128,14 +135,10 @@ export default function EnhancedFooter() {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-600 hover:text-[#1877F2] transition-colors duration-300"
+                className="text-neutral-600 hover:text-[#1877F2] transition-colors"
                 aria-label="Facebook"
-                whileHover={{
-                  scale: 1.2,
-                  rotate: 5,
-                  y: -3
-                }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <Facebook size={20} />
               </motion.a>
@@ -144,37 +147,51 @@ export default function EnhancedFooter() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-600 hover:text-[#1DA1F2] transition-colors duration-300"
+                className="text-neutral-600 hover:text-[#1DA1F2] transition-colors"
                 aria-label="Twitter"
-                whileHover={{
-                  scale: 1.2,
-                  rotate: 5,
-                  y: -3
-                }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <Twitter size={20} />
               </motion.a>
             </div>
+
             <a 
               href="mailto:info@inaarawoman.com" 
-              className="text-[13px] md:text-[14px] text-neutral-600 hover:text-[#D4AF37] transition-colors"
+              className="text-[13px] text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-2"
             >
+              <Mail size={16} />
               info@inaarawoman.com
             </a>
           </div>
         </div>
+      </div>
 
-        {/* Bottom Section with Policy Links */}
-        <div className="mt-12 pt-8 border-t border-neutral-200">
+      {/* Tagline & Acknowledgement Section */}
+      <div className="border-t border-neutral-200 bg-neutral-100">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-4xl">
+            <h5 className="text-[13px] font-bold text-neutral-900 mb-3 uppercase tracking-wider">
+              Tag @inaarawoman for a chance to be featured
+            </h5>
+            <p className="text-[12px] text-neutral-600 leading-relaxed">
+              By tagging us (@inaarawoman) on Instagram or other social platforms, you grant Inaara Woman permission to repost and feature your content across our digital channels — including but not limited to our website, social media pages, email newsletters, and marketing materials. We love celebrating our community, and your beautiful moments in Inaara pieces inspire women everywhere to shine in their own light.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Footer */}
+      <div className="border-t border-neutral-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4">
-              <p className="text-[13px] text-neutral-600">
-                © {year} Inaara Woman. All rights reserved.
+              <p className="text-[12px] text-neutral-600">
+                © {year} INAARA WOMAN
               </p>
               <motion.button
                 onClick={() => navigate('/admin/login')}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-xs font-semibold rounded-md hover:bg-neutral-800 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-[11px] font-semibold rounded-sm hover:bg-neutral-800 transition-colors uppercase tracking-wider"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -182,32 +199,20 @@ export default function EnhancedFooter() {
                 Admin Login
               </motion.button>
             </div>
-            
-            {/* Policy Links */}
-            <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
-              {[
-                { name: 'Privacy Policy', path: '/privacy-policy' },
-                { name: 'Terms & Conditions', path: '/terms-conditions' },
-                { name: 'Shipping Policy', path: '/shipping-policy' },
-                { name: 'Shipping & Returns', path: '/shipping-returns' },
-                { name: 'Cookie Policy', path: '/cookie-policy' }
-              ].map((item) => (
-                <Link key={item.name} to={item.path}>
-                  <motion.div
-                    className="text-[13px] text-neutral-600 hover:text-[#D4AF37] transition-colors relative"
-                    initial="rest"
-                    whileHover="hover"
+
+            {/* Payment Icons (Optional - Add if needed) */}
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Payment Methods:</span>
+              <div className="flex gap-2">
+                {['Visa', 'Mastercard', 'PayPal'].map((method) => (
+                  <div 
+                    key={method}
+                    className="px-2 py-1 bg-white border border-neutral-300 rounded text-[10px] text-neutral-600 font-medium"
                   >
-                    <span className="relative">
-                      {item.name}
-                      <motion.span
-                        className="absolute -bottom-1 left-0 h-0.5 bg-[#D4AF37]"
-                        variants={underlineVariants}
-                      />
-                    </span>
-                  </motion.div>
-                </Link>
-              ))}
+                    {method}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

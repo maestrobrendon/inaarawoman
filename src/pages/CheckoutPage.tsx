@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Ruler } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { supabase } from '../lib/supabase';
 import { Address } from '../types';
-import { formatPrice, generateOrderNumber, calculateShipping, calculateTax } from '../lib/utils';
+import { generateOrderNumber, calculateShipping, calculateTax } from '../lib/utils';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
@@ -12,6 +13,7 @@ import Button from '../components/ui/Button';
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
+  const { formatPrice, currency } = useCurrency();
   const [step, setStep] = useState<'shipping' | 'payment' | 'success'>('shipping');
   const [orderNumber, setOrderNumber] = useState('');
 
@@ -27,7 +29,17 @@ export default function CheckoutPage() {
     phone: ''
   });
 
-  const [billingAddress, setBillingAddress] = useState<Address | null>(null);
+  const [billingAddress, setBillingAddress] = useState<Address>({
+    first_name: '',
+    last_name: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: 'US',
+    phone: ''
+  });
   const [sameAsShipping, setSameAsShipping] = useState(true);
   const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>('standard');
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
@@ -41,6 +53,7 @@ export default function CheckoutPage() {
     { value: 'US', label: 'United States' },
     { value: 'CA', label: 'Canada' },
     { value: 'GB', label: 'United Kingdom' },
+    { value: 'NG', label: 'Nigeria' },
     { value: 'EU', label: 'European Union' }
   ];
 
@@ -60,11 +73,12 @@ export default function CheckoutPage() {
         product_id: item.product.id,
         name: item.product.name,
         image_url: item.image,
-        price: item.product.price,
+        price: item.product.sale_price || item.product.price,
         quantity: item.quantity,
         size: item.size,
         color: item.color.name,
-        sku: item.product.sku || ''
+        sku: item.product.sku || '',
+        custom_measurements: item.customMeasurements || null
       }));
 
       const { error } = await supabase.from('orders').insert({
@@ -78,7 +92,7 @@ export default function CheckoutPage() {
         shipping_cost: shipping,
         tax,
         total,
-        currency: 'USD',
+        currency: currency.code,
         payment_method: paymentMethod,
         payment_status: 'paid',
         shipping_method: shippingMethod,
@@ -316,6 +330,82 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sameAsShipping}
+                      onChange={(e) => setSameAsShipping(e.target.checked)}
+                      className="w-4 h-4 text-neutral-900 border-neutral-300 rounded focus:ring-neutral-900"
+                    />
+                    <span className="text-sm text-neutral-700">
+                      Billing address same as shipping address
+                    </span>
+                  </label>
+                </div>
+
+                {!sameAsShipping && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-3">Billing Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label="First Name"
+                        value={billingAddress.first_name}
+                        onChange={(e) => setBillingAddress({ ...billingAddress, first_name: e.target.value })}
+                        required
+                      />
+                      <Input
+                        label="Last Name"
+                        value={billingAddress.last_name}
+                        onChange={(e) => setBillingAddress({ ...billingAddress, last_name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Input
+                      label="Address Line 1"
+                      value={billingAddress.address_line1}
+                      onChange={(e) => setBillingAddress({ ...billingAddress, address_line1: e.target.value })}
+                      required
+                      className="mt-4"
+                    />
+                    <Input
+                      label="Address Line 2 (Optional)"
+                      value={billingAddress.address_line2}
+                      onChange={(e) => setBillingAddress({ ...billingAddress, address_line2: e.target.value })}
+                      className="mt-4"
+                    />
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <Input
+                        label="City"
+                        value={billingAddress.city}
+                        onChange={(e) => setBillingAddress({ ...billingAddress, city: e.target.value })}
+                        required
+                      />
+                      <Input
+                        label="State/Province"
+                        value={billingAddress.state}
+                        onChange={(e) => setBillingAddress({ ...billingAddress, state: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <Input
+                        label="Postal Code"
+                        value={billingAddress.postal_code}
+                        onChange={(e) => setBillingAddress({ ...billingAddress, postal_code: e.target.value })}
+                        required
+                      />
+                      <Select
+                        label="Country"
+                        options={countries}
+                        value={billingAddress.country}
+                        onChange={(e) => setBillingAddress({ ...billingAddress, country: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-4">
                   <Button type="button" variant="outline" onClick={() => setStep('shipping')} fullWidth>
                     Back
@@ -332,24 +422,67 @@ export default function CheckoutPage() {
             <div className="sticky top-24 bg-neutral-50 rounded-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Order Summary</h3>
               <div className="space-y-4 mb-6">
-                {items.map((item) => (
-                  <div key={`${item.product.id}-${item.size}-${item.color.name}`} className="flex gap-3">
-                    <img
-                      src={item.image}
-                      alt={item.product.name}
-                      className="w-16 h-16 object-cover rounded-sm"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-neutral-900">{item.product.name}</p>
-                      <p className="text-xs text-neutral-600">
-                        {item.size} | {item.color.name} | Qty: {item.quantity}
-                      </p>
-                      <p className="text-sm font-semibold text-neutral-900 mt-1">
-                        {formatPrice(item.product.price * item.quantity)}
-                      </p>
+                {items.map((item, index) => {
+                  const itemPrice = item.product.sale_price || item.product.price;
+                  
+                  return (
+                    <div key={`${item.product.id}-${item.size}-${item.color.name}-${index}`} className="border-b border-neutral-200 pb-4 last:border-0">
+                      <div className="flex gap-3">
+                        <img
+                          src={item.image}
+                          alt={item.product.name}
+                          className="w-16 h-16 object-cover rounded-sm"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-neutral-900">{item.product.name}</p>
+                          
+                          {/* Size with Custom Badge */}
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-neutral-600">
+                              {item.size} | {item.color.name} | Qty: {item.quantity}
+                            </p>
+                            {item.size === 'Custom' && item.customMeasurements && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] text-[9px] font-semibold rounded uppercase tracking-wider">
+                                <Ruler size={8} />
+                                Custom
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Custom Measurements */}
+                          {item.customMeasurements && (
+                            <div className="mt-2 bg-white border border-neutral-200 rounded p-2">
+                              <p className="text-[9px] font-semibold text-neutral-900 uppercase tracking-wider mb-1">
+                                Custom Measurements
+                              </p>
+                              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-neutral-600">
+                                <div>Bust: {item.customMeasurements.bust}"</div>
+                                <div>Waist: {item.customMeasurements.waist}"</div>
+                                <div>Hips: {item.customMeasurements.hips}"</div>
+                                <div>Length: {item.customMeasurements.length}"</div>
+                                {item.customMeasurements.height && (
+                                  <div className="col-span-2">Height: {item.customMeasurements.height}"</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Price */}
+                          <div className="mt-2">
+                            {item.product.sale_price && (
+                              <p className="text-[10px] text-neutral-400 line-through">
+                                {formatPrice(item.product.price * item.quantity)}
+                              </p>
+                            )}
+                            <p className={`text-sm font-semibold ${item.product.sale_price ? 'text-red-600' : 'text-neutral-900'}`}>
+                              {formatPrice(itemPrice * item.quantity)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="space-y-2 py-4 border-t border-neutral-200">
