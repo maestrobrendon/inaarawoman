@@ -136,13 +136,13 @@ export interface ProductImage {
 }
 
 // Product with Images
-export interface ProductWithImages extends Product {
+export interface ProductWithImages extends Omit<Product, 'images'> {
   images: ProductImage[];
   collection?: Collection;
 }
 
 // Product with Full Details (includes reviews)
-export interface ProductWithDetails extends Product {
+export interface ProductWithDetails extends Omit<Product, 'images'> {
   images: string[] | ProductImage[];
   collection?: Collection;
   reviews: Review[];
@@ -278,6 +278,21 @@ export interface AdminUser {
   created_at: string;
 }
 
+// Length Guide Types
+export interface LengthGuide {
+  enabled: boolean;
+  image_url?: string;
+  categories: {
+    petite: { height: string; pants_length: string; dress_length: string };
+    petite_plus: { height: string; pants_length: string; dress_length: string };
+    average: { height: string; pants_length: string; dress_length: string };
+    average_plus: { height: string; pants_length: string; dress_length: string };
+    tall: { height: string; pants_length: string; dress_length: string };
+    very_tall: { height: string; pants_length: string; dress_length: string };
+  };
+  note?: string;
+}
+
 // Product Form Data Types (NEW - for admin form)
 export interface ProductFormData {
   name: string;
@@ -304,6 +319,7 @@ export interface ProductFormData {
   model_measurements: ModelMeasurements;
   color_options: ColorOption[];
   size_chart: SizeChart;
+  length_guide?: LengthGuide;
   
   // Homepage
   show_on_homepage: boolean;
@@ -384,34 +400,5 @@ export interface ProductFilters {
   search?: string;
 }
 
-// Export all types
-export type {
-  Collection,
-  Product,
-  ProductImage,
-  ProductWithImages,
-  ProductWithDetails,
-  ProductMeasurements,
-  ModelMeasurements,
-  SizeChart,
-  SizeChartEntry,
-  ColorOption,
-  Review,
-  WishlistItem,
-  Order,
-  OrderItem,
-  Address,
-  CartItem,
-  NewsletterSubscriber,
-  Currency,
-  CurrencyInfo,
-  User,
-  AdminUser,
-  ProductFormData,
-  PaymentConfig,
-  PaymentResponse,
-  ApiResponse,
-  PaginationParams,
-  PaginatedResponse,
-  ProductFilters,
-};
+// All types are already exported above using 'export interface' or 'export type'
+// No need for additional export block to avoid duplicate export errors

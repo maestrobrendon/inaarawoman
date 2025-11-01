@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Save, ArrowLeft, Home, Star, Sparkles, Plus, X, Ruler } from 'lucide-react';
+import { Save, ArrowLeft, Home, Star, Sparkles, Plus, X, FileText, Info } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import ImageUpload from '../../components/admin/ImageUpload';
-import { ProductFormData, ColorOption, ProductMeasurements, ModelMeasurements, SizeChart } from '../../types';
+import { ProductFormData, ColorOption, LengthGuide } from '../../types';
 
 interface ProductFormProps {
   mode: 'new' | 'edit';
@@ -23,13 +23,25 @@ export default function ProductForm({ mode }: ProductFormProps) {
     is_featured: boolean;
   }>>([]);
 
-  // State for measurements
-  const [measurements, setMeasurements] = useState<ProductMeasurements>({});
-  const [modelMeasurements, setModelMeasurements] = useState<ModelMeasurements>({});
+  // State for colors and length guide
   const [colorOptions, setColorOptions] = useState<ColorOption[]>([]);
-  const [sizeChart, setSizeChart] = useState<SizeChart>({});
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#000000');
+  
+  // Length Guide state
+  const [lengthGuide, setLengthGuide] = useState<LengthGuide>({
+    enabled: false,
+    image_url: '',
+    categories: {
+      petite: { height: "5'0-5'3FT", pants_length: '42', dress_length: '56' },
+      petite_plus: { height: "5'4-5'5FT", pants_length: '43', dress_length: '57' },
+      average: { height: "5'6-5'7FT", pants_length: '45', dress_length: '58' },
+      average_plus: { height: "5'8-5'9FT", pants_length: '47', dress_length: '60' },
+      tall: { height: "5'10-5'11FT", pants_length: '49', dress_length: '63' },
+      very_tall: { height: "6FT+", pants_length: '52', dress_length: '65' },
+    },
+    note: 'ALL MEASUREMENTS ARE IN INCHES. THESE ARE HIGH WAIST TO FEET MEASUREMENTS. IF YOU WOULD LIKE IT TO FIT LONGER, PLEASE GO FOR A TALLER LENGTH OR SHARE YOUR EXACT LENGTH'
+  });
 
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -45,7 +57,7 @@ export default function ProductForm({ mode }: ProductFormProps) {
     low_stock_threshold: '5',
     status: 'draft',
     show_on_homepage: false,
-    homepage_section: 'featured',
+    homepage_section: 'best_sellers', // Updated default to match CMS
     homepage_position: '0',
     is_featured: false,
     is_bestseller: false,
@@ -58,6 +70,7 @@ export default function ProductForm({ mode }: ProductFormProps) {
     model_measurements: {},
     color_options: [],
     size_chart: {},
+    length_guide: undefined,
     seo_title: '',
     seo_description: '',
     tags: [],
@@ -94,7 +107,7 @@ export default function ProductForm({ mode }: ProductFormProps) {
         low_stock_threshold: data.low_stock_threshold?.toString() || '5',
         status: data.status || 'draft',
         show_on_homepage: data.show_on_homepage || false,
-        homepage_section: data.homepage_section || 'featured',
+        homepage_section: data.homepage_section || 'best_sellers',
         homepage_position: data.homepage_position?.toString() || '0',
         is_featured: data.is_featured || false,
         is_bestseller: data.is_bestseller || false,
@@ -107,15 +120,14 @@ export default function ProductForm({ mode }: ProductFormProps) {
         model_measurements: data.model_measurements || {},
         color_options: data.color_options || [],
         size_chart: data.size_chart || {},
+        length_guide: data.length_guide || lengthGuide,
         seo_title: data.seo_title || '',
         seo_description: data.seo_description || '',
         tags: data.tags || [],
       });
 
-      setMeasurements(data.measurements || {});
-      setModelMeasurements(data.model_measurements || {});
       setColorOptions(data.color_options || []);
-      setSizeChart(data.size_chart || {});
+      setLengthGuide(data.length_guide || lengthGuide);
 
       if (data.images && data.images.length > 0) {
         const formattedImages = data.images.map((url: string, index: number) => ({
@@ -168,33 +180,18 @@ export default function ProductForm({ mode }: ProductFormProps) {
     setColorOptions(colorOptions.filter((_, i) => i !== index));
   };
 
-  // Measurement management
-  const updateMeasurement = (key: string, value: string) => {
-    setMeasurements(prev => ({ ...prev, [key]: value }));
-  };
-
-  const updateModelMeasurement = (key: string, value: string) => {
-    setModelMeasurements(prev => ({ ...prev, [key]: value }));
-  };
-
-  // Size chart management
-  const addSizeToChart = (size: string) => {
-    if (size && !sizeChart[size]) {
-      setSizeChart(prev => ({ ...prev, [size]: {} }));
-    }
-  };
-
-  const updateSizeChart = (size: string, measurement: string, value: string) => {
-    setSizeChart(prev => ({
+  // Length Guide management
+  const updateLengthGuide = (category: string, field: string, value: string) => {
+    setLengthGuide(prev => ({
       ...prev,
-      [size]: { ...prev[size], [measurement]: value }
+      categories: {
+        ...prev.categories,
+        [category]: {
+          ...prev.categories[category as keyof typeof prev.categories],
+          [field]: value
+        }
+      }
     }));
-  };
-
-  const removeSizeFromChart = (size: string) => {
-    const newChart = { ...sizeChart };
-    delete newChart[size];
-    setSizeChart(newChart);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -231,10 +228,8 @@ export default function ProductForm({ mode }: ProductFormProps) {
         material_composition: formData.material_composition,
         care_details: formData.care_details,
         sizing_notes: formData.sizing_notes,
-        measurements: measurements,
-        model_measurements: modelMeasurements,
         color_options: colorOptions,
-        size_chart: sizeChart,
+        length_guide: lengthGuide.enabled ? lengthGuide : null,
         
         seo_title: formData.seo_title,
         seo_description: formData.seo_description,
@@ -242,6 +237,7 @@ export default function ProductForm({ mode }: ProductFormProps) {
         images: imageUrls,
         image_public_ids: imagePublicIds,
         main_image: mainImage,
+        featured_image: mainImage, // Add this for compatibility
         updated_at: new Date().toISOString(),
       };
 
@@ -484,116 +480,242 @@ export default function ProductForm({ mode }: ProductFormProps) {
           </div>
         </div>
 
-        {/* Product Measurements */}
+        {/* Length Guide Section */}
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
-            <Ruler size={20} />
-            Product Measurements
+            <FileText size={20} />
+            Length Guide
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {['bust', 'waist', 'hips', 'length', 'shoulder', 'sleeve'].map((measurement) => (
-              <Input
-                key={measurement}
-                label={measurement.charAt(0).toUpperCase() + measurement.slice(1)}
-                value={measurements[measurement] || ''}
-                onChange={(e) => updateMeasurement(measurement, e.target.value)}
-                placeholder='e.g., 34"'
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={lengthGuide.enabled}
+                onChange={(e) => setLengthGuide(prev => ({ ...prev, enabled: e.target.checked }))}
+                className="mt-1 w-5 h-5 text-blue-500 rounded focus:ring-blue-500"
               />
-            ))}
+              <div>
+                <p className="font-medium text-blue-900">Enable Length Guide</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  Show length guide for this product (useful for dresses and pants)
+                </p>
+              </div>
+            </label>
           </div>
-        </div>
 
-        {/* Model Measurements */}
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-neutral-900">Model Information</h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {['height', 'bust', 'waist', 'hips', 'size_worn'].map((measurement) => (
-              <Input
-                key={measurement}
-                label={measurement.replace('_', ' ').charAt(0).toUpperCase() + measurement.replace('_', ' ').slice(1)}
-                value={modelMeasurements[measurement] || ''}
-                onChange={(e) => updateModelMeasurement(measurement, e.target.value)}
-                placeholder={measurement === 'size_worn' ? 'S' : '5\'9"'}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Size Chart */}
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-neutral-900">Size Chart</h2>
-
-          <div className="flex gap-2 mb-4">
-            <Input
-              label=""
-              id="new-size"
-              placeholder="Size (e.g., S, M, L)"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const input = e.target as HTMLInputElement;
-                  addSizeToChart(input.value.toUpperCase());
-                  input.value = '';
-                }
-              }}
-            />
-            <Button
-              type="button"
-              onClick={() => {
-                const input = document.getElementById('new-size') as HTMLInputElement;
-                addSizeToChart(input.value.toUpperCase());
-                input.value = '';
-              }}
-              variant="outline"
+          {lengthGuide.enabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="space-y-4"
             >
-              <Plus size={16} /> Add Size
-            </Button>
-          </div>
+              <Input
+                label="Length Guide Image URL (Optional)"
+                value={lengthGuide.image_url || ''}
+                onChange={(e) => setLengthGuide(prev => ({ ...prev, image_url: e.target.value }))}
+                placeholder="https://... (optional custom length guide image)"
+              />
 
-          {Object.keys(sizeChart).length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-neutral-100">
-                    <th className="border p-2 text-left">Size</th>
-                    <th className="border p-2 text-left">Bust</th>
-                    <th className="border p-2 text-left">Waist</th>
-                    <th className="border p-2 text-left">Hips</th>
-                    <th className="border p-2 text-left">Length</th>
-                    <th className="border p-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.keys(sizeChart).map((size) => (
-                    <tr key={size}>
-                      <td className="border p-2 font-semibold">{size}</td>
-                      {['bust', 'waist', 'hips', 'length'].map((measurement) => (
-                        <td key={measurement} className="border p-2">
-                          <input
-                            type="text"
-                            value={sizeChart[size]?.[measurement] || ''}
-                            onChange={(e) => updateSizeChart(size, measurement, e.target.value)}
-                            placeholder='e.g., 32-34"'
-                            className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
-                          />
-                        </td>
-                      ))}
-                      <td className="border p-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => removeSizeFromChart(size)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <X size={16} />
-                        </button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-neutral-900 text-white">
+                      <th colSpan={4} className="border p-3 text-center text-base">
+                        LENGTH GUIDE
+                      </th>
+                    </tr>
+                    <tr className="bg-neutral-100">
+                      <th className="border p-2 text-left">Category</th>
+                      <th className="border p-2 text-left">Height</th>
+                      <th className="border p-2 text-left">Pants Length</th>
+                      <th className="border p-2 text-left">Dress Length</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border p-2 font-semibold bg-neutral-50">PETITE</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.petite.height}
+                          onChange={(e) => updateLengthGuide('petite', 'height', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.petite.pants_length}
+                          onChange={(e) => updateLengthGuide('petite', 'pants_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.petite.dress_length}
+                          onChange={(e) => updateLengthGuide('petite', 'dress_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    <tr>
+                      <td className="border p-2 font-semibold bg-neutral-50">PETITE+</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.petite_plus.height}
+                          onChange={(e) => updateLengthGuide('petite_plus', 'height', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.petite_plus.pants_length}
+                          onChange={(e) => updateLengthGuide('petite_plus', 'pants_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.petite_plus.dress_length}
+                          onChange={(e) => updateLengthGuide('petite_plus', 'dress_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border p-2 font-semibold bg-neutral-50">AVERAGE</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.average.height}
+                          onChange={(e) => updateLengthGuide('average', 'height', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.average.pants_length}
+                          onChange={(e) => updateLengthGuide('average', 'pants_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.average.dress_length}
+                          onChange={(e) => updateLengthGuide('average', 'dress_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border p-2 font-semibold bg-neutral-50">AVERAGE+</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.average_plus.height}
+                          onChange={(e) => updateLengthGuide('average_plus', 'height', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.average_plus.pants_length}
+                          onChange={(e) => updateLengthGuide('average_plus', 'pants_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.average_plus.dress_length}
+                          onChange={(e) => updateLengthGuide('average_plus', 'dress_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border p-2 font-semibold bg-neutral-50">TALL</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.tall.height}
+                          onChange={(e) => updateLengthGuide('tall', 'height', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.tall.pants_length}
+                          onChange={(e) => updateLengthGuide('tall', 'pants_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.tall.dress_length}
+                          onChange={(e) => updateLengthGuide('tall', 'dress_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border p-2 font-semibold bg-neutral-50">VERY TALL</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.very_tall.height}
+                          onChange={(e) => updateLengthGuide('very_tall', 'height', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.very_tall.pants_length}
+                          onChange={(e) => updateLengthGuide('very_tall', 'pants_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={lengthGuide.categories.very_tall.dress_length}
+                          onChange={(e) => updateLengthGuide('very_tall', 'dress_length', e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-neutral-300 rounded"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Note (FYI)
+                </label>
+                <textarea
+                  value={lengthGuide.note}
+                  onChange={(e) => setLengthGuide(prev => ({ ...prev, note: e.target.value }))}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs"
+                  rows={3}
+                  placeholder="Additional notes about measurements..."
+                />
+                <p className="text-xs text-red-600 mt-1">
+                  <Info size={12} className="inline mr-1" />
+                  Default: ALL MEASUREMENTS ARE IN INCHES. THESE ARE HIGH WAIST TO FEET MEASUREMENTS.
+                </p>
+              </div>
+            </motion.div>
           )}
         </div>
 
@@ -654,7 +776,7 @@ export default function ProductForm({ mode }: ProductFormProps) {
           </div>
         </div>
 
-        {/* Homepage & Visibility */}
+        {/* Homepage & Visibility - UPDATED SECTION */}
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
             <Home className="text-amber-500" size={20} />
@@ -693,12 +815,12 @@ export default function ProductForm({ mode }: ProductFormProps) {
                   onChange={(e) => handleChange('homepage_section', e.target.value)}
                   className="w-full px-4 py-3 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 >
-                  <option value="hero">Hero/Banner</option>
-                  <option value="best_sellers">Best Sellers</option>
+                  <option value="best_sellers">Best Sellers (Customer Favorites)</option>
                   <option value="new_arrivals">New Arrivals</option>
-                  <option value="featured">Featured Products</option>
-                  <option value="latest_collections">Latest Collections</option>
                 </select>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Choose which section this product will appear in on the homepage
+                </p>
               </div>
 
               <Input
@@ -708,6 +830,9 @@ export default function ProductForm({ mode }: ProductFormProps) {
                 onChange={(e) => handleChange('homepage_position', e.target.value)}
                 placeholder="0"
               />
+              <p className="text-xs text-neutral-500 -mt-2">
+                Lower numbers appear first. Use 0, 1, 2, etc. to control the order.
+              </p>
             </motion.div>
           )}
 
