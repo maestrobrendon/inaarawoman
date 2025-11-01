@@ -616,7 +616,7 @@ export default function ClingrHomePage() {
             <TextRevealOnScroll>
               <div className="relative aspect-[4/5]">
                 <ParallaxImage
-                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761654824/Gemini_Generated_Image_ehszg6ehszg6ehsz_qkrfwy.png"
+                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761734975/IMG_0011_kerlww.jpg"
                   speed={0.2}
                   className="w-full h-full rounded-lg"
                 />
