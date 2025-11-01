@@ -515,7 +515,7 @@ export default function ClingrHomePage() {
                 <div className="absolute bottom-6 left-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                   <h3 className="text-xl font-serif font-light mb-1">Elegant Dresses</h3>
                   <p className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    From casual to formal
+                  AMATA SS25
                   </p>
                 </div>
               </div>
@@ -524,7 +524,7 @@ export default function ClingrHomePage() {
             <TextRevealOnScroll>
               <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer">
                 <ParallaxImage
-                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761654824/Gemini_Generated_Image_ehszg6ehszg6ehsz_qkrfwy.png"
+                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761654824/Gemini_Generated_Image_mtsv62mtsv62mtsv_yynrua.png"
                   speed={0.2}
                   className="w-full h-full"
                 />
@@ -532,7 +532,7 @@ export default function ClingrHomePage() {
                 <div className="absolute bottom-6 left-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                   <h3 className="text-xl font-serif font-light mb-1">Statement Pieces</h3>
                   <p className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    Bold and beautiful
+                  UZURI SS25
                   </p>
                 </div>
               </div>
