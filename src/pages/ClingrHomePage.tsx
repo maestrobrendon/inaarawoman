@@ -2,8 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Play, ChevronDown, Star, ShoppingBag, Truck, Shield, Award } from 'lucide-react';
-import Button from '../components/ui/Button';
+import { supabase } from '../lib/supabase';
 
+// Keep all the animation components from the original
 const TextRevealOnScroll = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: false, amount: 0.5 });
@@ -75,18 +76,15 @@ const ScrollProgress = () => {
   );
 };
 
-// Decorative Lines Component (like Clingr)
 const DecorativeLines = () => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Vertical lines */}
       <div className="absolute left-[15%] top-0 bottom-0 w-px bg-white/10" />
       <div className="absolute left-[30%] top-0 bottom-0 w-px bg-white/10" />
       <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/10" />
       <div className="absolute left-[70%] top-0 bottom-0 w-px bg-white/10" />
       <div className="absolute left-[85%] top-0 bottom-0 w-px bg-white/10" />
       
-      {/* Horizontal lines */}
       <div className="absolute top-[20%] left-0 right-0 h-px bg-white/10" />
       <div className="absolute top-[40%] left-0 right-0 h-px bg-white/10" />
       <div className="absolute top-[60%] left-0 right-0 h-px bg-white/10" />
@@ -95,9 +93,76 @@ const DecorativeLines = () => {
   );
 };
 
+interface HomepageContent {
+  hero: {
+    image: string;
+    overlay_opacity: number;
+    small_text: string;
+    main_title: string;
+    subtitle: string;
+    button1_text: string;
+    button1_link: string;
+    button2_text: string;
+    show_video_button: boolean;
+  };
+  top_banner: {
+    text: string;
+    background_color: string;
+    text_color: string;
+    is_visible: boolean;
+  };
+  brand_story: {
+    small_text: string;
+    main_text: string;
+    description: string;
+  };
+  crafted_section: {
+    background_image: string;
+    title: string;
+    subtitle: string;
+    button_text: string;
+    button_link: string;
+    overlay_opacity: number;
+  };
+  final_cta: {
+    background_image: string;
+    title: string;
+    subtitle: string;
+    button_text: string;
+    button_link: string;
+    overlay_opacity: number;
+  };
+  benefits: {
+    title: string;
+    small_text: string;
+    benefits: Array<{
+      icon: string;
+      title: string;
+      description: string;
+    }>;
+  };
+}
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  compare_at_price?: number;
+  main_image?: string;
+  featured_image?: string;
+  category?: string;
+  description?: string;
+  homepage_position: number;
+}
+
 export default function ClingrHomePage() {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
+  const [content, setContent] = useState<HomepageContent | null>(null);
+  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  
   const heroRef = useRef(null);
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
@@ -105,29 +170,184 @@ export default function ClingrHomePage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    loadContent();
+    loadProducts();
   }, []);
+
+  const loadContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('homepage_content')
+        .select('*')
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      // Convert array to object keyed by section_key
+      const contentObj: any = {};
+      data?.forEach(item => {
+        contentObj[item.section_key] = item.content;
+      });
+      
+      setContent(contentObj);
+    } catch (error) {
+      console.error('Error loading content:', error);
+      // Set default content if loading fails
+      setDefaultContent();
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      // Load best sellers
+      const { data: bestSellersData, error: bestError } = await supabase
+        .from('products')
+        .select('id, name, slug, price, compare_at_price, main_image, featured_image, category, description, homepage_position')
+        .eq('show_on_homepage', true)
+        .eq('homepage_section', 'best_sellers')
+        .eq('status', 'active')
+        .order('homepage_position')
+        .limit(4);
+
+      if (!bestError && bestSellersData) {
+        setBestSellers(bestSellersData);
+      }
+
+      // Load new arrivals
+      const { data: newArrivalsData, error: newError } = await supabase
+        .from('products')
+        .select('id, name, slug, price, compare_at_price, main_image, featured_image, category, description, homepage_position')
+        .eq('show_on_homepage', true)
+        .eq('homepage_section', 'new_arrivals')
+        .eq('status', 'active')
+        .order('homepage_position')
+        .limit(6);
+
+      if (!newError && newArrivalsData) {
+        setNewArrivals(newArrivalsData);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
+
+  const setDefaultContent = () => {
+    // Set default content matching the original design
+    setContent({
+      hero: {
+        image: "https://res.cloudinary.com/dusynu0kv/image/upload/v1761658028/hero_jlpiil.jpg",
+        overlay_opacity: 40,
+        small_text: "New Arrivals Just for You",
+        main_title: "",
+        subtitle: "",
+        button1_text: "View Collection",
+        button1_link: "/shop",
+        button2_text: "Watch Story",
+        show_video_button: true
+      },
+      top_banner: {
+        text: "Free Shipping On All Orders - Don't Miss Out!",
+        background_color: "#000000",
+        text_color: "#FFFFFF",
+        is_visible: true
+      },
+      brand_story: {
+        small_text: "Our Story",
+        main_text: "Fashion is more than clothing. It's confidence, expression, and empowerment.",
+        description: "At Inaara Woman, we believe every woman deserves to feel extraordinary. Our carefully curated collections blend timeless elegance with contemporary style, creating pieces that transition seamlessly from day to night."
+      },
+      crafted_section: {
+        background_image: "https://res.cloudinary.com/dusynu0kv/image/upload/v1761657297/IMG_4662_nwpdmy.jpg",
+        title: "Crafted for You",
+        subtitle: "Each design tells a story of elegance and sophistication",
+        button_text: "Explore Collection",
+        button_link: "/shop",
+        overlay_opacity: 40
+      },
+      final_cta: {
+        background_image: "https://res.cloudinary.com/dusynu0kv/image/upload/v1761735409/Untitled-1_3x_laltoc.jpg",
+        title: "Ready to Elevate Your Wardrobe?",
+        subtitle: "Join thousands of women who trust Inaara Woman for their fashion needs.",
+        button_text: "Start Shopping",
+        button_link: "/shop",
+        overlay_opacity: 50
+      },
+      benefits: {
+        title: "The Inaara Experience",
+        small_text: "Why Choose Us",
+        benefits: [
+          {
+            icon: "Award",
+            title: "Premium Quality",
+            description: "Every piece is carefully selected for exceptional quality, craftsmanship, and attention to detail."
+          },
+          {
+            icon: "Truck",
+            title: "Fast Delivery",
+            description: "Nationwide shipping with tracking. Your order arrives swiftly and securely at your doorstep."
+          },
+          {
+            icon: "Shield",
+            title: "Secure Shopping",
+            description: "Shop with confidence. Your payment information is protected with industry-leading security."
+          }
+        ]
+      }
+    });
+  };
+
+  const getIconComponent = (iconName: string) => {
+    switch(iconName) {
+      case 'Award': return <Award size={20} className="text-white" />;
+      case 'Truck': return <Truck size={20} className="text-white" />;
+      case 'Shield': return <Shield size={20} className="text-white" />;
+      default: return <Award size={20} className="text-white" />;
+    }
+  };
+
+  if (!content) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-neutral-600">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white">
       <ScrollProgress />
 
-      {/* Hero Section - Minimalist */}
+      {/* Top Banner - Dynamic from CMS */}
+      {content.top_banner.is_visible && (
+        <div 
+          className="text-center py-2 text-xs"
+          style={{
+            backgroundColor: content.top_banner.background_color,
+            color: content.top_banner.text_color
+          }}
+        >
+          {content.top_banner.text}
+        </div>
+      )}
+
+      {/* Hero Section - Dynamic from CMS */}
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale }}
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
-        {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761658028/hero_jlpiil.jpg"
+            src={content.hero.image}
             alt="Hero"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40" />
+          <div 
+            className="absolute inset-0" 
+            style={{ backgroundColor: `rgba(0, 0, 0, ${content.hero.overlay_opacity / 100})` }}
+          />
         </div>
 
-        {/* Decorative Lines */}
         <DecorativeLines />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -137,10 +357,19 @@ export default function ClingrHomePage() {
             transition={{ duration: 1, ease: 'easeOut' }}
             className="mb-6"
           >
-            {/* Tiny elegant label */}
             <p className="text-[10px] md:text-xs tracking-[0.4em] text-white/70 mb-4 uppercase font-light">
-              New Arrivals Just for You
+              {content.hero.small_text}
             </p>
+            {content.hero.main_title && (
+              <h1 className="font-serif text-3xl md:text-5xl font-light text-white mb-4">
+                {content.hero.main_title}
+              </h1>
+            )}
+            {content.hero.subtitle && (
+              <p className="text-sm md:text-base text-white/80">
+                {content.hero.subtitle}
+              </p>
+            )}
           </motion.div>
 
           <motion.div
@@ -149,21 +378,22 @@ export default function ClingrHomePage() {
             transition={{ duration: 1, delay: 0.6 }}
             className="flex flex-col sm:flex-row gap-3 justify-center items-center"
           >
-            {/* Tiny buttons */}
             <button
-              onClick={() => navigate('/shop')}
+              onClick={() => navigate(content.hero.button1_link)}
               className="px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 border border-white transition-all duration-300 font-medium"
             >
-              View Collection
+              {content.hero.button1_text}
             </button>
             
-            <button
-              onClick={() => setShowVideo(true)}
-              className="flex items-center gap-2 px-6 py-2 text-[10px] tracking-widest uppercase border border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 font-medium"
-            >
-              <Play size={12} />
-              Watch Story
-            </button>
+            {content.hero.show_video_button && (
+              <button
+                onClick={() => setShowVideo(true)}
+                className="flex items-center gap-2 px-6 py-2 text-[10px] tracking-widest uppercase border border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 font-medium"
+              >
+                <Play size={12} />
+                {content.hero.button2_text}
+              </button>
+            )}
           </motion.div>
 
           <motion.div
@@ -182,144 +412,88 @@ export default function ClingrHomePage() {
         </div>
       </motion.section>
 
-      {/* Best Sellers Section - Minimalist */}
-      <section className="py-16 px-4 bg-neutral-50">
-        <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-12">
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Best Sellers</p>
-            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-              Customer Favorites
-            </h2>
-          </TextRevealOnScroll>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Product 1 */}
-            <TextRevealOnScroll>
-              <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761655548/A5B830C9-6BF5-4117-87BB-81014C55648B_jruhlc.jpg"
-                    alt="Blaze Set Summer"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Blaze Set Summer</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Adeleke</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦226,980.00</p>
-                </div>
-              </div>
+      {/* Best Sellers Section - Dynamic from Database */}
+      {bestSellers.length > 0 && (
+        <section className="py-16 px-4 bg-neutral-50">
+          <div className="max-w-7xl mx-auto">
+            <TextRevealOnScroll className="text-center mb-12">
+              <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Best Sellers</p>
+              <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
+                Customer Favorites
+              </h2>
             </TextRevealOnScroll>
 
-            {/* Product 2 */}
-            <TextRevealOnScroll>
-              <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761655938/IMG_2376_mwz41c.jpg"
-                    alt="Blaze Skirt Set"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {bestSellers.map((product) => (
+                <TextRevealOnScroll key={product.id}>
+                  <div 
+                    className="group cursor-pointer"
+                    onClick={() => navigate(`/product/${product.slug}`)}
+                  >
+                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
+                      <img
+                        src={product.main_image || product.featured_image || '/placeholder.jpg'}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
+                          Quick View
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">{product.name}</h3>
+                      <p className="text-neutral-600 text-[10px] mb-1">{product.category || 'Premium Collection'}</p>
+                      <p className="text-neutral-900 font-medium text-[10px]">
+                        ₦{product.price.toLocaleString()}
+                        {product.compare_at_price && (
+                          <span className="text-neutral-500 line-through ml-2">
+                            ₦{product.compare_at_price.toLocaleString()}
+                          </span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Blaze Skirt Set</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Premium Collection</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦499,300.00</p>
-                </div>
-              </div>
-            </TextRevealOnScroll>
+                </TextRevealOnScroll>
+              ))}
+            </div>
 
-            {/* Product 3 */}
-            <TextRevealOnScroll>
-              <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761657166/Gemini_Generated_Image_ywipcvywipcvywip_dcejpx.png"
-                    alt="Arewa Dress"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Arewa Dress</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Floral Beauty</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦249,990.00</p>
-                </div>
-              </div>
-            </TextRevealOnScroll>
-
-            {/* Product 4 */}
-            <TextRevealOnScroll>
-              <div className="group cursor-pointer">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/w_600,q_auto,f_auto/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
-                    alt="Makeup Dress"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Makeup Dress</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Statement Pink</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦123,493.50</p>
-                </div>
-              </div>
-            </TextRevealOnScroll>
+            <div className="text-center mt-8">
+              <button
+                onClick={() => navigate('/shop')}
+                className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
+              >
+                View All
+              </button>
+            </div>
           </div>
+        </section>
+      )}
 
-          {/* Tiny View All Button */}
-          <div className="text-center mt-8">
-            <button
-              onClick={() => navigate('/shop')}
-              className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
-            >
-              View All
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Brand Story Section - Minimalist */}
+      {/* Brand Story Section - Dynamic from CMS */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-5xl mx-auto">
           <TextRevealOnScroll>
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 text-center uppercase font-light">Our Story</p>
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 text-center uppercase font-light">
+              {content.brand_story.small_text}
+            </p>
           </TextRevealOnScroll>
 
           <SplitTextReveal
-            text="Fashion is more than clothing. It's confidence, expression, and empowerment."
+            text={content.brand_story.main_text}
             className="font-serif text-lg md:text-xl lg:text-2xl font-light text-neutral-900 text-center mb-8 leading-relaxed"
           />
 
           <TextRevealOnScroll>
             <p className="text-sm text-neutral-600 text-center max-w-3xl mx-auto leading-relaxed">
-              At Inaara Woman, we believe every woman deserves to feel extraordinary. Our carefully curated collections
-              blend timeless elegance with contemporary style, creating pieces that transition seamlessly from day to night.
+              {content.brand_story.description}
             </p>
           </TextRevealOnScroll>
         </div>
       </section>
 
-      {/* Featured Products Grid - Minimalist */}
+      {/* Featured Products Grid - Keep static for now */}
       <section className="py-16 px-4 bg-neutral-50">
         <div className="max-w-7xl mx-auto">
           <TextRevealOnScroll className="text-center mb-12">
@@ -367,67 +541,49 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Benefits Section - Minimalist */}
+      {/* Benefits Section - Dynamic from CMS */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <TextRevealOnScroll className="text-center mb-16">
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Why Choose Us</p>
+            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">
+              {content.benefits.small_text}
+            </p>
             <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-              The Inaara Experience
+              {content.benefits.title}
             </h2>
           </TextRevealOnScroll>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <TextRevealOnScroll>
-              <div className="text-center">
-                <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
-                  <Award size={20} className="text-white" />
+            {content.benefits.benefits.map((benefit, index) => (
+              <TextRevealOnScroll key={index}>
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
+                    {getIconComponent(benefit.icon)}
+                  </div>
+                  <h3 className="text-sm font-serif font-normal mb-2">{benefit.title}</h3>
+                  <p className="text-xs text-neutral-600 leading-relaxed">
+                    {benefit.description}
+                  </p>
                 </div>
-                <h3 className="text-sm font-serif font-normal mb-2">Premium Quality</h3>
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  Every piece is carefully selected for exceptional quality, craftsmanship, and attention to detail.
-                </p>
-              </div>
-            </TextRevealOnScroll>
-
-            <TextRevealOnScroll>
-              <div className="text-center">
-                <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
-                  <Truck size={20} className="text-white" />
-                </div>
-                <h3 className="text-sm font-serif font-normal mb-2">Fast Delivery</h3>
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  Nationwide shipping with tracking. Your order arrives swiftly and securely at your doorstep.
-                </p>
-              </div>
-            </TextRevealOnScroll>
-
-            <TextRevealOnScroll>
-              <div className="text-center">
-                <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
-                  <Shield size={20} className="text-white" />
-                </div>
-                <h3 className="text-sm font-serif font-normal mb-2">Secure Shopping</h3>
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  Shop with confidence. Your payment information is protected with industry-leading security.
-                </p>
-              </div>
-            </TextRevealOnScroll>
+              </TextRevealOnScroll>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Large Image Showcase - Crafted for You - Minimalist */}
+      {/* Crafted for You Section - Dynamic from CMS */}
       <section className="relative h-screen">
         <div className="absolute inset-0">
           <img
-            src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657297/IMG_4662_nwpdmy.jpg"
+            src={content.crafted_section.background_image}
             alt="Crafted for You"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40" />
+          <div 
+            className="absolute inset-0" 
+            style={{ backgroundColor: `rgba(0, 0, 0, ${content.crafted_section.overlay_opacity / 100})` }}
+          />
           
-          {/* Large INAARA watermark */}
           <div className="absolute inset-0 flex items-center justify-center opacity-10">
             <h1 className="font-serif text-[20vw] font-bold text-white tracking-wider">
               INAARA
@@ -438,22 +594,22 @@ export default function ClingrHomePage() {
         <div className="relative z-10 h-full flex items-center justify-center">
           <div className="text-center text-white px-4">
             <h2 className="font-serif text-2xl md:text-3xl font-light mb-4">
-              Crafted for You
+              {content.crafted_section.title}
             </h2>
             <p className="text-xs md:text-sm mb-6 max-w-2xl mx-auto">
-              Each design tells a story of elegance and sophistication
+              {content.crafted_section.subtitle}
             </p>
             <button
-              onClick={() => navigate('/shop')}
+              onClick={() => navigate(content.crafted_section.button_link)}
               className="px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
             >
-              Explore Collection
+              {content.crafted_section.button_text}
             </button>
           </div>
         </div>
       </section>
 
-      {/* Collection Highlights - Minimalist */}
+      {/* Collection Highlights - Keep static */}
       <section className="py-24 px-4 bg-neutral-50">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
@@ -520,196 +676,73 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Featured Products - Scrollable Section - Minimalist */}
-      <section className="py-24 px-4 bg-neutral-50 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-12">
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Discover</p>
-            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-              New Arrivals
-            </h2>
-          </TextRevealOnScroll>
+      {/* New Arrivals - Dynamic from Database */}
+      {newArrivals.length > 0 && (
+        <section className="py-24 px-4 bg-neutral-50 overflow-hidden">
+          <div className="max-w-7xl mx-auto">
+            <TextRevealOnScroll className="text-center mb-12">
+              <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Discover</p>
+              <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
+                New Arrivals
+              </h2>
+            </TextRevealOnScroll>
 
-          <div className="relative">
-            <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              
-              {/* Product 1 */}
-              <div className="flex-none w-64 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657117/Gemini_Generated_Image_ghl6prghl6prghl6_qvqz21.png"
-                    alt="Product 1"
-                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                  />
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657117/Gemini_Generated_Image_ghl6prghl6prghl6_qvqz21.png"
-                    alt="Product 1 Hover"
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
+            <div className="relative">
+              <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                
+                {newArrivals.map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="flex-none w-64 group cursor-pointer snap-start"
+                    onClick={() => navigate(`/product/${product.slug}`)}
+                  >
+                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
+                      <img
+                        src={product.main_image || product.featured_image || '/placeholder.jpg'}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-opacity duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
+                          Quick View
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">{product.name}</h3>
+                      <p className="text-neutral-600 text-[10px] mb-1">{product.category || 'Classic Statement Piece'}</p>
+                      <p className="text-neutral-900 font-medium text-[10px]">
+                        ₦{product.price.toLocaleString()}
+                        {product.compare_at_price && (
+                          <span className="text-neutral-500 line-through ml-2">
+                            ₦{product.compare_at_price.toLocaleString()}
+                          </span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Zola Earring</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Classic Statement Piece</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦277,200.00</p>
-                </div>
+                ))}
+
               </div>
 
-              {/* Product 2 */}
-              <div className="flex-none w-64 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657116/Gemini_Generated_Image_13mwoj13mwoj13mw_3_nq4a88.png"
-                    alt="Product 2"
-                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                  />
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657116/Gemini_Generated_Image_13mwoj13mwoj13mw_3_nq4a88.png"
-                    alt="Product 2 Hover"
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Salle Bodysuit</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Camel Elegance</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦215,800.00</p>
-                </div>
+              <div className="text-center mt-6">
+                <p className="text-[9px] text-neutral-500 tracking-wider">← Scroll to explore more →</p>
               </div>
-
-              {/* Product 3 */}
-              <div className="flex-none w-64 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657152/Gemini_Generated_Image_ezhk6aezhk6aezhk_vsvjez.png"
-                    alt="Product 3"
-                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                  />
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657152/Gemini_Generated_Image_ezhk6aezhk6aezhk_vsvjez.png"
-                    alt="Product 3 Hover"
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Ovu Knit Cape</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Sophisticated Layering</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦585,100.00</p>
-                </div>
-              </div>
-
-              {/* Product 4 */}
-              <div className="flex-none w-64 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
-                    alt="Product 4"
-                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                  />
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657174/Gemini_Generated_Image_y81htcy81htcy81h_i75fio.png"
-                    alt="Product 4 Hover"
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Ovu Knit Pants</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Coffee Comfort</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦369,500.00</p>
-                </div>
-              </div>
-
-              {/* Product 5 */}
-              <div className="flex-none w-64 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657292/Gemini_Generated_Image_jc5sdejc5sdejc5s_muhame.png"
-                    alt="Product 5"
-                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                  />
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657292/Gemini_Generated_Image_jc5sdejc5sdejc5s_muhame.png"
-                    alt="Product 5 Hover"
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Coral Dress</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Statement Evening Wear</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦458,980.00</p>
-                </div>
-              </div>
-
-              {/* Product 6 */}
-              <div className="flex-none w-64 group cursor-pointer snap-start">
-                <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657313/Gemini_Generated_Image_3g5mvf3g5mvf3g5m_ukrg1d.png"
-                    alt="Product 6"
-                    className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                  />
-                  <img
-                    src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761657313/Gemini_Generated_Image_3g5mvf3g5mvf3g5m_ukrg1d.png"
-                    alt="Product 6 Hover"
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                      Quick View
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">Floral Maxi Dress</h3>
-                  <p className="text-neutral-600 text-[10px] mb-1">Garden Party Perfect</p>
-                  <p className="text-neutral-900 font-medium text-[10px]">₦524,390.00</p>
-                </div>
-              </div>
-
             </div>
 
-            {/* Scroll Indicator */}
-            <div className="text-center mt-6">
-              <p className="text-[9px] text-neutral-500 tracking-wider">← Scroll to explore more →</p>
+            <div className="text-center mt-8">
+              <button
+                onClick={() => navigate('/shop')}
+                className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
+              >
+                View All
+              </button>
             </div>
           </div>
+        </section>
+      )}
 
-          {/* View All Button */}
-          <div className="text-center mt-8">
-            <button
-              onClick={() => navigate('/shop')}
-              className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
-            >
-              View All
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials - Minimalist */}
+      {/* Testimonials - Keep static */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <TextRevealOnScroll className="text-center mb-16">
@@ -741,38 +774,40 @@ export default function ClingrHomePage() {
         </div>
       </section>
 
-      {/* Final CTA - Minimalist */}
+      {/* Final CTA - Dynamic from CMS */}
       <section className="relative py-32 px-4 text-white">
-        {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761735409/Untitled-1_3x_laltoc.jpg"
+            src={content.final_cta.background_image}
             alt="Background"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/50" />
+          <div 
+            className="absolute inset-0" 
+            style={{ backgroundColor: `rgba(0, 0, 0, ${content.final_cta.overlay_opacity / 100})` }}
+          />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <TextRevealOnScroll>
             <h2 className="font-serif text-2xl md:text-3xl font-light mb-4">
-              Ready to Elevate Your Wardrobe?
+              {content.final_cta.title}
             </h2>
           </TextRevealOnScroll>
 
           <TextRevealOnScroll>
             <p className="text-sm md:text-base text-white/90 mb-8">
-              Join thousands of women who trust Inaara Woman for their fashion needs.
+              {content.final_cta.subtitle}
             </p>
           </TextRevealOnScroll>
 
           <TextRevealOnScroll>
             <button
-              onClick={() => navigate('/shop')}
+              onClick={() => navigate(content.final_cta.button_link)}
               className="inline-flex items-center gap-2 px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
             >
               <ShoppingBag size={14} />
-              Start Shopping
+              {content.final_cta.button_text}
             </button>
           </TextRevealOnScroll>
         </div>
