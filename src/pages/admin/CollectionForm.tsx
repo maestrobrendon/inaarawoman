@@ -13,7 +13,8 @@ interface Product {
   id: string;
   name: string;
   price: number;
-  image_url: string;
+  main_image: string | null;
+  images: string[] | null;
 }
 
 export default function CollectionForm({ mode }: CollectionFormProps) {
@@ -34,6 +35,7 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -65,16 +67,20 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
 
   const loadProducts = async () => {
     try {
+      setLoadingProducts(true);
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price, image_url')
-        .eq('status', 'published')
+        .select('id, name, price, main_image, images')
+        .in('status', ['active', 'published', 'draft'])
         .order('name');
 
       if (error) throw error;
       setAvailableProducts(data || []);
     } catch (error) {
       console.error('Error loading products:', error);
+      alert('Failed to load products. Please try again.');
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
@@ -262,10 +268,19 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
                 label="Search Products"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search..."
+                placeholder="Search by product name..."
               />
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {filteredProducts.map((product) => (
+              {loadingProducts ? (
+                <div className="text-center py-8 text-neutral-500">
+                  Loading products...
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="text-center py-8 text-neutral-500">
+                  {searchTerm ? `No products found matching "${searchTerm}"` : 'No products available. Create products first.'}
+                </div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {filteredProducts.map((product) => (
                   <label
                     key={product.id}
                     className="flex items-center gap-3 p-2 hover:bg-neutral-50 rounded cursor-pointer"
@@ -276,20 +291,24 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
                       onChange={() => toggleProduct(product.id)}
                       className="w-4 h-4"
                     />
-                    {product.image_url && (
+                    {(product.main_image || (product.images && product.images.length > 0)) && (
                       <img
-                        src={product.image_url}
+                        src={product.main_image || (product.images?.[0]) || ''}
                         alt={product.name}
                         className="w-10 h-10 object-cover rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     )}
                     <div className="flex-1">
                       <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-neutral-600">₦{product.price.toLocaleString()}</p>
+                      <p className="text-xs text-neutral-600">₦{product.price?.toLocaleString() || '0'}</p>
                     </div>
                   </label>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -300,16 +319,19 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
                   key={product.id}
                   className="flex items-center gap-3 p-3 border border-neutral-200 rounded-lg"
                 >
-                  {product.image_url && (
+                  {(product.main_image || (product.images && product.images.length > 0)) && (
                     <img
-                      src={product.image_url}
+                      src={product.main_image || (product.images?.[0]) || ''}
                       alt={product.name}
                       className="w-12 h-12 object-cover rounded"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   )}
                   <div className="flex-1">
                     <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-neutral-600">₦{product.price.toLocaleString()}</p>
+                    <p className="text-sm text-neutral-600">₦{product.price?.toLocaleString() || '0'}</p>
                   </div>
                   <button
                     type="button"
