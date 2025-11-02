@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Home, Save, Eye, RefreshCw, Image, Type, 
-  Globe, ShoppingBag, Award, Edit2
+  Globe, ShoppingBag, Award, Edit2, Truck, Shield
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
@@ -62,6 +62,7 @@ interface Product {
   name: string;
   price: number;
   featured_image: string;
+  main_image?: string;
   show_on_homepage: boolean;
   homepage_section: string;
   homepage_position: number;
@@ -106,15 +107,38 @@ export default function HomepageContentManager() {
 
   const loadProducts = async () => {
     try {
+      // Fetch ALL fields we might need for displaying products
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price, featured_image, show_on_homepage, homepage_section, homepage_position')
+        .select('*') // Get all fields to debug
         .eq('show_on_homepage', true)
         .eq('status', 'active')
         .order('homepage_position');
 
       if (error) throw error;
-      setProducts(data || []);
+      
+      // Map the data to ensure we have an image to display
+      const mappedData = data?.map(product => {
+        // Try to get the best available image
+        let displayImage = product.featured_image || product.main_image;
+        
+        // If neither exists, try to get the first image from the images array
+        if (!displayImage && product.images && product.images.length > 0) {
+          displayImage = product.images[0];
+        }
+        
+        return {
+          ...product,
+          featured_image: displayImage || null
+        };
+      }) || [];
+      
+      setProducts(mappedData);
+      
+      // Debug logging
+      console.log('Total products loaded:', mappedData.length);
+      console.log('Best Sellers:', mappedData.filter(p => p.homepage_section === 'best_sellers'));
+      console.log('New Arrivals:', mappedData.filter(p => p.homepage_section === 'new_arrivals'));
     } catch (error) {
       console.error('Error loading products:', error);
     }
@@ -214,7 +238,10 @@ export default function HomepageContentManager() {
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={loadContent}
+            onClick={() => {
+              loadContent();
+              loadProducts();
+            }}
             variant="outline"
             className="gap-2"
           >
@@ -713,6 +740,12 @@ export default function HomepageContentManager() {
               Products shown below are already marked to display on the homepage. 
               To add or remove products, edit them in the Products section.
             </p>
+            {/* Debug info */}
+            <div className="text-xs text-amber-700">
+              <p>Total products loaded: {products.length}</p>
+              <p>Best Sellers: {groupedProducts.best_sellers?.length || 0}</p>
+              <p>New Arrivals: {groupedProducts.new_arrivals?.length || 0}</p>
+            </div>
           </div>
 
           {/* Best Sellers Section */}
@@ -731,8 +764,12 @@ export default function HomepageContentManager() {
                   {groupedProducts.best_sellers.map(product => (
                     <div key={product.id} className="border rounded-lg overflow-hidden">
                       <div className="aspect-square bg-neutral-100">
-                        {product.featured_image && (
+                        {product.featured_image ? (
                           <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                            No Image
+                          </div>
                         )}
                       </div>
                       <div className="p-3">
@@ -767,8 +804,12 @@ export default function HomepageContentManager() {
                   {groupedProducts.new_arrivals.map(product => (
                     <div key={product.id} className="border rounded-lg overflow-hidden">
                       <div className="aspect-square bg-neutral-100">
-                        {product.featured_image && (
+                        {product.featured_image ? (
                           <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                            No Image
+                          </div>
                         )}
                       </div>
                       <div className="p-3">
