@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Ruler } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -10,12 +10,38 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 
+/* ---------- Paystack type guard ---------- */
+declare global {
+  interface Window {
+    PaystackPop?: {
+      setup: (config: any) => {
+        openIframe: () => void;
+      };
+    };
+  }
+}
+
+/* ---------- Load Paystack script ---------- */
+const loadPaystackScript = () =>
+  new Promise<boolean>((resolve) => {
+    if (document.getElementById('paystack-script')) return resolve(true);
+    const s = document.createElement('script');
+    s.id = 'paystack-script';
+    s.src = 'https://js.paystack.co/v1/inline.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const { formatPrice, currency } = useCurrency();
+
   const [step, setStep] = useState<'shipping' | 'payment' | 'success'>('shipping');
   const [orderNumber, setOrderNumber] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paystackLoaded, setPaystackLoaded] = useState(false);
 
   const [shippingAddress, setShippingAddress] = useState<Address>({
     first_name: '',
@@ -25,93 +51,141 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     postal_code: '',
-    country: 'US',
-    phone: ''
+    country: 'NG',
+    phone: '',
   });
 
-  const [billingAddress, setBillingAddress] = useState<Address>({
-    first_name: '',
-    last_name: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: 'US',
-    phone: ''
-  });
-  const [sameAsShipping, setSameAsShipping] = useState(true);
   const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>('standard');
-  const [paymentMethod, setPaymentMethod] = useState('credit_card');
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const shipping = calculateShipping(subtotal, shippingAddress.country);
   const tax = calculateTax(subtotal, shippingAddress.country);
   const total = subtotal + shipping + tax;
 
   const countries = [
+    { value: 'NG', label: 'Nigeria' },
     { value: 'US', label: 'United States' },
     { value: 'CA', label: 'Canada' },
     { value: 'GB', label: 'United Kingdom' },
-    { value: 'NG', label: 'Nigeria' },
-    { value: 'EU', label: 'European Union' }
+    { value: 'EU', label: 'European Union' },
   ];
 
+  /* ---------- Load Paystack on mount ---------- */
+  useEffect(() => {
+    loadPaystackScript().then(setPaystackLoaded);
+  }, []);
+
+  /* ---------- Shipping form ---------- */
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStep('payment');
   };
 
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessing(true);
-
-    try {
-      const orderNum = generateOrderNumber();
-
-      const orderItems = items.map((item) => ({
-        product_id: item.product.id,
-        name: item.product.name,
-        image_url: item.image,
-        price: item.product.sale_price || item.product.price,
-        quantity: item.quantity,
-        size: item.size,
-        color: item.color.name,
-        sku: item.product.sku || '',
-        custom_measurements: item.customMeasurements || null
-      }));
-
-      const { error } = await supabase.from('orders').insert({
-        order_number: orderNum,
-        customer_email: shippingAddress.phone,
-        customer_name: `${shippingAddress.first_name} ${shippingAddress.last_name}`,
-        shipping_address: shippingAddress,
-        billing_address: sameAsShipping ? shippingAddress : billingAddress,
-        items: orderItems,
-        subtotal,
-        shipping_cost: shipping,
-        tax,
-        total,
-        currency: currency.code,
-        payment_method: paymentMethod,
-        payment_status: 'paid',
-        shipping_method: shippingMethod,
-        order_status: 'processing'
-      });
-
-      if (error) throw error;
-
-      setOrderNumber(orderNum);
-      clearCart();
-      setStep('success');
-    } catch (error) {
-      console.error('Error creating order:', error);
-      alert('Failed to process order. Please try again.');
-    } finally {
-      setIsProcessing(false);
+  /* ---------- Paystack payment ---------- */
+  const handlePayWithPaystack = async () => {
+    if (!paystackLoaded || !window.PaystackPop) {
+      alert('Paystack not loaded. Try again.');
+      return;
     }
+
+    setIsProcessing(true);
+    const orderNum = generateOrderNumber();
+    const email = shippingAddress.phone.includes('@')
+      ? shippingAddress.phone
+      : `${shippingAddress.phone}@temp.com`;
+    const amountKobo = Math.round(total * 100);
+
+    const handler = window.PaystackPop.setup({
+      key: 'pk_live_6fb4375c586d035dfa541d01357199850e6773fb',
+      email,
+      amount: amountKobo,
+      currency: currency.code,
+      ref: orderNum,
+      metadata: {
+        custom_fields: [
+          {
+            display_name: 'Customer Name',
+            variable_name: 'customer_name',
+            value: `${shippingAddress.first_name} ${shippingAddress.last_name}`,
+          },
+          { display_name: 'Phone', variable_name: 'phone', value: shippingAddress.phone },
+        ],
+      },
+      callback: async (response: { reference: string }) => {
+        try {
+          const res = await fetch('/api/verify-paystack', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference: response.reference }),
+          });
+          const data = await res.json();
+
+          if (data.success && data.data.status === 'success') {
+            await saveOrderToSupabase(orderNum, data.data);
+          } else {
+            throw new Error('Verification failed');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Payment failed. Contact support.');
+          setIsProcessing(false);
+        }
+      },
+      onClose: () => {
+        setIsProcessing(false);
+        alert('Payment cancelled.');
+      },
+    });
+
+    handler.openIframe();
   };
 
+  /* ---------- Save order after successful payment ---------- */
+  const saveOrderToSupabase = async (orderNum: string, paymentData: any) => {
+    const orderItems = items.map((item) => ({
+      product_id: item.product.id,
+      name: item.product.name,
+      image_url: item.image,
+      price: item.product.sale_price || item.product.price,
+      quantity: item.quantity,
+      size: item.size,
+      color: item.color.name,
+      sku: item.product.sku || '',
+      custom_measurements: item.customMeasurements || null,
+    }));
+
+    const { error } = await supabase.from('orders').insert({
+      order_number: orderNum,
+      customer_email: shippingAddress.phone.includes('@') ? shippingAddress.phone : null,
+      customer_phone: shippingAddress.phone,
+      customer_name: `${shippingAddress.first_name} ${shippingAddress.last_name}`,
+      shipping_address: shippingAddress,
+      billing_address: shippingAddress,
+      items: orderItems,
+      subtotal,
+      shipping_cost: shipping,
+      tax,
+      total,
+      currency: currency.code,
+      payment_method: 'paystack',
+      payment_status: 'paid',
+      payment_reference: paymentData.reference,
+      shipping_method: shippingMethod,
+      order_status: 'processing',
+    });
+
+    if (error) {
+      console.error(error);
+      alert('Failed to save order. Contact support.');
+      return;
+    }
+
+    setOrderNumber(orderNum);
+    clearCart();
+    setStep('success');
+    setIsProcessing(false);
+  };
+
+  /* ---------- Empty cart view ---------- */
   if (items.length === 0 && step !== 'success') {
     return (
       <div className="min-h-screen flex items-center justify-center py-12">
@@ -123,23 +197,16 @@ export default function CheckoutPage() {
     );
   }
 
+  /* ---------- Success view ---------- */
   if (step === 'success') {
     return (
       <div className="min-h-screen flex items-center justify-center py-12">
         <div className="max-w-md mx-auto px-4 text-center">
           <CheckCircle size={64} className="mx-auto text-green-500 mb-6" />
-          <h1 className="font-serif text-3xl font-bold text-neutral-900 mb-4">
-            Order Confirmed!
-          </h1>
-          <p className="text-neutral-700 mb-2">
-            Thank you for your purchase. Your order number is:
-          </p>
-          <p className="text-2xl font-mono font-semibold text-neutral-900 mb-6">
-            {orderNumber}
-          </p>
-          <p className="text-sm text-neutral-600 mb-8">
-            We've sent a confirmation email with your order details and tracking information.
-          </p>
+          <h1 className="font-serif text-3xl font-bold text-neutral-900 mb-4">Order Confirmed!</h1>
+          <p className="text-neutral-700 mb-2">Your order number is:</p>
+          <p className="text-2xl font-mono font-semibold text-neutral-900 mb-6">{orderNumber}</p>
+          <p className="text-sm text-neutral-600 mb-8">Confirmation sent to your phone/email.</p>
           <div className="space-y-3">
             <Button fullWidth onClick={() => navigate('/shop')}>
               Continue Shopping
@@ -153,25 +220,31 @@ export default function CheckoutPage() {
     );
   }
 
+  /* ---------- Main checkout UI ---------- */
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="font-serif text-4xl font-bold text-neutral-900 mb-8">Checkout</h1>
 
+        {/* Progress */}
         <div className="flex items-center mb-8">
           <div className={`flex items-center ${step === 'shipping' ? 'text-neutral-900' : 'text-green-600'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              step === 'shipping' ? 'bg-neutral-900 text-white' : 'bg-green-600 text-white'
-            }`}>
-              {step === 'shipping' ? '1' : '✓'}
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                step === 'shipping' ? 'bg-neutral-900 text-white' : 'bg-green-600 text-white'
+              }`}
+            >
+              {step === 'shipping' ? '1' : 'Check'}
             </div>
             <span className="ml-2 font-medium">Shipping</span>
           </div>
           <div className={`flex-1 h-0.5 mx-4 ${step === 'payment' ? 'bg-neutral-900' : 'bg-neutral-300'}`} />
           <div className={`flex items-center ${step === 'payment' ? 'text-neutral-900' : 'text-neutral-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              step === 'payment' ? 'bg-neutral-900 text-white' : 'bg-neutral-300'
-            }`}>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                step === 'payment' ? 'bg-neutral-900 text-white' : 'bg-neutral-300'
+              }`}
+            >
               2
             </div>
             <span className="ml-2 font-medium">Payment</span>
@@ -179,11 +252,14 @@ export default function CheckoutPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Forms */}
           <div className="lg:col-span-2">
+            {/* ---------- Shipping Step ---------- */}
             {step === 'shipping' && (
               <form onSubmit={handleShippingSubmit} className="space-y-6">
                 <div>
                   <h2 className="text-xl font-semibold text-neutral-900 mb-4">Shipping Information</h2>
+
                   <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="First Name"
@@ -198,6 +274,7 @@ export default function CheckoutPage() {
                       required
                     />
                   </div>
+
                   <Input
                     label="Address Line 1"
                     value={shippingAddress.address_line1}
@@ -211,6 +288,7 @@ export default function CheckoutPage() {
                     onChange={(e) => setShippingAddress({ ...shippingAddress, address_line2: e.target.value })}
                     className="mt-4"
                   />
+
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <Input
                       label="City"
@@ -225,12 +303,12 @@ export default function CheckoutPage() {
                       required
                     />
                   </div>
+
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <Input
                       label="Postal Code"
                       value={shippingAddress.postal_code}
                       onChange={(e) => setShippingAddress({ ...shippingAddress, postal_code: e.target.value })}
-                      required
                     />
                     <Select
                       label="Country"
@@ -240,16 +318,19 @@ export default function CheckoutPage() {
                       required
                     />
                   </div>
+
                   <Input
-                    label="Phone"
+                    label="Phone Number"
                     type="tel"
                     value={shippingAddress.phone}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, phone: e.target.value })}
                     required
                     className="mt-4"
+                    placeholder="e.g. 08012345678"
                   />
                 </div>
 
+                {/* Shipping Method */}
                 <div>
                   <h3 className="text-lg font-semibold text-neutral-900 mb-3">Shipping Method</h3>
                   <div className="space-y-2">
@@ -270,6 +351,7 @@ export default function CheckoutPage() {
                         {subtotal >= 150 ? 'FREE' : formatPrice(10)}
                       </p>
                     </label>
+
                     <label className="flex items-center p-4 border rounded-sm cursor-pointer hover:bg-neutral-50">
                       <input
                         type="radio"
@@ -294,139 +376,56 @@ export default function CheckoutPage() {
               </form>
             )}
 
+            {/* ---------- Payment Step ---------- */}
             {step === 'payment' && (
-              <form onSubmit={handlePaymentSubmit} className="space-y-6">
+              <div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-semibold text-neutral-900 mb-4">Payment Method</h2>
-                  <div className="space-y-2">
-                    {['credit_card', 'paypal', 'apple_pay', 'google_pay'].map((method) => (
-                      <label
-                        key={method}
-                        className="flex items-center p-4 border rounded-sm cursor-pointer hover:bg-neutral-50"
-                      >
-                        <input
-                          type="radio"
-                          name="payment"
-                          value={method}
-                          checked={paymentMethod === method}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="mr-3"
-                        />
-                        <p className="font-medium text-neutral-900 capitalize">
-                          {method.replace('_', ' ')}
-                        </p>
-                      </label>
-                    ))}
+                  <div className="p-4 border rounded-sm bg-green-50 border-green-200">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 bg-cover rounded"
+                        style={{ backgroundImage: 'ur[](https://paystack.com/assets/img/logo.png)' }}
+                      />
+                      <div>
+                        <p className="font-medium text-neutral-900">Pay with Paystack</p>
+                        <p className="text-sm text-neutral-600">Card, Bank Transfer, USSD, Apple Pay</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {paymentMethod === 'credit_card' && (
-                  <div>
-                    <Input label="Card Number" type="text" placeholder="1234 5678 9012 3456" required />
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <Input label="Expiry Date" type="text" placeholder="MM/YY" required />
-                      <Input label="CVV" type="text" placeholder="123" required />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={sameAsShipping}
-                      onChange={(e) => setSameAsShipping(e.target.checked)}
-                      className="w-4 h-4 text-neutral-900 border-neutral-300 rounded focus:ring-neutral-900"
-                    />
-                    <span className="text-sm text-neutral-700">
-                      Billing address same as shipping address
-                    </span>
-                  </label>
-                </div>
-
-                {!sameAsShipping && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-3">Billing Information</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="First Name"
-                        value={billingAddress.first_name}
-                        onChange={(e) => setBillingAddress({ ...billingAddress, first_name: e.target.value })}
-                        required
-                      />
-                      <Input
-                        label="Last Name"
-                        value={billingAddress.last_name}
-                        onChange={(e) => setBillingAddress({ ...billingAddress, last_name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <Input
-                      label="Address Line 1"
-                      value={billingAddress.address_line1}
-                      onChange={(e) => setBillingAddress({ ...billingAddress, address_line1: e.target.value })}
-                      required
-                      className="mt-4"
-                    />
-                    <Input
-                      label="Address Line 2 (Optional)"
-                      value={billingAddress.address_line2}
-                      onChange={(e) => setBillingAddress({ ...billingAddress, address_line2: e.target.value })}
-                      className="mt-4"
-                    />
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <Input
-                        label="City"
-                        value={billingAddress.city}
-                        onChange={(e) => setBillingAddress({ ...billingAddress, city: e.target.value })}
-                        required
-                      />
-                      <Input
-                        label="State/Province"
-                        value={billingAddress.state}
-                        onChange={(e) => setBillingAddress({ ...billingAddress, state: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <Input
-                        label="Postal Code"
-                        value={billingAddress.postal_code}
-                        onChange={(e) => setBillingAddress({ ...billingAddress, postal_code: e.target.value })}
-                        required
-                      />
-                      <Select
-                        label="Country"
-                        options={countries}
-                        value={billingAddress.country}
-                        onChange={(e) => setBillingAddress({ ...billingAddress, country: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex gap-4">
                   <Button type="button" variant="outline" onClick={() => setStep('shipping')} fullWidth>
                     Back
                   </Button>
-                  <Button type="submit" fullWidth disabled={isProcessing}>
+                  <Button
+                    onClick={handlePayWithPaystack}
+                    fullWidth
+                    disabled={isProcessing || !paystackLoaded}
+                    className="bg-[#00C1A1] text-white hover:bg-[#00a88a]"
+                  >
                     {isProcessing ? 'Processing...' : `Pay ${formatPrice(total)}`}
                   </Button>
                 </div>
-              </form>
+              </div>
             )}
           </div>
 
+          {/* ---------- Order Summary ---------- */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 bg-neutral-50 rounded-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Order Summary</h3>
+
               <div className="space-y-4 mb-6">
                 {items.map((item, index) => {
                   const itemPrice = item.product.sale_price || item.product.price;
-                  
+
                   return (
-                    <div key={`${item.product.id}-${item.size}-${item.color.name}-${index}`} className="border-b border-neutral-200 pb-4 last:border-0">
+                    <div
+                      key={`${item.product.id}-${item.size}-${item.color.name}-${index}`}
+                      className="border-b border-neutral-200 pb-4 last:border-0"
+                    >
                       <div className="flex gap-3">
                         <img
                           src={item.image}
@@ -435,21 +434,19 @@ export default function CheckoutPage() {
                         />
                         <div className="flex-1">
                           <p className="text-sm font-medium text-neutral-900">{item.product.name}</p>
-                          
-                          {/* Size with Custom Badge */}
+
                           <div className="flex items-center gap-2 mt-1">
                             <p className="text-xs text-neutral-600">
                               {item.size} | {item.color.name} | Qty: {item.quantity}
                             </p>
                             {item.size === 'Custom' && item.customMeasurements && (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] text-[9px] font-semibold rounded uppercase tracking-wider">
-                                <Ruler size={8} />
-                                Custom
+                                <Ruler size={8} /> Custom
                               </span>
                             )}
                           </div>
 
-                          {/* Custom Measurements */}
+                          {/* Custom measurements */}
                           {item.customMeasurements && (
                             <div className="mt-2 bg-white border border-neutral-200 rounded p-2">
                               <p className="text-[9px] font-semibold text-neutral-900 uppercase tracking-wider mb-1">
@@ -461,7 +458,9 @@ export default function CheckoutPage() {
                                 <div>Hips: {item.customMeasurements.hips}"</div>
                                 <div>Length: {item.customMeasurements.length}"</div>
                                 {item.customMeasurements.height && (
-                                  <div className="col-span-2">Height: {item.customMeasurements.height}"</div>
+                                  <div className="col-span-2">
+                                    Height: {item.customMeasurements.height}"
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -474,7 +473,11 @@ export default function CheckoutPage() {
                                 {formatPrice(item.product.price * item.quantity)}
                               </p>
                             )}
-                            <p className={`text-sm font-semibold ${item.product.sale_price ? 'text-red-600' : 'text-neutral-900'}`}>
+                            <p
+                              className={`text-sm font-semibold ${
+                                item.product.sale_price ? 'text-red-600' : 'text-neutral-900'
+                              }`}
+                            >
                               {formatPrice(itemPrice * item.quantity)}
                             </p>
                           </div>
@@ -485,6 +488,7 @@ export default function CheckoutPage() {
                 })}
               </div>
 
+              {/* Totals */}
               <div className="space-y-2 py-4 border-t border-neutral-200">
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Subtotal</span>
@@ -492,9 +496,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Shipping</span>
-                  <span className="text-neutral-900">
-                    {shipping === 0 ? 'FREE' : formatPrice(shipping)}
-                  </span>
+                  <span className="text-neutral-900">{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Tax</span>

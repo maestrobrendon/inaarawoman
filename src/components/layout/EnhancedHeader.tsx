@@ -16,6 +16,7 @@ export default function EnhancedHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [isMobileCurrencyOpen, setIsMobileCurrencyOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
@@ -396,7 +397,7 @@ export default function EnhancedHeader() {
                 style={{ zIndex: 50, paddingTop: '60px' }}
               >
                 <nav className="px-6 py-8 space-y-1">
-                  {/* MOBILE CURRENCY SELECTOR */}
+                  {/* MOBILE CURRENCY DROPDOWN SELECTOR */}
                   <div className="pb-6 mb-6 border-b border-neutral-200">
                     <div className="flex items-center gap-2 mb-3">
                       <Globe size={16} className="text-neutral-600" />
@@ -404,23 +405,68 @@ export default function EnhancedHeader() {
                         Currency
                       </p>
                     </div>
-                    <div className="space-y-1">
-                      {currencies.map((curr) => (
-                        <motion.button
-                          key={curr.code}
-                          onClick={() => setCurrency(curr)}
-                          className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center justify-between ${
-                            currency.code === curr.code
-                              ? 'bg-[#D4AF37]/10 text-[#D4AF37] font-semibold border-l-4 border-[#D4AF37]'
-                              : 'text-neutral-700 hover:bg-neutral-50'
-                          }`}
-                          whileTap={{ scale: 0.98 }}
+                    
+                    {/* Dropdown Button */}
+                    <motion.button
+                      onClick={() => setIsMobileCurrencyOpen(!isMobileCurrencyOpen)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg hover:border-neutral-300 transition-colors"
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                          {currency.code}
+                        </span>
+                        <span className="text-sm text-neutral-900">{currency.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-medium text-neutral-900">{currency.symbol}</span>
+                        <motion.div
+                          animate={{ rotate: isMobileCurrencyOpen ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
                         >
-                          <span className="text-sm">{curr.name}</span>
-                          <span className="text-base font-medium">{curr.symbol}</span>
-                        </motion.button>
-                      ))}
-                    </div>
+                          <ChevronDown size={16} className="text-neutral-600" />
+                        </motion.div>
+                      </div>
+                    </motion.button>
+
+                    {/* Dropdown Menu */}
+                    <AnimatePresence>
+                      {isMobileCurrencyOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden mt-2"
+                        >
+                          <div className="space-y-1 bg-white border border-neutral-200 rounded-lg shadow-lg">
+                            {currencies.map((curr) => (
+                              <motion.button
+                                key={curr.code}
+                                onClick={() => {
+                                  setCurrency(curr);
+                                  setIsMobileCurrencyOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-3 transition-all flex items-center justify-between first:rounded-t-lg last:rounded-b-lg ${
+                                  currency.code === curr.code
+                                    ? 'bg-[#D4AF37]/10 text-[#D4AF37] font-semibold border-l-4 border-[#D4AF37]'
+                                    : 'text-neutral-700 hover:bg-neutral-50'
+                                }`}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                                    {curr.code}
+                                  </span>
+                                  <span className="text-sm">{curr.name}</span>
+                                </div>
+                                <span className="text-base font-medium">{curr.symbol}</span>
+                              </motion.button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Navigation Links */}
