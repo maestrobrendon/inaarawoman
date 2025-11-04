@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Play, ChevronDown, Star, ShoppingBag, Truck, Shield, Award } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useCurrency } from '../context/CurrencyContext';
 
 // Keep all the animation components from the original
 const TextRevealOnScroll = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
@@ -158,6 +159,7 @@ interface Product {
 
 export default function ClingrHomePage() {
   const navigate = useNavigate();
+  const { currency, convertPrice } = useCurrency();
   const [showVideo, setShowVideo] = useState(false);
   const [content, setContent] = useState<HomepageContent | null>(null);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
@@ -446,10 +448,10 @@ export default function ClingrHomePage() {
                       <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">{product.name}</h3>
                       <p className="text-neutral-600 text-[10px] mb-1">{product.category || 'Premium Collection'}</p>
                       <p className="text-neutral-900 font-medium text-[10px]">
-                        ₦{product.price.toLocaleString()}
+                        {currency.symbol}{convertPrice(product.price).toLocaleString()}
                         {product.compare_at_price && (
                           <span className="text-neutral-500 line-through ml-2">
-                            ₦{product.compare_at_price.toLocaleString()}
+                            {currency.symbol}{convertPrice(product.compare_at_price).toLocaleString()}
                           </span>
                         )}
                       </p>
@@ -712,10 +714,10 @@ export default function ClingrHomePage() {
                       <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">{product.name}</h3>
                       <p className="text-neutral-600 text-[10px] mb-1">{product.category || 'Classic Statement Piece'}</p>
                       <p className="text-neutral-900 font-medium text-[10px]">
-                        ₦{product.price.toLocaleString()}
+                        {currency.symbol}{convertPrice(product.price).toLocaleString()}
                         {product.compare_at_price && (
                           <span className="text-neutral-500 line-through ml-2">
-                            ₦{product.compare_at_price.toLocaleString()}
+                            {currency.symbol}{convertPrice(product.compare_at_price).toLocaleString()}
                           </span>
                         )}
                       </p>

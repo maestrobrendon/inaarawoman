@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-
 import { supabase } from '../lib/supabase';
 import { Collection, Product } from '../types';
 import { getProductImageUrl } from '../utils/cloudinaryUpload';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface ShopPageProps {
   initialFilters?: { collection?: string };
@@ -13,6 +14,7 @@ const PRODUCTS_PER_PAGE = 12;
 
 export default function ShopPage({ initialFilters }: ShopPageProps) {
   const navigate = useNavigate();
+  const { currency, convertPrice } = useCurrency();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -208,127 +210,162 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
     { value: 'tops', label: 'Tops' },
     { value: 'bottoms', label: 'Bottoms' },
     { value: 'sets', label: 'Sets' },
-    { value: 'accessories', label: 'Accessories' }
-  ];
-
-  const sortOptions = [
-    { value: 'featured', label: 'Featured' },
-    { value: 'newest', label: 'Newest' },
-    { value: 'price-low', label: 'Price: Low to High' },
-    { value: 'price-high', label: 'Price: High to Low' },
-    { value: 'name', label: 'A-Z' }
+    { value: 'outerwear', label: 'Outerwear' },
+    { value: 'accessories', label: 'Accessories' },
   ];
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header Section - Minimalist */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-8">
-          <h1 className="font-serif text-2xl md:text-3xl font-light text-neutral-900 mb-3">
-          ALL PRODUCTS
-          </h1>
-          <p className="text-xs text-neutral-600 max-w-2xl mx-auto">
+      {/* Simple Text Header */}
+    
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+          <h1 className="text-2xl md:text-3xl font-serif text-neutral-900 mb-2">ALL PRODUCTS</h1>
+          <p className="text-sm text-neutral-600">
             Carefully crafted to help you be your most confident and stylish self.
           </p>
         </div>
+    
 
-        {/* Filters Bar - Top */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-neutral-200">
-          <div className="flex items-center gap-4">
-            {/* Filter Toggle for Mobile */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Filters Bar */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            {/* Search */}
+            <div className="relative flex-1 md:flex-initial md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    loadProducts();
+                  }
+                }}
+                className="w-full pl-10 pr-4 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              />
+            </div>
+
+            {/* Mobile Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 text-[10px] tracking-wider uppercase text-neutral-900 hover:text-neutral-600 transition-colors"
+              className="md:hidden flex items-center gap-2 px-4 py-2 border border-neutral-300 text-[10px] tracking-widest uppercase hover:bg-neutral-50 transition-colors"
             >
               <SlidersHorizontal size={14} />
-              Filter
+              Filters
             </button>
+          </div>
 
-            {/* Availability Filter */}
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full md:w-auto px-4 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          >
+            <option value="featured">Featured</option>
+            <option value="newest">Newest</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="name">Name: A-Z</option>
+          </select>
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="hidden md:grid md:grid-cols-4 gap-4 mb-8">
+          {/* Collection Filter */}
+          <div>
+            <label className="block text-xs font-medium text-neutral-700 mb-2">
+              Collection
+            </label>
+            <select
+              value={selectedCollection}
+              onChange={(e) => setSelectedCollection(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+            >
+              <option value="all">All Collections</option>
+              {collections.map((collection) => (
+                <option key={collection.id} value={collection.id}>
+                  {collection.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Category Filter */}
+          <div>
+            <label className="block text-xs font-medium text-neutral-700 mb-2">
+              Category
+            </label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="text-[10px] tracking-wider uppercase text-neutral-900 border-none bg-transparent focus:outline-none cursor-pointer"
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
             >
-              <option value="all">Availability</option>
-              {categories.slice(1).map((cat) => (
+              {categories.map((cat) => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
                 </option>
               ))}
             </select>
-
-            {/* Price Range */}
-            <button 
-              onClick={() => setShowFilters(true)}
-              className="text-[10px] tracking-wider uppercase text-neutral-900 hover:text-neutral-600 transition-colors"
-            >
-              Price
-            </button>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Sort By */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] tracking-wider uppercase text-neutral-600">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-[10px] tracking-wider uppercase text-neutral-900 border-none bg-transparent focus:outline-none cursor-pointer"
+          {/* Price Range */}
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-neutral-700 mb-2">
+              Price Range
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder="Min"
+                value={priceRange.min}
+                onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              />
+              <input
+                type="number"
+                placeholder="Max"
+                value={priceRange.max}
+                onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              />
+              <button
+                onClick={loadProducts}
+                className="px-4 py-2 bg-neutral-900 text-white text-[10px] tracking-widest uppercase hover:bg-neutral-800 transition-colors whitespace-nowrap"
               >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                Apply
+              </button>
             </div>
-
-            {/* Product Count */}
-            <span className="text-[10px] tracking-wider uppercase text-neutral-600">
-              {allProducts.length} products
-            </span>
           </div>
         </div>
 
-        {/* Mobile Filters Dropdown */}
+        {/* Mobile Filters Drawer */}
         {showFilters && (
-          <div className="mb-8 p-6 border border-neutral-200 rounded-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-medium text-neutral-900">Filters</h3>
-              <button onClick={() => setShowFilters(false)}>
-                <X size={20} className="text-neutral-600" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Search */}
-              <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-2">
-                  Search
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && loadProducts()}
-                    className="w-full pl-9 pr-4 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
-                  />
-                </div>
+          <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setShowFilters(false)}>
+            <div
+              className="absolute right-0 top-0 bottom-0 w-3/4 max-w-sm bg-white p-6 overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-medium uppercase tracking-wider">Filters</h3>
+                <button onClick={() => setShowFilters(false)}>
+                  <X size={20} />
+                </button>
               </div>
 
-              {/* Collection */}
-              <div>
+              {/* Collection Filter */}
+              <div className="mb-6">
                 <label className="block text-xs font-medium text-neutral-700 mb-2">
                   Collection
                 </label>
                 <select
                   value={selectedCollection}
                   onChange={(e) => setSelectedCollection(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-white"
+                  className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
                 >
                   <option value="all">All Collections</option>
                   {collections.map((collection) => (
@@ -339,8 +376,26 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 </select>
               </div>
 
+              {/* Category Filter */}
+              <div className="mb-6">
+                <label className="block text-xs font-medium text-neutral-700 mb-2">
+                  Category
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Price Range */}
-              <div>
+              <div className="mb-6">
                 <label className="block text-xs font-medium text-neutral-700 mb-2">
                   Price Range
                 </label>
@@ -469,15 +524,15 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                         {product.compare_at_price && product.compare_at_price > product.price ? (
                           <>
                             <span className="text-[10px] text-neutral-500 line-through">
-                              ₦{product.compare_at_price.toLocaleString()}
+                              {currency.symbol}{convertPrice(product.compare_at_price).toLocaleString()}
                             </span>
                             <span className="text-[10px] text-red-600 font-medium">
-                              ₦{product.price.toLocaleString()}
+                              {currency.symbol}{convertPrice(product.price).toLocaleString()}
                             </span>
                           </>
                         ) : (
                           <span className="text-[10px] text-neutral-900">
-                            ₦{product.price.toLocaleString()}
+                            {currency.symbol}{convertPrice(product.price).toLocaleString()}
                           </span>
                         )}
                       </div>

@@ -128,8 +128,8 @@ export default function EnhancedHeader() {
         }`}
         style={{ height: headerHeight, opacity: headerOpacity }}
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full py-3 md:py-0">
-          <div className="flex h-full items-center justify-between">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-20 items-center justify-between">
             <button
               className="lg:hidden p-1 -ml-1 relative z-[60]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
