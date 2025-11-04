@@ -106,7 +106,7 @@ export default function OrderConfirmationPage() {
             <p className="text-sm text-neutral-600">
               Need help? Contact us at{' '}
               <a href="mailto:support@inaarawoman.com" className="text-[#D4AF37] hover:underline">
-                support@inaarawoman.com
+                info@inaarawoman.com
               </a>
             </p>
           </div>

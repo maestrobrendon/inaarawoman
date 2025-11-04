@@ -35,7 +35,7 @@ import CollectionsList from './pages/admin/CollectionsList';
 import CollectionForm from './pages/admin/CollectionForm';
 import Settings from './pages/admin/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 // Policy Pages
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';

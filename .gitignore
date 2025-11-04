@@ -21,3 +21,14 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Build outputs
+dist/
+*.dist/
+**/dist/
+
+# Node modules
+node_modules/
+
+# Vercel
+.vercel
