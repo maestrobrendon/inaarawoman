@@ -50,6 +50,28 @@ interface PaystackPaymentProps {
   children: React.ReactNode;
 }
 
+interface CartItem {
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    main_image?: string;
+    featured_image?: string;
+  };
+  quantity: number;
+  variant?: any;
+}
+
+interface PaystackReference {
+  reference: string;
+  status: string;
+  message: string;
+  trans: string;
+  transaction: string;
+  trxref: string;
+}
+
 export default function PaystackPayment({
   amount,
   email,
@@ -95,7 +117,7 @@ export default function PaystackPayment({
   };
 
   // Create or update customer record
-  const createOrUpdateCustomer = async (orderTotal: number) => {
+  const createOrUpdateCustomer = async (orderTotal: number): Promise<string> => {
     try {
       // Check if customer exists
       const { data: existingCustomer } = await supabase
@@ -157,11 +179,8 @@ export default function PaystackPayment({
   };
 
   // Send order confirmation email
-  const sendOrderConfirmationEmail = async (orderData: any) => {
+  const sendOrderConfirmationEmail = async (orderData: any): Promise<void> => {
     try {
-      // Call your email service here (Supabase Edge Function, SendGrid, etc.)
-      // This is a placeholder - you'll need to implement your email service
-      
       const emailData = {
         to: email,
         subject: `Order Confirmation - ${orderData.order_number}`,
@@ -186,7 +205,7 @@ export default function PaystackPayment({
         }
       };
 
-      // Example: Using Supabase Edge Function
+      // Using Supabase Edge Function
       const { error } = await supabase.functions.invoke('send-order-email', {
         body: emailData
       });
@@ -201,7 +220,7 @@ export default function PaystackPayment({
     }
   };
 
-  const handlePaystackSuccess = async (reference: any) => {
+  const handlePaystackSuccess = async (reference: PaystackReference): Promise<void> => {
     try {
       showToast('Payment successful! Processing your order...', 'success');
 
@@ -240,7 +259,7 @@ export default function PaystackPayment({
         payment_status: 'paid',
         payment_reference: reference.reference,
         order_status: 'pending',
-        items: items.map(item => ({
+        items: (items as CartItem[]).map((item: CartItem) => ({
           product_id: item.product.id,
           product_name: item.product.name,
           product_slug: item.product.slug,
@@ -263,18 +282,15 @@ export default function PaystackPayment({
       // Step 4: Send confirmation email to customer
       await sendOrderConfirmationEmail(orderData);
 
-      // Step 5: Send notification email to admin (optional)
-      // await sendAdminNotificationEmail(orderData);
-
-      // Step 6: Clear cart after successful order
+      // Step 5: Clear cart after successful order
       clearCart();
 
-      // Step 7: Call success callback if provided
+      // Step 6: Call success callback if provided
       if (onSuccess) {
         onSuccess();
       }
 
-      // Step 8: Show success message and redirect
+      // Step 7: Show success message and redirect
       showToast('Order placed successfully! Check your email for confirmation.', 'success');
       
       // Redirect to order confirmation page
@@ -288,7 +304,7 @@ export default function PaystackPayment({
     }
   };
 
-  const handlePaystackClose = () => {
+  const handlePaystackClose = (): void => {
     showToast('Payment cancelled', 'error');
     if (onClose) {
       onClose();
@@ -297,8 +313,11 @@ export default function PaystackPayment({
 
   const initializePayment = usePaystackPayment(config);
 
-  const handleClick = () => {
-    initializePayment(handlePaystackSuccess, handlePaystackClose);
+  const handleClick = (): void => {
+    initializePayment(
+      (reference: PaystackReference) => handlePaystackSuccess(reference),
+      () => handlePaystackClose()
+    );
   };
 
   return (
