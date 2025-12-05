@@ -196,7 +196,7 @@ function HeroSection() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 6000);
+    }, 8000); // Increased timing for better viewing
     return () => clearInterval(interval);
   }, [slides.length]);
 
@@ -207,7 +207,7 @@ function HeroSection() {
     <motion.section 
       ref={heroRef}
       style={{ y, scale }}
-      className="relative h-[100svh] md:h-screen overflow-hidden bg-neutral-900 z-0"
+      className="relative h-[100svh] md:h-screen overflow-hidden bg-neutral-900 sticky top-0 z-0"
     >
       <motion.div style={{ opacity }} className="absolute inset-0">
         {/* Background Images */}
@@ -225,10 +225,10 @@ function HeroSection() {
               alt={slides[currentSlide].title}
               className={`w-full h-full object-cover transition-opacity duration-1000 ${
                 isLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
+              } object-left lg:object-center`}
               onLoad={() => setIsLoaded(true)}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
           </motion.div>
         </AnimatePresence>
 
@@ -324,8 +324,8 @@ function HeroSection() {
           </div>
         </div>
 
-        {/* Mobile Layout */}
-        <div className="lg:hidden relative z-10 h-full flex flex-col justify-end pb-8 px-5">
+        {/* Mobile Layout - Content positioned higher for scroll visibility */}
+        <div className="lg:hidden relative z-10 h-full flex flex-col justify-center px-5 pb-20">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -346,7 +346,7 @@ function HeroSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-white/60 text-sm font-light mb-6 leading-relaxed"
+              className="text-white/60 text-sm font-light mb-6 leading-relaxed max-w-[280px]"
             >
               {slides[currentSlide].subtitle}
             </motion.p>
@@ -354,7 +354,7 @@ function HeroSection() {
 
           <button
             onClick={() => navigate('/shop')}
-            className="w-full bg-white/5 backdrop-blur-sm border border-white/20 text-white px-6 py-3 rounded-lg text-xs font-normal tracking-[0.05em] mb-6"
+            className="w-fit bg-white/5 backdrop-blur-sm border border-white/20 text-white px-6 py-3 rounded-lg text-xs font-normal tracking-[0.05em] mb-8"
           >
             Browse Collection
           </button>
@@ -816,7 +816,7 @@ function InstagramSection() {
 
           {/* Navigation dots */}
           <div className="flex justify-center gap-2 mt-6">
-            {images.map((_, index) => (
+            {images.slice(0, 6).map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
