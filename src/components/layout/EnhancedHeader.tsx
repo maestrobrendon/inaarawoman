@@ -17,6 +17,7 @@ export default function EnhancedHeader() {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [isMobileCurrencyOpen, setIsMobileCurrencyOpen] = useState(false);
+  const [isMobileCollectionsOpen, setIsMobileCollectionsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
@@ -471,30 +472,86 @@ export default function EnhancedHeader() {
 
                   {/* Navigation Links */}
                   {navigation.map((item, index) => (
-                    <Link
-                      key={item.name}
-                      to={item.path}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <motion.div
-                        className={`block w-full text-left px-4 py-4 rounded-lg transition-colors relative group ${
-                          currentPage === item.path
-                            ? 'bg-neutral-100 text-neutral-900 font-medium'
-                            : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
-                        }`}
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        whileTap={{ scale: 0.98 }}
+                    item.isDropdown ? (
+                      // MOBILE COLLECTIONS DROPDOWN
+                      <div key={item.name}>
+                        <motion.button
+                          onClick={() => setIsMobileCollectionsOpen(!isMobileCollectionsOpen)}
+                          className="w-full flex items-center justify-between px-4 py-4 rounded-lg text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                          initial={{ opacity: 0, x: 50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span>{item.name}</span>
+                          <motion.div
+                            animate={{ rotate: isMobileCollectionsOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <ChevronDown size={16} />
+                          </motion.div>
+                        </motion.button>
+
+                        {/* Mobile Collections Dropdown */}
+                        <AnimatePresence>
+                          {isMobileCollectionsOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="pl-4 space-y-1 mt-1">
+                                {collections.map((collection) => (
+                                  <Link
+                                    key={collection.id}
+                                    to={`/collection/${collection.slug}`}
+                                    onClick={() => {
+                                      setIsMobileCollectionsOpen(false);
+                                      setIsMobileMenuOpen(false);
+                                    }}
+                                  >
+                                    <motion.div
+                                      className="block px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-[#D4AF37] rounded-lg transition-colors"
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      {collection.name}
+                                    </motion.div>
+                                  </Link>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      // Regular Navigation Link
+                      <Link
+                        key={item.name}
+                        to={item.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        {item.name}
-                        <motion.span
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-[#D4AF37] rounded-r"
-                          whileHover={{ height: '70%' }}
-                          transition={{ duration: 0.3 }}
-                        />
-                      </motion.div>
-                    </Link>
+                        <motion.div
+                          className={`block w-full text-left px-4 py-4 rounded-lg transition-colors relative group ${
+                            currentPage === item.path
+                              ? 'bg-neutral-100 text-neutral-900 font-medium'
+                              : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                          }`}
+                          initial={{ opacity: 0, x: 50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {item.name}
+                          <motion.span
+                            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-[#D4AF37] rounded-r"
+                            whileHover={{ height: '70%' }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </motion.div>
+                      </Link>
+                    )
                   ))}
                 </nav>
               </motion.div>

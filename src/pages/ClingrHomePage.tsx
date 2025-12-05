@@ -1,842 +1,1079 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
-import { Play, ChevronDown, Star, ShoppingBag, Truck, Shield, Award } from 'lucide-react';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { Heart, ChevronLeft, ChevronRight, Truck, Headphones, Shield, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { ProductWithImages, ProductImage } from '../types';
 import { useCurrency } from '../context/CurrencyContext';
+import { useWishlist } from '../context/WishlistContext';
+import { useToast } from '../context/ToastContext';
+import { getProductImageUrl } from '../utils/cloudinaryUpload';
 
-// Keep all the animation components from the original
-const TextRevealOnScroll = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: false, amount: 0.5 });
+// ============================================
+// ANIMATION VARIANTS - Fixed TypeScript errors
+// ============================================
 
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
+// Using tuple type for cubic-bezier to fix TypeScript error
+const customEase: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: customEase,
+    },
+  },
 };
 
-const SplitTextReveal = ({ text, className = '' }: { text: string; className?: string }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: false, amount: 0.5 });
-  const words = text.split(' ');
-
-  return (
-    <div ref={ref} className={className}>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: i * 0.1 }}
-          className="inline-block mr-2"
-        >
-          {word}
-        </motion.span>
-      ))}
-    </div>
-  );
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.8,
+      ease: customEase,
+    },
+  },
 };
 
-const ParallaxImage = ({ src, speed = 0.5, className = '' }: { src: string; speed?: number; className?: string }) => {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'end start']
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', `${speed * 100}%`]);
-
-  return (
-    <div ref={ref} className={`overflow-hidden ${className}`}>
-      <motion.img
-        src={src}
-        style={{ y }}
-        className="w-full h-full object-cover scale-110"
-        alt=""
-      />
-    </div>
-  );
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
 };
 
-const ScrollProgress = () => {
-  const { scrollYProgress } = useScroll();
-
-  return (
-    <motion.div
-      className="fixed top-0 left-0 right-0 h-1 bg-neutral-900 z-50 origin-left"
-      style={{ scaleX: scrollYProgress }}
-    />
-  );
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.6,
+      ease: customEase,
+    },
+  },
 };
 
-const DecorativeLines = () => {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute left-[15%] top-0 bottom-0 w-px bg-white/10" />
-      <div className="absolute left-[30%] top-0 bottom-0 w-px bg-white/10" />
-      <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/10" />
-      <div className="absolute left-[70%] top-0 bottom-0 w-px bg-white/10" />
-      <div className="absolute left-[85%] top-0 bottom-0 w-px bg-white/10" />
-      
-      <div className="absolute top-[20%] left-0 right-0 h-px bg-white/10" />
-      <div className="absolute top-[40%] left-0 right-0 h-px bg-white/10" />
-      <div className="absolute top-[60%] left-0 right-0 h-px bg-white/10" />
-      <div className="absolute top-[80%] left-0 right-0 h-px bg-white/10" />
-    </div>
-  );
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+// Helper to safely get image URL from ProductImage or string
+const getImageUrl = (image: string | ProductImage | undefined): string => {
+  if (!image) return '';
+  if (typeof image === 'string') return image;
+  return image.image_url || image.cloudinary_url || '';
 };
 
-interface HomepageContent {
-  hero: {
-    image: string;
-    overlay_opacity: number;
-    small_text: string;
-    main_title: string;
-    subtitle: string;
-    button1_text: string;
-    button1_link: string;
-    button2_text: string;
-    show_video_button: boolean;
-  };
-  top_banner: {
-    text: string;
-    background_color: string;
-    text_color: string;
-    is_visible: boolean;
-  };
-  brand_story: {
-    small_text: string;
-    main_text: string;
-    description: string;
-  };
-  crafted_section: {
-    background_image: string;
-    title: string;
-    subtitle: string;
-    button_text: string;
-    button_link: string;
-    overlay_opacity: number;
-  };
-  final_cta: {
-    background_image: string;
-    title: string;
-    subtitle: string;
-    button_text: string;
-    button_link: string;
-    overlay_opacity: number;
-  };
-  benefits: {
-    title: string;
-    small_text: string;
-    benefits: Array<{
-      icon: string;
-      title: string;
-      description: string;
-    }>;
-  };
-}
+// Helper to get primary image from product
+const getPrimaryImage = (product: ProductWithImages): string => {
+  if (product.main_image) {
+    return typeof product.main_image === 'string' 
+      ? product.main_image 
+      : getImageUrl(product.main_image as unknown as ProductImage);
+  }
+  if (product.images && product.images.length > 0) {
+    return getImageUrl(product.images[0]);
+  }
+  return '';
+};
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  compare_at_price?: number;
-  main_image?: string;
-  featured_image?: string;
-  category?: string;
-  description?: string;
-  homepage_position: number;
-}
+// Helper to get secondary image from product
+const getSecondaryImage = (product: ProductWithImages): string => {
+  if (product.images && product.images.length > 1) {
+    return getImageUrl(product.images[1]);
+  }
+  return getPrimaryImage(product);
+};
 
-export default function ClingrHomePage() {
-  const navigate = useNavigate();
-  const { currency, convertPrice } = useCurrency();
-  const [showVideo, setShowVideo] = useState(false);
-  const [content, setContent] = useState<HomepageContent | null>(null);
-  const [bestSellers, setBestSellers] = useState<Product[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
-  
-  const heroRef = useRef(null);
-  const { scrollY } = useScroll();
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
-  const heroScale = useTransform(scrollY, [0, 300], [1, 0.95]);
+// ============================================
+// CUSTOM HOOKS
+// ============================================
+
+function useScrollAnimation(options: { threshold?: number; triggerOnce?: boolean } = {}) {
+  const { threshold = 0.1, triggerOnce = true } = options;
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    loadContent();
-    loadProducts();
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          if (triggerOnce && ref.current) {
+            observer.unobserve(ref.current);
+          }
+        } else if (!triggerOnce) {
+          setIsVisible(false);
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [threshold, triggerOnce]);
+
+  return { ref, isVisible };
+}
+
+// ============================================
+// SUB-COMPONENTS
+// ============================================
+
+// Announcement Bar - Matching VÉON exactly
+function AnnouncementBar() {
+  return (
+    <div className="bg-[#1a1a1a] text-white py-2.5 overflow-hidden">
+      <motion.div 
+        className="flex whitespace-nowrap"
+        animate={{ x: [0, -1000] }}
+        transition={{ 
+          duration: 20, 
+          repeat: Infinity, 
+          ease: "linear" 
+        }}
+      >
+        {[...Array(10)].map((_, i) => (
+          <span key={i} className="text-xs tracking-[0.2em] mx-12 font-light uppercase">
+            FREE SHIPPING ON ALL ORDERS
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+// Hero Section - Matching VÉON design exactly
+interface HeroSlide {
+  image: string;
+  title: string;
+  subtitle: string;
+}
+
+function HeroSection() {
+  const navigate = useNavigate();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const slides: HeroSlide[] = [
+    {
+      image: '/hero.jpg',
+      title: 'Bold Layers,\nConfident Looks.',
+      subtitle: 'Layer up with confidence and stylish all season'
+    },
+    {
+      image: '/freepik_edit (14).png',
+      title: 'Elegant\nSimplicity.',
+      subtitle: 'Discover timeless pieces for the modern woman'
+    },
+    {
+      image: '/image copy copy copy.png',
+      title: 'Define Your\nStyle.',
+      subtitle: 'Curated collections that speak to your individuality'
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  const loadContent = async () => {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [slides.length]);
+
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+
+  return (
+    <section className="relative h-[100svh] md:h-screen overflow-hidden bg-neutral-900">
+      {/* Background Images */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: customEase }}
+          className="absolute inset-0"
+        >
+          <img
+            src={slides[currentSlide].image}
+            alt={slides[currentSlide].title}
+            className={`w-full h-full object-cover transition-opacity duration-1000 ${
+              isLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            onLoad={() => setIsLoaded(true)}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex relative z-10 h-full items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid grid-cols-2 gap-8 items-center">
+            {/* Left Content */}
+            <div className="text-white">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentSlide}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.8, ease: customEase }}
+                >
+                  <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-normal leading-[1.15] mb-6 whitespace-pre-line tracking-[-0.01em]">
+                    {slides[currentSlide].title}
+                  </h1>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Thumbnail Navigation */}
+              <div className="flex items-center gap-4 mt-8">
+                <span className="text-xs font-light text-white/50 tracking-wide">
+                  {String(currentSlide + 1).padStart(2, '0')}
+                </span>
+                <div className="flex gap-2">
+                  {slides.map((slide, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-14 h-10 rounded-[2px] overflow-hidden border transition-all duration-300 ${
+                        currentSlide === index 
+                          ? 'border-white/80 opacity-100' 
+                          : 'border-white/20 opacity-40 hover:opacity-60'
+                      }`}
+                    >
+                      <img 
+                        src={slide.image} 
+                        alt="" 
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content */}
+            <div className="flex flex-col items-end justify-center text-right text-white">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={currentSlide}
+                  initial={{ opacity: 0, x: 15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -15 }}
+                  transition={{ duration: 0.6, delay: 0.2, ease: customEase }}
+                  className="text-sm text-white/70 mb-6 max-w-xs font-light leading-relaxed"
+                >
+                  {slides[currentSlide].subtitle}
+                </motion.p>
+              </AnimatePresence>
+
+              <motion.button
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                onClick={() => navigate('/shop')}
+                className="group inline-flex items-center gap-3 bg-white/5 backdrop-blur-sm border border-white/20 text-white px-7 py-3 rounded-[2px] hover:bg-white hover:text-neutral-900 transition-all duration-500"
+              >
+                <span className="text-xs font-normal tracking-[0.05em]">Browse Collection</span>
+              </motion.button>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Arrows - Desktop */}
+        <div className="absolute bottom-8 right-8 flex items-center gap-2">
+          <button
+            onClick={prevSlide}
+            className="p-2.5 bg-white/5 backdrop-blur-sm border border-white/15 text-white rounded-[2px] hover:bg-white hover:text-neutral-900 transition-all duration-300"
+          >
+            <ChevronLeft size={18} strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="p-2.5 bg-white/5 backdrop-blur-sm border border-white/15 text-white rounded-[2px] hover:bg-white hover:text-neutral-900 transition-all duration-300"
+          >
+            <ChevronRight size={18} strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Layout - Refined luxury aesthetic */}
+      <div className="lg:hidden relative z-10 h-full flex flex-col justify-end pb-8 px-5">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0, y: 25 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.8, ease: customEase }}
+          >
+            <h1 className="text-3xl sm:text-4xl font-normal leading-[1.15] text-white mb-4 whitespace-pre-line tracking-[-0.01em]">
+              {slides[currentSlide].title}
+            </h1>
+          </motion.div>
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={currentSlide}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-white/60 text-sm font-light mb-6 leading-relaxed"
+          >
+            {slides[currentSlide].subtitle}
+          </motion.p>
+        </AnimatePresence>
+
+        <button
+          onClick={() => navigate('/shop')}
+          className="w-full bg-white/5 backdrop-blur-sm border border-white/20 text-white px-6 py-3 rounded-[2px] text-xs font-normal tracking-[0.05em] mb-6"
+        >
+          Browse Collection
+        </button>
+
+        {/* Mobile Thumbnails */}
+        <div className="flex items-center gap-2">
+          {slides.map((slide, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-11 h-8 rounded-[2px] overflow-hidden border transition-all duration-300 ${
+                currentSlide === index 
+                  ? 'border-white/70 opacity-100' 
+                  : 'border-white/20 opacity-40'
+              }`}
+            >
+              <img 
+                src={slide.image} 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Product Card Component - Refined luxury style
+interface ProductCardProps {
+  product: ProductWithImages;
+  showBadge?: boolean;
+  badgeType?: 'bestseller' | 'new' | null;
+}
+
+function ProductCard({ product, showBadge = true, badgeType }: ProductCardProps) {
+  const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { showToast } = useToast();
+  const { formatPrice } = useCurrency();
+  const inWishlist = isInWishlist(product.id);
+
+  const primaryImage = getPrimaryImage(product);
+  const secondaryImage = getSecondaryImage(product);
+
+  const handleWishlistClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
-      const { data, error } = await supabase
-        .from('homepage_content')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      // Convert array to object keyed by section_key
-      const contentObj: any = {};
-      data?.forEach(item => {
-        contentObj[item.section_key] = item.content;
-      });
-      
-      setContent(contentObj);
+      const productForWishlist = {
+        ...product,
+        images: product.images?.map(img => getImageUrl(img)) || []
+      };
+      await toggleWishlist(productForWishlist as any);
+      showToast(
+        inWishlist ? 'Removed from wishlist' : 'Added to wishlist',
+        'success'
+      );
     } catch (error) {
-      console.error('Error loading content:', error);
-      // Set default content if loading fails
-      setDefaultContent();
+      showToast('Failed to update wishlist', 'error');
     }
   };
 
-  const loadProducts = async () => {
+  // Determine badge to show
+  const badge = badgeType !== undefined 
+    ? badgeType 
+    : (product.is_bestseller ? 'bestseller' : product.is_new ? 'new' : null);
+
+  return (
+    <motion.div
+      variants={fadeInUp}
+      className="group cursor-pointer"
+      onClick={() => navigate(`/product/${product.id}`)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#f7f7f7] rounded-[2px] mb-3">
+        {/* Image with hover swap */}
+        {primaryImage ? (
+          <motion.img
+            src={getProductImageUrl(isHovered && secondaryImage !== primaryImage ? secondaryImage : primaryImage)}
+            alt={product.name}
+            className="w-full h-full object-cover"
+            initial={false}
+            animate={{ scale: isHovered ? 1.03 : 1 }}
+            transition={{ duration: 0.7, ease: customEase }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-neutral-300 text-xs">
+            No image
+          </div>
+        )}
+
+        {/* Badge - Refined styling */}
+        {showBadge && badge && (
+          <span className={`absolute top-3 left-3 text-[10px] px-2.5 py-1 rounded-[2px] font-normal tracking-[0.03em] ${
+            badge === 'bestseller' 
+              ? 'bg-[#c9a56c] text-white' 
+              : 'bg-neutral-800 text-white'
+          }`}>
+            {badge === 'bestseller' ? 'Best Seller' : 'New'}
+          </span>
+        )}
+
+        {/* Wishlist Button - Refined heart */}
+        <button
+          onClick={handleWishlistClick}
+          className="absolute top-3 right-3 p-1.5 bg-transparent hover:bg-white/30 rounded-full transition-all duration-300 z-10"
+        >
+          <Heart
+            size={18}
+            strokeWidth={1.25}
+            className={`transition-colors duration-300 ${
+              inWishlist ? 'fill-neutral-800 text-neutral-800' : 'text-neutral-400 hover:text-neutral-600'
+            }`}
+          />
+        </button>
+
+        {/* Out of Stock Overlay */}
+        {product.stock_quantity === 0 && (
+          <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+            <span className="text-xs font-light text-neutral-600 tracking-[0.05em]">Out of Stock</span>
+          </div>
+        )}
+      </div>
+
+      {/* Product Info - Refined typography */}
+      <div className="space-y-1">
+        <h3 className="text-xs font-normal text-neutral-700 group-hover:text-neutral-500 transition-colors line-clamp-1 tracking-[0.01em]">
+          {product.name}
+        </h3>
+        <p className="text-xs text-neutral-500 font-light">
+          {formatPrice(product.price)}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+// Section Header Component - Refined luxury style
+interface SectionHeaderProps {
+  title: string;
+  viewAllLink?: string;
+  className?: string;
+}
+
+function SectionHeader({ title, viewAllLink, className = '' }: SectionHeaderProps) {
+  const navigate = useNavigate();
+  
+  return (
+    <div className={`flex items-center justify-between mb-10 ${className}`}>
+      <h2 className="text-sm font-normal text-neutral-800 tracking-[0.04em]">{title}</h2>
+      {viewAllLink && (
+        <button
+          onClick={() => navigate(viewAllLink)}
+          className="text-xs text-neutral-400 hover:text-neutral-700 transition-colors tracking-[0.02em]"
+        >
+          View All
+        </button>
+      )}
+    </div>
+  );
+}
+
+// About Section - "Our Story, Your Style" - Refined luxury aesthetic
+function AboutSection() {
+  const navigate = useNavigate();
+  const { ref, isVisible } = useScrollAnimation();
+
+  return (
+    <section className="relative">
+      <motion.div
+        ref={ref}
+        initial="hidden"
+        animate={isVisible ? "visible" : "hidden"}
+        variants={fadeIn}
+        className="relative h-[450px] md:h-[550px] overflow-hidden"
+      >
+        <img
+          src="/freepik_edit (14).png"
+          alt="Our Story"
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/10" />
+        
+        <div className="absolute inset-0 flex items-center justify-center text-center px-4">
+          <motion.div variants={fadeInUp} className="max-w-lg">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-normal text-white mb-4 tracking-[-0.01em]">
+              Our Story, Your Style
+            </h2>
+            <p className="text-white/70 text-sm md:text-base mb-8 max-w-md mx-auto font-light leading-relaxed">
+              Crafting timeless fashion with quality, innovation, and sophistication at the core
+            </p>
+            <button
+              onClick={() => navigate('/about')}
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/25 text-white px-7 py-3 rounded-[2px] hover:bg-white hover:text-neutral-900 transition-all duration-500 text-xs font-normal tracking-[0.05em]"
+            >
+              Explore About us
+            </button>
+          </motion.div>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+// Category Showcase - Refined luxury typography
+function CategoryShowcase() {
+  const navigate = useNavigate();
+  const { ref, isVisible } = useScrollAnimation();
+
+  const categories = [
+    {
+      title: 'Elevate Your Style',
+      subtitle: 'New in Dresses',
+      description: 'Discover sophisticated silhouettes and luxurious fabrics, designed for timeless style',
+      image: '/IMG_4511 copy.JPG',
+      link: '/shop?category=dresses',
+      alignment: 'left' as const
+    },
+    {
+      title: 'Redefine Casual Comfort',
+      subtitle: 'New in T-Shirts',
+      description: 'Experience premium fabrics and modern fits, designed for effortless everyday style',
+      image: '/A5B830C9-6BF5-4117-87BB-81014C55648B copy.jpg',
+      link: '/shop?category=tops',
+      alignment: 'right' as const
+    }
+  ];
+
+  return (
+    <section className="bg-white">
+      <motion.div
+        ref={ref}
+        initial="hidden"
+        animate={isVisible ? "visible" : "hidden"}
+        variants={staggerContainer}
+      >
+        {categories.map((category, index) => (
+          <motion.div
+            key={index}
+            variants={fadeInUp}
+            className="grid grid-cols-1 lg:grid-cols-2"
+          >
+            {/* Image */}
+            <div className={`relative aspect-[4/5] lg:aspect-auto lg:h-[550px] overflow-hidden ${
+              category.alignment === 'right' ? 'lg:order-2' : ''
+            }`}>
+              <motion.img
+                src={category.image}
+                alt={category.title}
+                className="w-full h-full object-cover"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.8, ease: customEase }}
+              />
+            </div>
+
+            {/* Content */}
+            <div className={`flex flex-col justify-center px-6 lg:px-14 py-14 lg:py-0 bg-[#fafafa] ${
+              category.alignment === 'right' ? 'lg:order-1 lg:text-right lg:items-end' : 'lg:items-start'
+            }`}>
+              <p className="text-[10px] tracking-[0.2em] text-neutral-400 uppercase mb-3 font-normal">
+                {category.subtitle}
+              </p>
+              <h3 className="text-xl md:text-2xl lg:text-[1.75rem] font-normal text-neutral-800 mb-4 tracking-[-0.01em]">
+                {category.title}
+              </h3>
+              <p className={`text-neutral-500 mb-8 max-w-sm text-sm font-light leading-relaxed ${
+                category.alignment === 'right' ? 'lg:text-right' : ''
+              }`}>
+                {category.description}
+              </p>
+              <button
+                onClick={() => navigate(category.link)}
+                className="inline-flex items-center gap-2 bg-neutral-900 text-white px-7 py-3 rounded-[2px] hover:bg-neutral-800 transition-colors text-xs font-normal tracking-[0.05em] w-fit"
+              >
+                Discover Collection
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+}
+
+// Why Shop With Us Section - Refined luxury typography
+function WhyShopSection() {
+  const { ref, isVisible } = useScrollAnimation();
+
+  const features = [
+    {
+      icon: <Truck className="w-6 h-6" strokeWidth={1} />,
+      title: 'Free Shipping',
+      description: 'Get your order in 4-7 business days.'
+    },
+    {
+      icon: <Headphones className="w-6 h-6" strokeWidth={1} />,
+      title: 'Here to help',
+      description: 'Customer service is available Monday through Friday.'
+    },
+    {
+      icon: <Shield className="w-6 h-6" strokeWidth={1} />,
+      title: 'Secure Payment',
+      description: 'We keep your payment information safe.'
+    },
+    {
+      icon: <RotateCcw className="w-6 h-6" strokeWidth={1} />,
+      title: '10-Days Return Policy',
+      description: "We think you'll love it. If you don't, let us know!"
+    }
+  ];
+
+  return (
+    <section className="py-16 md:py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          ref={ref}
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center mb-12"
+        >
+          <h2 className="text-xl md:text-2xl font-normal text-neutral-800 mb-3 tracking-[-0.01em]">
+            Why Shop with Inaara
+          </h2>
+          <p className="text-neutral-400 text-sm font-light">
+            Enjoy exclusive benefits designed for a seamless shopping experience
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          variants={staggerContainer}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              variants={fadeInUp}
+              className="bg-[#fafafa] rounded-[2px] p-8 text-center hover:shadow-sm transition-shadow duration-300"
+            >
+              <div className="flex justify-center mb-4 text-neutral-500">
+                {feature.icon}
+              </div>
+              <h3 className="font-normal text-neutral-800 mb-2 text-sm tracking-[0.01em]">{feature.title}</h3>
+              <p className="text-xs text-neutral-400 font-light leading-relaxed">{feature.description}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// Instagram Section - Refined luxury typography
+function InstagramSection() {
+  const { ref, isVisible } = useScrollAnimation();
+
+  const images = [
+    '/IMG_4511 copy.JPG',
+    '/A5B830C9-6BF5-4117-87BB-81014C55648B copy.jpg',
+    '/Gemini_Generated_Image_saz8ssaz8ssaz8ss.png',
+    '/Gemini_Generated_Image_hggw0zhggw0zhggw copy.png',
+    '/freepik_edit (14).png',
+    '/image copy copy copy.png'
+  ];
+
+  return (
+    <section className="py-14 md:py-18 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          ref={ref}
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center mb-10"
+        >
+          <p className="text-[10px] tracking-[0.2em] text-neutral-400 uppercase mb-2 font-normal">Instagram</p>
+          <h2 className="text-base md:text-lg font-normal text-neutral-800 tracking-[0.01em]">@inaarawoman</h2>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          variants={staggerContainer}
+          className="grid grid-cols-3 md:grid-cols-6 gap-1.5 md:gap-2"
+        >
+          {images.map((image, index) => (
+            <motion.a
+              key={index}
+              href="https://instagram.com/inaarawoman"
+              target="_blank"
+              rel="noopener noreferrer"
+              variants={scaleIn}
+              className="relative aspect-square overflow-hidden group"
+            >
+              <img
+                src={image}
+                alt={`Instagram ${index + 1}`}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+            </motion.a>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// Footer Section - Refined luxury typography
+function FooterSection() {
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const { ref, isVisible } = useScrollAnimation();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsSubscribing(true);
     try {
-      // Load best sellers
-      const { data: bestSellersData, error: bestError } = await supabase
-        .from('products')
-        .select('id, name, slug, price, compare_at_price, main_image, featured_image, category, description, homepage_position')
-        .eq('show_on_homepage', true)
-        .eq('homepage_section', 'best_sellers')
-        .eq('status', 'active')
-        .order('homepage_position')
-        .limit(4);
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({ email });
 
-      if (!bestError && bestSellersData) {
-        setBestSellers(bestSellersData);
+      if (error) {
+        if (error.code === '23505') {
+          alert('This email is already subscribed!');
+        } else {
+          throw error;
+        }
+      } else {
+        alert('Thank you for subscribing!');
+        setEmail('');
       }
+    } catch (error) {
+      console.error('Error subscribing:', error);
+      alert('Failed to subscribe. Please try again.');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
-      // Load new arrivals
-      const { data: newArrivalsData, error: newError } = await supabase
+  return (
+    <footer className="bg-[#1a1a1a] py-14 md:py-18">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          ref={ref}
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          variants={staggerContainer}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12"
+        >
+          {/* Brand & Newsletter */}
+          <motion.div variants={fadeInUp} className="lg:col-span-1">
+            <h3 className="text-base font-normal text-white mb-2 tracking-[0.02em]">INAARA</h3>
+            <p className="text-neutral-500 text-xs mb-6 font-light leading-relaxed">
+              Sign-up to receive the latest news from Inaara.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-neutral-800/50 border border-neutral-700/50 text-white placeholder-neutral-500 px-4 py-2.5 rounded-[2px] text-xs focus:outline-none focus:border-neutral-500 font-light"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isSubscribing}
+                className="w-full bg-white text-neutral-900 px-4 py-2.5 rounded-[2px] text-xs font-normal tracking-[0.03em] hover:bg-neutral-100 transition-colors disabled:opacity-50"
+              >
+                {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </form>
+          </motion.div>
+
+          {/* Navigation */}
+          <motion.div variants={fadeInUp}>
+            <h4 className="text-[10px] tracking-[0.15em] text-neutral-500 uppercase mb-4 font-normal">Navigation</h4>
+            <ul className="space-y-2.5">
+              {['Home', 'About', 'Blogs', 'Contact', 'Favorites', 'FAQ'].map((item) => (
+                <li key={item}>
+                  <a href={`/${item.toLowerCase()}`} className="text-neutral-400 hover:text-white transition-colors text-xs font-light">
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Shop */}
+          <motion.div variants={fadeInUp}>
+            <h4 className="text-[10px] tracking-[0.15em] text-neutral-500 uppercase mb-4 font-normal">Shop</h4>
+            <ul className="space-y-2.5">
+              {['All', 'T-Shirts', 'Shirts', 'Dresses & Jump Suits', 'Bottoms', 'Knitwears', 'Coats & Jackets'].map((item) => (
+                <li key={item}>
+                  <a href="/shop" className="text-neutral-400 hover:text-white transition-colors text-xs font-light">
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Support */}
+          <motion.div variants={fadeInUp}>
+            <h4 className="text-[10px] tracking-[0.15em] text-neutral-500 uppercase mb-4 font-normal">Support</h4>
+            <ul className="space-y-2.5">
+              {['Payment Methods', 'Returns & Refunds', 'Shipping & Delivery', 'Terms & Condition', 'Privacy Policy'].map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-neutral-400 hover:text-white transition-colors text-xs font-light">
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </motion.div>
+
+        {/* Bottom Bar */}
+        <motion.div
+          variants={fadeInUp}
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          className="mt-12 pt-6 border-t border-neutral-800/50 flex flex-col md:flex-row items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-6">
+            {['Instagram', 'Twitter (X)', 'LinkedIn'].map((social) => (
+              <a key={social} href="#" className="text-neutral-500 hover:text-white transition-colors text-xs font-light">
+                {social}
+              </a>
+            ))}
+          </div>
+          <p className="text-neutral-600 text-xs font-light">
+            © {new Date().getFullYear()} Inaara, All rights reserved
+          </p>
+        </motion.div>
+      </div>
+    </footer>
+  );
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
+export default function EnhancedHomePage() {
+  const [bestSellers, setBestSellers] = useState<ProductWithImages[]>([]);
+  const [newArrivals, setNewArrivals] = useState<ProductWithImages[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { ref: bestSellersRef, isVisible: bestSellersVisible } = useScrollAnimation();
+  const { ref: newArrivalsRef, isVisible: newArrivalsVisible } = useScrollAnimation();
+
+  useEffect(() => {
+    loadAllProducts();
+  }, []);
+
+  const loadAllProducts = async () => {
+    setIsLoading(true);
+    try {
+      // Load Best Sellers - matching live site query structure
+      const { data: bestSellerData, error: bestSellerError } = await supabase
         .from('products')
-        .select('id, name, slug, price, compare_at_price, main_image, featured_image, category, description, homepage_position')
-        .eq('show_on_homepage', true)
-        .eq('homepage_section', 'new_arrivals')
-        .eq('status', 'active')
-        .order('homepage_position')
+        .select(`
+          *,
+          images:product_images(*),
+          collection:collections(*)
+        `)
+        .eq('is_bestseller', true)
+        .order('created_at', { ascending: false })
         .limit(6);
 
-      if (!newError && newArrivalsData) {
-        setNewArrivals(newArrivalsData);
+      if (bestSellerError) {
+        console.error('Error loading best sellers:', bestSellerError);
+      } else if (bestSellerData) {
+        console.log('Best sellers loaded:', bestSellerData.length);
+        setBestSellers(bestSellerData as ProductWithImages[]);
+      }
+
+      // Load New Arrivals - matching live site query structure
+      const { data: newArrivalData, error: newArrivalError } = await supabase
+        .from('products')
+        .select(`
+          *,
+          images:product_images(*),
+          collection:collections(*)
+        `)
+        .eq('is_new', true)
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      if (newArrivalError) {
+        console.error('Error loading new arrivals:', newArrivalError);
+      } else if (newArrivalData) {
+        console.log('New arrivals loaded:', newArrivalData.length);
+        setNewArrivals(newArrivalData as ProductWithImages[]);
       }
     } catch (error) {
       console.error('Error loading products:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const setDefaultContent = () => {
-    // Set default content matching the original design
-    setContent({
-      hero: {
-        image: "https://res.cloudinary.com/dusynu0kv/image/upload/v1761658028/hero_jlpiil.jpg",
-        overlay_opacity: 40,
-        small_text: "New Arrivals Just for You",
-        main_title: "",
-        subtitle: "",
-        button1_text: "View Collection",
-        button1_link: "/shop",
-        button2_text: "Watch Story",
-        show_video_button: true
-      },
-      top_banner: {
-        text: "Free Shipping On All Orders - Don't Miss Out!",
-        background_color: "#000000",
-        text_color: "#FFFFFF",
-        is_visible: true
-      },
-      brand_story: {
-        small_text: "Our Story",
-        main_text: "Fashion is more than clothing. It's confidence, expression, and empowerment.",
-        description: "At Inaara Woman, we believe every woman deserves to feel extraordinary. Our carefully curated collections blend timeless elegance with contemporary style, creating pieces that transition seamlessly from day to night."
-      },
-      crafted_section: {
-        background_image: "https://res.cloudinary.com/dusynu0kv/image/upload/v1761657297/IMG_4662_nwpdmy.jpg",
-        title: "Crafted for You",
-        subtitle: "Each design tells a story of elegance and sophistication",
-        button_text: "Explore Collection",
-        button_link: "/shop",
-        overlay_opacity: 40
-      },
-      final_cta: {
-        background_image: "https://res.cloudinary.com/dusynu0kv/image/upload/v1761735409/Untitled-1_3x_laltoc.jpg",
-        title: "Ready to Elevate Your Wardrobe?",
-        subtitle: "Join thousands of women who trust Inaara Woman for their fashion needs.",
-        button_text: "Start Shopping",
-        button_link: "/shop",
-        overlay_opacity: 50
-      },
-      benefits: {
-        title: "The Inaara Experience",
-        small_text: "Why Choose Us",
-        benefits: [
-          {
-            icon: "Award",
-            title: "Premium Quality",
-            description: "Every piece is carefully selected for exceptional quality, craftsmanship, and attention to detail."
-          },
-          {
-            icon: "Truck",
-            title: "Fast Delivery",
-            description: "Nationwide shipping with tracking. Your order arrives swiftly and securely at your doorstep."
-          },
-          {
-            icon: "Shield",
-            title: "Secure Shopping",
-            description: "Shop with confidence. Your payment information is protected with industry-leading security."
-          }
-        ]
-      }
-    });
-  };
-
-  const getIconComponent = (iconName: string) => {
-    switch(iconName) {
-      case 'Award': return <Award size={20} className="text-white" />;
-      case 'Truck': return <Truck size={20} className="text-white" />;
-      case 'Shield': return <Shield size={20} className="text-white" />;
-      default: return <Award size={20} className="text-white" />;
-    }
-  };
-
-  if (!content) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-neutral-600">Loading...</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="bg-white">
-      <ScrollProgress />
+    <div className="min-h-screen bg-white">
+      {/* Announcement Bar */}
+      <AnnouncementBar />
 
-      {/* Top Banner - Dynamic from CMS */}
-      {content.top_banner.is_visible && (
-        <div 
-          className="text-center py-2 text-xs"
-          style={{
-            backgroundColor: content.top_banner.background_color,
-            color: content.top_banner.text_color
-          }}
-        >
-          {content.top_banner.text}
-        </div>
-      )}
+      {/* Hero Section */}
+      <HeroSection />
 
-      {/* Hero Section - Dynamic from CMS */}
-      <motion.section
-        ref={heroRef}
-        style={{ opacity: heroOpacity, scale: heroScale }}
-        className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      >
-        <div className="absolute inset-0 z-0">
-          <img
-            src={content.hero.image}
-            alt="Hero"
-            className="w-full h-full object-cover"
-          />
-          <div 
-            className="absolute inset-0" 
-            style={{ backgroundColor: `rgba(0, 0, 0, ${content.hero.overlay_opacity / 100})` }}
-          />
-        </div>
-
-        <DecorativeLines />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+      {/* Best Sellers Section */}
+      <section className="py-12 md:py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-            className="mb-6"
+            ref={bestSellersRef}
+            initial="hidden"
+            animate={bestSellersVisible ? "visible" : "hidden"}
+            variants={fadeInUp}
           >
-            <p className="text-[10px] md:text-xs tracking-[0.4em] text-white/70 mb-4 uppercase font-light">
-              {content.hero.small_text}
-            </p>
-            {content.hero.main_title && (
-              <h1 className="font-serif text-3xl md:text-5xl font-light text-white mb-4">
-                {content.hero.main_title}
-              </h1>
-            )}
-            {content.hero.subtitle && (
-              <p className="text-sm md:text-base text-white/80">
-                {content.hero.subtitle}
-              </p>
-            )}
+            <SectionHeader title="Best Sellers" viewAllLink="/shop" />
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-3 justify-center items-center"
-          >
-            <button
-              onClick={() => navigate(content.hero.button1_link)}
-              className="px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 border border-white transition-all duration-300 font-medium"
-            >
-              {content.hero.button1_text}
-            </button>
-            
-            {content.hero.show_video_button && (
-              <button
-                onClick={() => setShowVideo(true)}
-                className="flex items-center gap-2 px-6 py-2 text-[10px] tracking-widest uppercase border border-white text-white hover:bg-white hover:text-neutral-900 transition-all duration-300 font-medium"
-              >
-                <Play size={12} />
-                {content.hero.button2_text}
-              </button>
-            )}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 1.2 }}
-            className="absolute bottom-12 left-1/2 -translate-x-1/2"
-          >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <ChevronDown size={20} className="text-white/60" />
-            </motion.div>
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* Best Sellers Section - Dynamic from Database */}
-      {bestSellers.length > 0 && (
-        <section className="py-16 px-4 bg-neutral-50">
-          <div className="max-w-7xl mx-auto">
-            <TextRevealOnScroll className="text-center mb-12">
-              <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Best Sellers</p>
-              <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-                Customer Favorites
-              </h2>
-            </TextRevealOnScroll>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {bestSellers.map((product) => (
-                <TextRevealOnScroll key={product.id}>
-                  <div 
-                    className="group cursor-pointer"
-                    onClick={() => navigate(`/product/${product.slug}`)}
-                  >
-                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                      <img
-                        src={product.main_image || product.featured_image || '/placeholder.jpg'}
-                        alt={product.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                          Quick View
-                        </button>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">{product.name}</h3>
-                      <p className="text-neutral-600 text-[10px] mb-1">{product.category || 'Premium Collection'}</p>
-                      <p className="text-neutral-900 font-medium text-[10px]">
-                        {currency.symbol}{convertPrice(product.price).toLocaleString()}
-                        {product.compare_at_price && (
-                          <span className="text-neutral-500 line-through ml-2">
-                            {currency.symbol}{convertPrice(product.compare_at_price).toLocaleString()}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </TextRevealOnScroll>
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[3/4] bg-neutral-200 rounded-sm mb-3" />
+                  <div className="h-4 bg-neutral-200 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-neutral-200 rounded w-1/2" />
+                </div>
               ))}
             </div>
-
-            <div className="text-center mt-8">
-              <button
-                onClick={() => navigate('/shop')}
-                className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
-              >
-                View All
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Brand Story Section - Dynamic from CMS */}
-      <section className="py-24 px-4 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <TextRevealOnScroll>
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 text-center uppercase font-light">
-              {content.brand_story.small_text}
-            </p>
-          </TextRevealOnScroll>
-
-          <SplitTextReveal
-            text={content.brand_story.main_text}
-            className="font-serif text-lg md:text-xl lg:text-2xl font-light text-neutral-900 text-center mb-8 leading-relaxed"
-          />
-
-          <TextRevealOnScroll>
-            <p className="text-sm text-neutral-600 text-center max-w-3xl mx-auto leading-relaxed">
-              {content.brand_story.description}
-            </p>
-          </TextRevealOnScroll>
-        </div>
-      </section>
-
-      {/* Featured Products Grid - Keep static for now */}
-      <section className="py-16 px-4 bg-neutral-50">
-        <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-12">
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Featured Collection</p>
-            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-              This Season's Must-Haves
-            </h2>
-          </TextRevealOnScroll>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <TextRevealOnScroll>
-              <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer">
-                <ParallaxImage
-                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761654830/Gemini_Generated_Image_c0aiz1c0aiz1c0ai_yit4rx.png"
-                  speed={0.2}
-                  className="w-full h-full"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute bottom-6 left-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="text-xl font-serif font-light mb-1">Elegant Dresses</h3>
-                  <p className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  AMATA SS25
-                  </p>
-                </div>
-              </div>
-            </TextRevealOnScroll>
-
-            <TextRevealOnScroll>
-              <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer">
-                <ParallaxImage
-                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761654824/Gemini_Generated_Image_mtsv62mtsv62mtsv_yynrua.png"
-                  speed={0.2}
-                  className="w-full h-full"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute bottom-6 left-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="text-xl font-serif font-light mb-1">Statement Pieces</h3>
-                  <p className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  UZURI SS25
-                  </p>
-                </div>
-              </div>
-            </TextRevealOnScroll>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section - Dynamic from CMS */}
-      <section className="py-24 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-16">
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">
-              {content.benefits.small_text}
-            </p>
-            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-              {content.benefits.title}
-            </h2>
-          </TextRevealOnScroll>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {content.benefits.benefits.map((benefit, index) => (
-              <TextRevealOnScroll key={index}>
-                <div className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-neutral-900 rounded-full flex items-center justify-center">
-                    {getIconComponent(benefit.icon)}
-                  </div>
-                  <h3 className="text-sm font-serif font-normal mb-2">{benefit.title}</h3>
-                  <p className="text-xs text-neutral-600 leading-relaxed">
-                    {benefit.description}
-                  </p>
-                </div>
-              </TextRevealOnScroll>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Crafted for You Section - Dynamic from CMS */}
-      <section className="relative h-screen">
-        <div className="absolute inset-0">
-          <img
-            src={content.crafted_section.background_image}
-            alt="Crafted for You"
-            className="w-full h-full object-cover"
-          />
-          <div 
-            className="absolute inset-0" 
-            style={{ backgroundColor: `rgba(0, 0, 0, ${content.crafted_section.overlay_opacity / 100})` }}
-          />
-          
-          <div className="absolute inset-0 flex items-center justify-center opacity-10">
-            <h1 className="font-serif text-[20vw] font-bold text-white tracking-wider">
-              INAARA
-            </h1>
-          </div>
-        </div>
-
-        <div className="relative z-10 h-full flex items-center justify-center">
-          <div className="text-center text-white px-4">
-            <h2 className="font-serif text-2xl md:text-3xl font-light mb-4">
-              {content.crafted_section.title}
-            </h2>
-            <p className="text-xs md:text-sm mb-6 max-w-2xl mx-auto">
-              {content.crafted_section.subtitle}
-            </p>
-            <button
-              onClick={() => navigate(content.crafted_section.button_link)}
-              className="px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
+          ) : (
+            <motion.div
+              initial="hidden"
+              animate={bestSellersVisible ? "visible" : "hidden"}
+              variants={staggerContainer}
+              className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
             >
-              {content.crafted_section.button_text}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Collection Highlights - Keep static */}
-      <section className="py-24 px-4 bg-neutral-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
-            <TextRevealOnScroll>
-              <div className="relative aspect-[4/5]">
-                <ParallaxImage
-                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1761734975/IMG_0011_kerlww.jpg"
-                  speed={0.2}
-                  className="w-full h-full rounded-lg"
-                />
-              </div>
-            </TextRevealOnScroll>
-
-            <TextRevealOnScroll>
-              <div>
-                <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Versatile Style</p>
-                <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900 mb-4">
-                  Day to Night Elegance
-                </h2>
-                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
-                  Our collection seamlessly transitions from professional meetings to evening gatherings.
-                  Versatile pieces designed to adapt to your dynamic lifestyle.
-                </p>
-                <button
-                  onClick={() => navigate('/collections')}
-                  className="px-6 py-2 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
-                >
-                  View Collections
-                </button>
-              </div>
-            </TextRevealOnScroll>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <TextRevealOnScroll className="order-2 lg:order-1">
-              <div>
-                <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Sustainable Fashion</p>
-                <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900 mb-4">
-                  Conscious Choices
-                </h2>
-                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
-                  We're committed to sustainable practices and ethical sourcing. Fashion that looks good
-                  and does good for our planet.
-                </p>
-                <button
-                  onClick={() => navigate('/about')}
-                  className="px-6 py-2 bg-neutral-900 hover:bg-neutral-800 text-white transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
-                >
-                  Learn More
-                </button>
-              </div>
-            </TextRevealOnScroll>
-
-            <TextRevealOnScroll className="order-1 lg:order-2">
-              <div className="relative aspect-[4/5]">
-                <ParallaxImage
-                  src="/Gemini_Generated_Image_vre75gvre75gvre7.png"
-                  speed={0.2}
-                  className="w-full h-full rounded-lg"
-                />
-              </div>
-            </TextRevealOnScroll>
-          </div>
-        </div>
-      </section>
-
-      {/* New Arrivals - Dynamic from Database */}
-      {newArrivals.length > 0 && (
-        <section className="py-24 px-4 bg-neutral-50 overflow-hidden">
-          <div className="max-w-7xl mx-auto">
-            <TextRevealOnScroll className="text-center mb-12">
-              <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Discover</p>
-              <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-                New Arrivals
-              </h2>
-            </TextRevealOnScroll>
-
-            <div className="relative">
-              <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                
-                {newArrivals.map((product) => (
-                  <div 
+              {bestSellers.length > 0 ? (
+                bestSellers.map((product) => (
+                  <ProductCard 
                     key={product.id} 
-                    className="flex-none w-64 group cursor-pointer snap-start"
-                    onClick={() => navigate(`/product/${product.slug}`)}
-                  >
-                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3">
-                      <img
-                        src={product.main_image || product.featured_image || '/placeholder.jpg'}
-                        alt={product.name}
-                        className="w-full h-full object-cover transition-opacity duration-500"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <button className="px-4 py-1.5 bg-white text-neutral-900 text-[9px] tracking-widest uppercase font-medium">
-                          Quick View
-                        </button>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-serif text-xs font-normal text-neutral-900 mb-0.5">{product.name}</h3>
-                      <p className="text-neutral-600 text-[10px] mb-1">{product.category || 'Classic Statement Piece'}</p>
-                      <p className="text-neutral-900 font-medium text-[10px]">
-                        {currency.symbol}{convertPrice(product.price).toLocaleString()}
-                        {product.compare_at_price && (
-                          <span className="text-neutral-500 line-through ml-2">
-                            {currency.symbol}{convertPrice(product.compare_at_price).toLocaleString()}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-
-              </div>
-
-              <div className="text-center mt-6">
-                <p className="text-[9px] text-neutral-500 tracking-wider">← Scroll to explore more →</p>
-              </div>
-            </div>
-
-            <div className="text-center mt-8">
-              <button
-                onClick={() => navigate('/shop')}
-                className="px-8 py-2 bg-neutral-900 text-white hover:bg-neutral-800 transition-all duration-300 font-medium text-[10px] tracking-widest uppercase"
-              >
-                View All
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Testimonials - Keep static */}
-      <section className="py-24 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <TextRevealOnScroll className="text-center mb-16">
-            <p className="text-[10px] tracking-[0.3em] text-neutral-500 mb-3 uppercase font-light">Testimonials</p>
-            <h2 className="font-serif text-xl md:text-2xl font-light text-neutral-900">
-              What Our Customers Say
-            </h2>
-          </TextRevealOnScroll>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <TextRevealOnScroll key={i}>
-                <div className="bg-neutral-50 p-6 rounded-lg">
-                  <div className="flex gap-0.5 mb-3">
-                    {[...Array(5)].map((_, j) => (
-                      <Star key={j} size={14} className="fill-neutral-900 text-neutral-900" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-neutral-600 mb-4 leading-relaxed">
-                    "Absolutely love my purchase! The quality is exceptional and the fit is perfect.
-                    Inaara Woman has become my go-to for elegant fashion."
-                  </p>
-                  <p className="font-medium text-neutral-900 text-xs">Customer {i}</p>
-                  <p className="text-[10px] text-neutral-500">Verified Purchase</p>
+                    product={product} 
+                    badgeType="bestseller"
+                  />
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12 text-neutral-400">
+                  No best sellers available. Mark products as "Best Seller" in the admin dashboard.
                 </div>
-              </TextRevealOnScroll>
-            ))}
-          </div>
+              )}
+            </motion.div>
+          )}
         </div>
       </section>
 
-      {/* Final CTA - Dynamic from CMS */}
-      <section className="relative py-32 px-4 text-white">
-        <div className="absolute inset-0">
-          <img
-            src={content.final_cta.background_image}
-            alt="Background"
-            className="w-full h-full object-cover"
-          />
-          <div 
-            className="absolute inset-0" 
-            style={{ backgroundColor: `rgba(0, 0, 0, ${content.final_cta.overlay_opacity / 100})` }}
-          />
-        </div>
+      {/* About Section - "Our Story, Your Style" */}
+      <AboutSection />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <TextRevealOnScroll>
-            <h2 className="font-serif text-2xl md:text-3xl font-light mb-4">
-              {content.final_cta.title}
-            </h2>
-          </TextRevealOnScroll>
+      {/* New Arrivals Section */}
+      <section className="py-12 md:py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            ref={newArrivalsRef}
+            initial="hidden"
+            animate={newArrivalsVisible ? "visible" : "hidden"}
+            variants={fadeInUp}
+          >
+            <SectionHeader title="New in" viewAllLink="/shop" />
+          </motion.div>
 
-          <TextRevealOnScroll>
-            <p className="text-sm md:text-base text-white/90 mb-8">
-              {content.final_cta.subtitle}
-            </p>
-          </TextRevealOnScroll>
-
-          <TextRevealOnScroll>
-            <button
-              onClick={() => navigate(content.final_cta.button_link)}
-              className="inline-flex items-center gap-2 px-6 py-2 text-[10px] tracking-widest uppercase bg-white text-neutral-900 hover:bg-neutral-100 transition-all duration-300 font-medium"
-            >
-              <ShoppingBag size={14} />
-              {content.final_cta.button_text}
-            </button>
-          </TextRevealOnScroll>
-        </div>
-      </section>
-
-      {/* Video Modal */}
-      {showVideo && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowVideo(false)}
-        >
-          <div className="relative w-full max-w-4xl aspect-video bg-neutral-900 rounded-lg">
-            <button
-              onClick={() => setShowVideo(false)}
-              className="absolute -top-10 right-0 text-white text-sm hover:text-neutral-300"
-            >
-              Close
-            </button>
-            <div className="w-full h-full flex items-center justify-center text-white">
-              <p className="text-sm">Video placeholder - Add your brand story video here</p>
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[3/4] bg-neutral-200 rounded-sm mb-3" />
+                  <div className="h-4 bg-neutral-200 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-neutral-200 rounded w-1/2" />
+                </div>
+              ))}
             </div>
-          </div>
-        </motion.div>
-      )}
+          ) : (
+            <motion.div
+              initial="hidden"
+              animate={newArrivalsVisible ? "visible" : "hidden"}
+              variants={staggerContainer}
+              className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
+            >
+              {newArrivals.length > 0 ? (
+                newArrivals.map((product) => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product}
+                    showBadge={false}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12 text-neutral-400">
+                  No new arrivals available. Mark products as "New" in the admin dashboard.
+                </div>
+              )}
+            </motion.div>
+          )}
+        </div>
+      </section>
+
+      {/* Category Showcase - "Elevate Your Style" & "Redefine Casual Comfort" */}
+      <CategoryShowcase />
+
+      {/* Why Shop With Us */}
+      <WhyShopSection />
+
+      {/* Instagram Section */}
+      <InstagramSection />
+
+      {/* Footer */}
+      <FooterSection />
     </div>
   );
 }
