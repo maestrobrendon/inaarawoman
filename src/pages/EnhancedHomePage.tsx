@@ -207,7 +207,7 @@ function HeroSection() {
     <motion.section 
       ref={heroRef}
       style={{ y, scale }}
-      className="relative h-[100svh] md:h-screen overflow-hidden bg-neutral-900 sticky top-0 z-0"
+      className="relative h-[100svh] md:h-screen overflow-hidden bg-neutral-900 z-0"
     >
       <motion.div style={{ opacity }} className="absolute inset-0">
         {/* Background Images */}
@@ -816,7 +816,7 @@ function InstagramSection() {
 
           {/* Navigation dots */}
           <div className="flex justify-center gap-2 mt-6">
-            {images.slice(0, 6).map((_, index) => (
+            {images.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
