@@ -267,7 +267,7 @@ export default function CollectionPage() {
       </section>
 
       {/* Filter Bar */}
-      <section className="sticky top-0 z-40 bg-[#f5f5f5] border-b border-neutral-200">
+      <section className="sticky top-0 z-30 bg-[#f5f5f5] border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-3">
             {/* Left: Filters */}

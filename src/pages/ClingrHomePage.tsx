@@ -143,7 +143,7 @@ function AnnouncementBar() {
       >
         {[...Array(10)].map((_, i) => (
           <span key={i} className="text-xs tracking-[0.2em] mx-12 font-light uppercase">
-            FREE SHIPPING ON ALL ORDERS
+            DISCOVER OUR NIVRA COLLECTION
           </span>
         ))}
       </motion.div>
@@ -631,8 +631,8 @@ function CategoryShowcase() {
       alignment: 'left' as const
     },
     {
-      title: 'Redefine Casual Comfort',
-      subtitle: 'New in T-Shirts',
+      title: 'Discover Nivara SS26',
+      subtitle: 'New in Collection',
       description: 'Experience premium fabrics and modern fits, designed for effortless everyday style',
       image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1200/v1761734975/IMG_0011_kerlww.jpg',
       link: '/shop?category=tops',
@@ -699,7 +699,7 @@ function WhyShopSection() {
   const features = [
     {
       icon: <Truck className="w-6 h-6" strokeWidth={1} />,
-      title: 'Free Shipping',
+      title: 'Fast Shipping',
       description: 'Get your order in 4-7 business days.'
     },
     {

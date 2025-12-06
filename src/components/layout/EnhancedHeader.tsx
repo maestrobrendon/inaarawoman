@@ -47,7 +47,7 @@ export default function EnhancedHeader() {
       const { data } = await supabase
         .from('collections')
         .select('id, name, slug')
-        .eq('is_active', true)
+        .eq('status', 'active')
         .order('name');
       if (data) setCollections(data);
     };
@@ -119,12 +119,12 @@ export default function EnhancedHeader() {
   return (
     <>
       <motion.div
-        className="fixed top-0 left-0 right-0 h-0.5 bg-[#D4AF37] origin-left z-50"
+        className="fixed top-0 left-0 right-0 h-0.5 bg-[#D4AF37] origin-left z-[60]"
         style={{ scaleX: useTransform(scrollProgress, [0, 100], [0, 1]) }}
       />
 
       <motion.header
-        className={`sticky top-0 z-40 bg-white border-b border-neutral-200 transition-all duration-300 ${
+        className={`sticky top-0 z-50 bg-white border-b border-neutral-200 transition-all duration-300 ${
           scrolled ? 'shadow-md backdrop-blur-md bg-white/95' : ''
         }`}
         style={{ height: headerHeight, opacity: headerOpacity }}
@@ -132,7 +132,7 @@ export default function EnhancedHeader() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
             <button
-              className="lg:hidden p-1 -ml-1 relative z-[60]"
+              className="lg:hidden p-1 -ml-1 relative z-[70]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <motion.div
@@ -145,13 +145,13 @@ export default function EnhancedHeader() {
 
             <div className="flex items-center gap-8">
               <Link to="/">
-                <motion.div
-                  className="text-[18px] md:text-[20px] font-bold tracking-wider uppercase text-neutral-900 hover:text-neutral-700 transition-colors"
+                <motion.img
+                  src="https://res.cloudinary.com/dusynu0kv/image/upload/v1765001554/z0mkjqsdbnr4ppai6ukp.png"
+                  alt="Inaara Woman"
+                  className="h-8 md:h-10 w-auto object-contain"
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.3 }}
-                >
-                  INAARA WOMAN
-                </motion.div>
+                />
               </Link>
 
               <nav className="hidden lg:flex items-center gap-8">
@@ -373,7 +373,7 @@ export default function EnhancedHeader() {
           </div>
         </div>
 
-        {/* MOBILE MENU - PERMANENTLY FIXED FOR ALL SCROLL POSITIONS */}
+        {/* MOBILE MENU - HIGHER Z-INDEX TO OVERLAY EVERYTHING */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
@@ -384,7 +384,7 @@ export default function EnhancedHeader() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
-                style={{ zIndex: 45 }}
+                style={{ zIndex: 55 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
@@ -395,7 +395,7 @@ export default function EnhancedHeader() {
                 exit={{ x: '100%' }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                 className="fixed right-0 top-0 bottom-0 w-3/4 max-w-sm bg-white shadow-2xl lg:hidden overflow-y-auto"
-                style={{ zIndex: 50, paddingTop: '60px' }}
+                style={{ zIndex: 60, paddingTop: '60px' }}
               >
                 <nav className="px-6 py-8 space-y-1">
                   {/* MOBILE CURRENCY DROPDOWN SELECTOR */}
