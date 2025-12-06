@@ -143,7 +143,7 @@ function AnnouncementBar() {
       >
         {[...Array(10)].map((_, i) => (
           <span key={i} className="text-xs tracking-[0.2em] mx-12 font-light uppercase">
-            DISCOVER OUR NIVRA COLLECTION
+            DISCOVER OUR NIVARA COLLECTION
           </span>
         ))}
       </motion.div>
