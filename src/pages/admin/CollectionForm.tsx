@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Search, Package } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import { extractImageUrl } from '../../utils/cloudinaryUpload';
 
 interface CollectionFormProps {
   mode: 'new' | 'edit';
@@ -13,26 +14,27 @@ interface Product {
   id: string;
   name: string;
   price: number;
-  main_image: string | null;
-  images: string[] | null;
+  main_image: any;
+  images: any[];
+  collection_id: string | null;
 }
 
 export default function CollectionForm({ mode }: CollectionFormProps) {
   const navigate = useNavigate();
   const { id: collectionId } = useParams();
+  
+  // Form state - only fields used in CollectionPage design
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
-    description: '',
     status: 'active',
-    position: 0,
-    seo_title: '',
-    seo_description: '',
   });
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  
+  // Products state
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -47,19 +49,33 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
   const loadCollection = async () => {
     try {
       setLoading(true);
-      const [collectionRes, productsRes] = await Promise.all([
-        supabase.from('collections').select('*').eq('id', collectionId).single(),
-        supabase
-          .from('collection_products')
-          .select('product_id')
-          .eq('collection_id', collectionId),
-      ]);
+      
+      const { data: collectionData, error: collectionError } = await supabase
+        .from('collections')
+        .select('*')
+        .eq('id', collectionId)
+        .single();
 
-      if (collectionRes.error) throw collectionRes.error;
-      setFormData(collectionRes.data);
-      setSelectedProducts(productsRes.data?.map(p => p.product_id) || []);
+      if (collectionError) throw collectionError;
+      
+      setFormData({
+        name: collectionData.name || '',
+        slug: collectionData.slug || '',
+        status: collectionData.status || 'active',
+      });
+
+      // Load products in this collection
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('id')
+        .eq('collection_id', collectionId);
+
+      if (productsData) {
+        setSelectedProductIds(productsData.map(p => p.id));
+      }
     } catch (error) {
       console.error('Error loading collection:', error);
+      alert('Failed to load collection. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -68,17 +84,16 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
   const loadProducts = async () => {
     try {
       setLoadingProducts(true);
+      
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price, main_image, images')
-        .in('status', ['active', 'published', 'draft'])
+        .select('id, name, price, main_image, images:product_images(*), collection_id')
         .order('name');
 
       if (error) throw error;
-      setAvailableProducts(data || []);
+      setAllProducts(data || []);
     } catch (error) {
       console.error('Error loading products:', error);
-      alert('Failed to load products. Please try again.');
     } finally {
       setLoadingProducts(false);
     }
@@ -87,8 +102,10 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
 
-    if (field === 'name' && !collectionId) {
-      const slug = value.toLowerCase()
+    // Auto-generate slug from name (only for new collections)
+    if (field === 'name' && mode === 'new') {
+      const slug = value
+        .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
       setFormData(prev => ({ ...prev, slug }));
@@ -97,15 +114,20 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!formData.name.trim()) {
       alert('Collection name is required');
       return;
     }
 
+    if (!formData.slug.trim()) {
+      alert('Collection slug is required');
+      return;
+    }
+
     try {
       setSaving(true);
-
-      let collId = collectionId;
+      let savedCollectionId = collectionId;
 
       if (mode === 'new') {
         const { data, error } = await supabase
@@ -114,48 +136,53 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
           .select()
           .single();
 
-        if (error) throw error;
-        collId = data.id;
+        if (error) {
+          if (error.code === '23505') {
+            alert('A collection with this slug already exists.');
+            return;
+          }
+          throw error;
+        }
+        savedCollectionId = data.id;
       } else {
         const { error } = await supabase
           .from('collections')
           .update(formData)
           .eq('id', collectionId);
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === '23505') {
+            alert('A collection with this slug already exists.');
+            return;
+          }
+          throw error;
+        }
       }
 
+      // Update product associations
       await supabase
-        .from('collection_products')
-        .delete()
-        .eq('collection_id', collId);
+        .from('products')
+        .update({ collection_id: null })
+        .eq('collection_id', savedCollectionId);
 
-      if (selectedProducts.length > 0) {
-        const collectionProducts = selectedProducts.map((productId, index) => ({
-          collection_id: collId,
-          product_id: productId,
-          position: index,
-        }));
-
-        const { error: insertError } = await supabase
-          .from('collection_products')
-          .insert(collectionProducts);
-
-        if (insertError) throw insertError;
+      if (selectedProductIds.length > 0) {
+        await supabase
+          .from('products')
+          .update({ collection_id: savedCollectionId })
+          .in('id', selectedProductIds);
       }
 
-      alert('Collection saved successfully!');
       navigate('/admin/collections');
     } catch (error) {
       console.error('Error saving collection:', error);
-      alert('Failed to save collection');
+      alert('Failed to save collection. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   const toggleProduct = (productId: string) => {
-    setSelectedProducts(prev =>
+    setSelectedProductIds(prev =>
       prev.includes(productId)
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
@@ -163,221 +190,284 @@ export default function CollectionForm({ mode }: CollectionFormProps) {
   };
 
   const removeProduct = (productId: string) => {
-    setSelectedProducts(prev => prev.filter(id => id !== productId));
+    setSelectedProductIds(prev => prev.filter(id => id !== productId));
   };
 
-  const selectedProductsData = availableProducts.filter(p =>
-    selectedProducts.includes(p.id)
-  );
-
-  const filteredProducts = availableProducts.filter(p =>
+  const selectedProducts = allProducts.filter(p => selectedProductIds.includes(p.id));
+  
+  const filteredProducts = allProducts.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  const getProductImage = (product: Product): string => {
+    if (product.main_image) {
+      return extractImageUrl(product.main_image);
+    }
+    if (product.images && product.images.length > 0) {
+      return extractImageUrl(product.images[0]);
+    }
+    return '';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-8 h-8 border-2 border-neutral-200 border-t-amber-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
       <div className="space-y-4">
         <button
           onClick={() => navigate('/admin/collections')}
-          className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900"
+          className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 text-sm transition-colors"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           Back to Collections
         </button>
         <h1 className="text-2xl font-semibold text-neutral-900">
-          {mode === 'edit' ? 'Edit Collection' : 'Create Collection'}
+          {mode === 'edit' ? 'Edit Collection' : 'New Collection'}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-neutral-900">Basic Information</h2>
+        {/* Collection Details */}
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 space-y-5">
+          <h2 className="text-base font-medium text-neutral-900">Collection Details</h2>
 
-          <Input
-            label="Collection Name *"
-            value={formData.name}
-            onChange={(e) => handleChange('name', e.target.value)}
-            placeholder="e.g., Summer Collection"
-            required
-          />
-
-          <Input
-            label="Slug *"
-            value={formData.slug}
-            onChange={(e) => handleChange('slug', e.target.value)}
-            placeholder="summer-collection"
-            required
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              className="w-full px-4 py-3 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-              rows={4}
-              placeholder="Describe this collection..."
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-                className="w-full px-4 py-3 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-              >
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-              </select>
+              <Input
+                label="Collection Name"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                placeholder="e.g., Amata Collection"
+                required
+              />
+              <p className="text-xs text-neutral-500 mt-1.5">
+                This name will be displayed as the collection page header
+              </p>
             </div>
 
-            <Input
-              label="Position"
-              type="number"
-              value={formData.position.toString()}
-              onChange={(e) => handleChange('position', parseInt(e.target.value) || 0)}
-            />
+            <div>
+              <Input
+                label="URL Slug"
+                value={formData.slug}
+                onChange={(e) => handleChange('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                placeholder="amata-collection"
+                required
+              />
+              <p className="text-xs text-neutral-500 mt-1.5">
+                URL: /collection/<span className="font-medium">{formData.slug || 'your-slug'}</span>
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Status
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="active"
+                    checked={formData.status === 'active'}
+                    onChange={(e) => handleChange('status', e.target.value)}
+                    className="w-4 h-4 text-amber-500 border-neutral-300 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-neutral-700">Active</span>
+                  <span className="text-xs text-neutral-500">(visible on website)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="draft"
+                    checked={formData.status === 'draft'}
+                    onChange={(e) => handleChange('status', e.target.value)}
+                    className="w-4 h-4 text-amber-500 border-neutral-300 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-neutral-700">Draft</span>
+                  <span className="text-xs text-neutral-500">(hidden)</span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
+        {/* Products */}
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Products ({selectedProductsData.length})
-            </h2>
+            <div>
+              <h2 className="text-base font-medium text-neutral-900">Products</h2>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                {selectedProducts.length} {selectedProducts.length === 1 ? 'product' : 'products'} in this collection
+              </p>
+            </div>
             <Button
               type="button"
               onClick={() => setShowProductPicker(!showProductPicker)}
               variant="outline"
-              className="gap-2"
+              className="gap-2 text-sm"
             >
               <Plus size={16} />
               Add Products
             </Button>
           </div>
 
+          {/* Product Picker */}
           {showProductPicker && (
-            <div className="border border-neutral-300 rounded-lg p-4 space-y-4">
-              <Input
-                label="Search Products"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by product name..."
-              />
+            <div className="border border-neutral-200 rounded-lg p-4 space-y-4 bg-neutral-50">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search products..."
+                  className="w-full pl-9 pr-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm bg-white"
+                />
+              </div>
+              
               {loadingProducts ? (
-                <div className="text-center py-8 text-neutral-500">
-                  Loading products...
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-neutral-200 border-t-amber-500 rounded-full animate-spin mx-auto" />
                 </div>
               ) : filteredProducts.length === 0 ? (
-                <div className="text-center py-8 text-neutral-500">
-                  {searchTerm ? `No products found matching "${searchTerm}"` : 'No products available. Create products first.'}
+                <div className="text-center py-8 text-neutral-500 text-sm">
+                  {searchTerm ? `No products found for "${searchTerm}"` : 'No products available'}
                 </div>
               ) : (
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {filteredProducts.map((product) => (
-                  <label
+                <div className="max-h-64 overflow-y-auto space-y-1">
+                  {filteredProducts.map((product) => {
+                    const isSelected = selectedProductIds.includes(product.id);
+                    const imageUrl = getProductImage(product);
+                    
+                    return (
+                      <label
+                        key={product.id}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                          isSelected ? 'bg-amber-50 border border-amber-200' : 'hover:bg-white border border-transparent'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleProduct(product.id)}
+                          className="w-4 h-4 rounded border-neutral-300 text-amber-500 focus:ring-amber-500"
+                        />
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={product.name}
+                            className="w-10 h-10 object-cover rounded-md bg-neutral-100"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-neutral-200 rounded-md flex items-center justify-center">
+                            <Package size={16} className="text-neutral-400" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-neutral-900 truncate">{product.name}</p>
+                          <p className="text-xs text-neutral-500">₦{product.price?.toLocaleString() || '0'}</p>
+                        </div>
+                        {product.collection_id && product.collection_id !== collectionId && (
+                          <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">
+                            In another collection
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              
+              <div className="flex justify-end pt-2 border-t border-neutral-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowProductPicker(false);
+                    setSearchTerm('');
+                  }}
+                  className="text-sm"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Selected Products List */}
+          {selectedProducts.length > 0 ? (
+            <div className="space-y-2">
+              {selectedProducts.map((product) => {
+                const imageUrl = getProductImage(product);
+                
+                return (
+                  <div
                     key={product.id}
-                    className="flex items-center gap-3 p-2 hover:bg-neutral-50 rounded cursor-pointer"
+                    className="flex items-center gap-3 p-3 border border-neutral-200 rounded-lg bg-white"
                   >
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.includes(product.id)}
-                      onChange={() => toggleProduct(product.id)}
-                      className="w-4 h-4"
-                    />
-                    {(product.main_image || (product.images && product.images.length > 0)) && (
+                    {imageUrl ? (
                       <img
-                        src={product.main_image || (product.images?.[0]) || ''}
+                        src={imageUrl}
                         alt={product.name}
-                        className="w-10 h-10 object-cover rounded"
+                        className="w-12 h-12 object-cover rounded-md bg-neutral-100"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
                       />
+                    ) : (
+                      <div className="w-12 h-12 bg-neutral-100 rounded-md flex items-center justify-center">
+                        <Package size={20} className="text-neutral-400" />
+                      </div>
                     )}
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-neutral-600">₦{product.price?.toLocaleString() || '0'}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-neutral-900 text-sm truncate">{product.name}</p>
+                      <p className="text-xs text-neutral-500">₦{product.price?.toLocaleString() || '0'}</p>
                     </div>
-                  </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {selectedProductsData.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3">
-              {selectedProductsData.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center gap-3 p-3 border border-neutral-200 rounded-lg"
-                >
-                  {(product.main_image || (product.images && product.images.length > 0)) && (
-                    <img
-                      src={product.main_image || (product.images?.[0]) || ''}
-                      alt={product.name}
-                      className="w-12 h-12 object-cover rounded"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <div className="flex-1">
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-neutral-600">₦{product.price?.toLocaleString() || '0'}</p>
+                    <button
+                      type="button"
+                      onClick={() => removeProduct(product.id)}
+                      className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeProduct(product.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <p className="text-neutral-500 text-center py-8">
-              No products added. Click "Add Products" to start.
-            </p>
+            <div className="text-center py-8 border border-dashed border-neutral-200 rounded-lg">
+              <Package className="mx-auto text-neutral-300 mb-2" size={32} />
+              <p className="text-neutral-500 text-sm">No products added yet</p>
+              <p className="text-neutral-400 text-xs mt-1">Click "Add Products" to get started</p>
+            </div>
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-neutral-900">SEO Settings</h2>
-
-          <Input
-            label="SEO Title"
-            value={formData.seo_title}
-            onChange={(e) => handleChange('seo_title', e.target.value)}
-            placeholder="Collection page title for search engines"
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              SEO Description
-            </label>
-            <textarea
-              value={formData.seo_description}
-              onChange={(e) => handleChange('seo_description', e.target.value)}
-              className="w-full px-4 py-3 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-              rows={3}
-              placeholder="Meta description for search engines"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4">
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-4">
           <Button type="submit" disabled={saving} className="gap-2">
-            <Save size={16} />
-            {saving ? 'Saving...' : 'Save Collection'}
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={16} />
+                {mode === 'edit' ? 'Update Collection' : 'Create Collection'}
+              </>
+            )}
           </Button>
           <Button
             type="button"

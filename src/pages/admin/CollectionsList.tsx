@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderOpen, Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import { FolderOpen, Plus, Search, Edit, Trash2, Eye, MoreHorizontal } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 
@@ -10,7 +10,6 @@ interface Collection {
   slug: string;
   description: string;
   status: string;
-  position: number;
   created_at: string;
   product_count?: number;
 }
@@ -20,6 +19,7 @@ export default function CollectionsList() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     loadCollections();
@@ -28,20 +28,29 @@ export default function CollectionsList() {
   const loadCollections = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Get collections
+      const { data: collectionsData, error: collectionsError } = await supabase
         .from('collections')
-        .select(`
-          *,
-          collection_products(count)
-        `)
-        .order('position', { ascending: true });
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (collectionsError) throw collectionsError;
 
-      const collectionsWithCount = data?.map(col => ({
-        ...col,
-        product_count: col.collection_products?.[0]?.count || 0
-      })) || [];
+      // Get product counts for each collection
+      const collectionsWithCount = await Promise.all(
+        (collectionsData || []).map(async (collection) => {
+          const { count } = await supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('collection_id', collection.id);
+          
+          return {
+            ...collection,
+            product_count: count || 0
+          };
+        })
+      );
 
       setCollections(collectionsWithCount);
     } catch (error) {
@@ -52,21 +61,38 @@ export default function CollectionsList() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete collection "${name}"? This will not delete the products.`)) return;
+    if (!confirm(`Delete collection "${name}"?\n\nProducts in this collection will not be deleted, but they will no longer be associated with this collection.`)) {
+      return;
+    }
 
     try {
+      setDeleting(id);
+      
+      // First, remove collection_id from products
+      await supabase
+        .from('products')
+        .update({ collection_id: null })
+        .eq('collection_id', id);
+
+      // Then delete the collection
       const { error } = await supabase
         .from('collections')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      alert('Collection deleted successfully!');
-      loadCollections();
+      
+      setCollections(prev => prev.filter(c => c.id !== id));
     } catch (error) {
       console.error('Error deleting collection:', error);
-      alert('Failed to delete collection');
+      alert('Failed to delete collection. Please try again.');
+    } finally {
+      setDeleting(null);
     }
+  };
+
+  const handleViewCollection = (slug: string) => {
+    window.open(`/collection/${slug}`, '_blank');
   };
 
   const filteredCollections = collections.filter(collection =>
@@ -76,107 +102,136 @@ export default function CollectionsList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900 flex items-center gap-2">
             <FolderOpen className="text-amber-500" size={28} />
             Collections
           </h1>
-          <p className="text-neutral-600 mt-1">{filteredCollections.length} collections</p>
+          <p className="text-neutral-500 mt-1 text-sm">
+            Organize your products into collections
+          </p>
         </div>
         <Button
           onClick={() => navigate('/admin/collections/new')}
           className="gap-2"
         >
           <Plus size={16} />
-          Add Collection
+          New Collection
         </Button>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4">
+      {/* Search */}
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
           <input
             type="text"
             placeholder="Search collections..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Collections List */}
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-neutral-600">Loading collections...</div>
+          <div className="p-12 text-center">
+            <div className="w-8 h-8 border-2 border-neutral-200 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-neutral-500 text-sm">Loading collections...</p>
+          </div>
         ) : filteredCollections.length === 0 ? (
           <div className="p-12 text-center">
-            <FolderOpen className="mx-auto text-neutral-400 mb-4" size={48} />
-            <p className="text-neutral-600 mb-4">No collections found</p>
-            <Button onClick={() => navigate('/admin/collections/new')}>
-              Create Your First Collection
-            </Button>
+            <FolderOpen className="mx-auto text-neutral-300 mb-4" size={48} />
+            <h3 className="text-neutral-900 font-medium mb-2">
+              {searchTerm ? 'No collections found' : 'No collections yet'}
+            </h3>
+            <p className="text-neutral-500 text-sm mb-6">
+              {searchTerm 
+                ? `No collections matching "${searchTerm}"`
+                : 'Create your first collection to organize products'
+              }
+            </p>
+            {!searchTerm && (
+              <Button onClick={() => navigate('/admin/collections/new')}>
+                Create Collection
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-neutral-50 border-b border-neutral-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Slug</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Products</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Position</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-200">
-                {filteredCollections.map((collection) => (
-                  <tr key={collection.id} className="hover:bg-neutral-50">
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-neutral-900">{collection.name}</p>
-                      {collection.description && (
-                        <p className="text-sm text-neutral-600 truncate max-w-xs">
-                          {collection.description}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-neutral-600">{collection.slug}</td>
-                    <td className="px-6 py-4 text-sm text-neutral-900 font-medium">
-                      {collection.product_count} products
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+          <div className="divide-y divide-neutral-100">
+            {filteredCollections.map((collection) => (
+              <div 
+                key={collection.id} 
+                className="p-4 sm:p-6 hover:bg-neutral-50 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-medium text-neutral-900 truncate">
+                        {collection.name}
+                      </h3>
+                      <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full uppercase tracking-wide ${
                         collection.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-neutral-100 text-neutral-800'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-neutral-100 text-neutral-600'
                       }`}>
                         {collection.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-neutral-600">{collection.position}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => navigate(`/admin/collections/edit/${collection.id}`)}
-                          className="p-2 text-neutral-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(collection.id, collection.name)}
-                          className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    
+                    <p className="text-sm text-neutral-500 mb-2">
+                      /{collection.slug}
+                    </p>
+                    
+                    {collection.description && (
+                      <p className="text-sm text-neutral-600 line-clamp-2 mb-3">
+                        {collection.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-4 text-xs text-neutral-500">
+                      <span>{collection.product_count} {collection.product_count === 1 ? 'product' : 'products'}</span>
+                      <span>•</span>
+                      <span>Created {new Date(collection.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleViewCollection(collection.slug)}
+                      className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+                      title="View collection"
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => navigate(`/admin/collections/edit/${collection.id}`)}
+                      className="p-2 text-neutral-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                      title="Edit collection"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(collection.id, collection.name)}
+                      disabled={deleting === collection.id}
+                      className="p-2 text-neutral-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      title="Delete collection"
+                    >
+                      {deleting === collection.id ? (
+                        <div className="w-4 h-4 border-2 border-neutral-300 border-t-red-500 rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

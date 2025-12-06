@@ -151,20 +151,21 @@ function AnnouncementBar() {
   );
 }
 
-// Hero Section with parallax scroll effect
+// Hero Section with optimized performance and dynamic image positioning
 interface HeroSlide {
   image: string;
   title: string;
   subtitle: string;
+  mobilePosition: string; // Dynamic position per slide for mobile
 }
 
 function HeroSection() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState<boolean[]>([false, false, false]);
   const heroRef = useRef<HTMLDivElement>(null);
   
-  // Parallax scroll effect - hero goes behind content
+  // Parallax scroll effect
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 500], [0, 150]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0.3]);
@@ -172,36 +173,53 @@ function HeroSection() {
 
   const slides: HeroSlide[] = [
     {
-      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/v1764968906/s1q1nyc4y7lcvqxtsltz.jpg',
+      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1764968906/s1q1nyc4y7lcvqxtsltz.jpg',
       title: 'Bold Layers,\nConfident Looks.',
-      subtitle: 'Layer up with confidence and stylish all season'
+      subtitle: 'Layer up with confidence and stylish all season',
+      mobilePosition: 'object-left' // Left align for this image
     },
     {
-      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/v1764968784/xritjgpwclz3vs0eccdi.jpg',
+      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1764968784/xritjgpwclz3vs0eccdi.jpg',
       title: 'Elegant\nSimplicity.',
-      subtitle: 'Discover timeless pieces for the modern woman'
+      subtitle: 'Discover timeless pieces for the modern woman',
+      mobilePosition: 'object-center' // Center for this image
     },
     {
-      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/v1761658028/hero_jlpiil.jpg',
+      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1761658028/hero_jlpiil.jpg',
       title: 'Define Your\nStyle.',
-      subtitle: 'Curated collections that speak to your individuality'
+      subtitle: 'Curated collections that speak to your individuality',
+      mobilePosition: 'object-center' // Center for this image
     }
   ];
 
+  // Preload all images on mount for smooth transitions
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 100);
-    return () => clearTimeout(timer);
+    slides.forEach((slide, index) => {
+      const img = new Image();
+      img.src = slide.image;
+      img.onload = () => {
+        setImagesLoaded(prev => {
+          const newState = [...prev];
+          newState[index] = true;
+          return newState;
+        });
+      };
+    });
   }, []);
 
+  // Auto-advance slides
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 8000); // Increased timing for better viewing
+    }, 8000);
     return () => clearInterval(interval);
   }, [slides.length]);
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+
+  // Check if at least the first image is loaded
+  const isReady = imagesLoaded[0] || imagesLoaded[currentSlide];
 
   return (
     <motion.section 
@@ -210,27 +228,37 @@ function HeroSection() {
       className="relative h-[100svh] md:h-screen overflow-hidden bg-neutral-900 sticky top-0 z-0"
     >
       <motion.div style={{ opacity }} className="absolute inset-0">
-        {/* Background Images */}
+        {/* Background Images with optimized rendering */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: customEase }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
             className="absolute inset-0"
           >
+            {/* Optimized image with dynamic positioning */}
             <img
               src={slides[currentSlide].image}
               alt={slides[currentSlide].title}
-              className={`w-full h-full object-cover transition-opacity duration-1000 ${
-                isLoaded ? 'opacity-100' : 'opacity-0'
-              } object-left lg:object-center`}
-              onLoad={() => setIsLoaded(true)}
+              loading="eager"
+              decoding="async"
+              className={`w-full h-full object-cover will-change-transform ${
+                isReady ? 'opacity-100' : 'opacity-0'
+              } ${slides[currentSlide].mobilePosition} lg:object-center transition-opacity duration-300`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+            {/* Gradient overlay - optimized for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent lg:bg-gradient-to-r lg:from-black/50 lg:via-black/20 lg:to-transparent" />
           </motion.div>
         </AnimatePresence>
+
+        {/* Loading placeholder */}
+        {!isReady && (
+          <div className="absolute inset-0 bg-neutral-900 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
 
         {/* Desktop Layout */}
         <div className="hidden lg:flex relative z-10 h-full items-center">
@@ -241,10 +269,10 @@ function HeroSection() {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentSlide}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    transition={{ duration: 0.8, ease: customEase }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
                   >
                     <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-normal leading-[1.15] mb-6 whitespace-pre-line tracking-[-0.01em]">
                       {slides[currentSlide].title}
@@ -271,6 +299,7 @@ function HeroSection() {
                         <img 
                           src={slide.image} 
                           alt="" 
+                          loading="lazy"
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -284,10 +313,10 @@ function HeroSection() {
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={currentSlide}
-                    initial={{ opacity: 0, x: 15 }}
+                    initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -15 }}
-                    transition={{ duration: 0.6, delay: 0.2, ease: customEase }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
                     className="text-sm text-white/70 mb-6 max-w-xs font-light leading-relaxed"
                   >
                     {slides[currentSlide].subtitle}
@@ -295,11 +324,11 @@ function HeroSection() {
                 </AnimatePresence>
 
                 <motion.button
-                  initial={{ opacity: 0, y: 15 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                   onClick={() => navigate('/shop')}
-                  className="group inline-flex items-center gap-3 bg-white/5 backdrop-blur-sm border border-white/20 text-white px-7 py-3 rounded-lg hover:bg-white hover:text-neutral-900 transition-all duration-500"
+                  className="group inline-flex items-center gap-3 bg-white/5 backdrop-blur-sm border border-white/20 text-white px-7 py-3 rounded-lg hover:bg-white hover:text-neutral-900 transition-all duration-300"
                 >
                   <span className="text-xs font-normal tracking-[0.05em]">Browse Collection</span>
                 </motion.button>
@@ -324,48 +353,51 @@ function HeroSection() {
           </div>
         </div>
 
-        {/* Mobile Layout - Content positioned higher for scroll visibility */}
-        <div className="lg:hidden relative z-10 h-full flex flex-col justify-center px-5 pb-20">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0, y: 25 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.8, ease: customEase }}
+        {/* Mobile Layout - Responsive and centered content */}
+        <div className="lg:hidden relative z-10 h-full flex flex-col justify-end px-5 pb-8 pt-20">
+          <div className="flex-1 flex flex-col justify-center">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                <h1 className="text-[2rem] sm:text-4xl font-normal leading-[1.15] text-white mb-3 whitespace-pre-line tracking-[-0.01em]">
+                  {slides[currentSlide].title}
+                </h1>
+              </motion.div>
+            </AnimatePresence>
+
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={currentSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="text-white/60 text-sm font-light mb-5 leading-relaxed max-w-[280px]"
+              >
+                {slides[currentSlide].subtitle}
+              </motion.p>
+            </AnimatePresence>
+
+            <button
+              onClick={() => navigate('/shop')}
+              className="w-fit bg-white/5 backdrop-blur-sm border border-white/20 text-white px-6 py-2.5 rounded-lg text-xs font-normal tracking-[0.05em]"
             >
-              <h1 className="text-3xl sm:text-4xl font-normal leading-[1.15] text-white mb-4 whitespace-pre-line tracking-[-0.01em]">
-                {slides[currentSlide].title}
-              </h1>
-            </motion.div>
-          </AnimatePresence>
+              Browse Collection
+            </button>
+          </div>
 
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={currentSlide}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-white/60 text-sm font-light mb-6 leading-relaxed max-w-[280px]"
-            >
-              {slides[currentSlide].subtitle}
-            </motion.p>
-          </AnimatePresence>
-
-          <button
-            onClick={() => navigate('/shop')}
-            className="w-fit bg-white/5 backdrop-blur-sm border border-white/20 text-white px-6 py-3 rounded-lg text-xs font-normal tracking-[0.05em] mb-8"
-          >
-            Browse Collection
-          </button>
-
-          {/* Mobile Thumbnails */}
-          <div className="flex items-center gap-2">
+          {/* Mobile Thumbnails - Fixed at bottom */}
+          <div className="flex items-center gap-2 mt-6">
             {slides.map((slide, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-11 h-8 rounded-lg overflow-hidden border transition-all duration-300 ${
+                className={`w-10 h-7 rounded-md overflow-hidden border transition-all duration-300 ${
                   currentSlide === index 
                     ? 'border-white/70 opacity-100' 
                     : 'border-white/20 opacity-40'
@@ -374,6 +406,7 @@ function HeroSection() {
                 <img 
                   src={slide.image} 
                   alt="" 
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </button>
@@ -554,8 +587,10 @@ function AboutSection() {
         className="relative h-[450px] md:h-[550px] overflow-hidden"
       >
         <img
-          src="https://res.cloudinary.com/dusynu0kv/image/upload/v1764968797/xwxzqp1biltadyyxsct7.jpg"
+          src="https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1764968797/xwxzqp1biltadyyxsct7.jpg"
           alt="Our Story"
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/10" />
@@ -599,7 +634,7 @@ function CategoryShowcase() {
       title: 'Redefine Casual Comfort',
       subtitle: 'New in T-Shirts',
       description: 'Experience premium fabrics and modern fits, designed for effortless everyday style',
-      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/v1761734975/IMG_0011_kerlww.jpg',
+      image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1200/v1761734975/IMG_0011_kerlww.jpg',
       link: '/shop?category=tops',
       alignment: 'right' as const
     }
@@ -733,13 +768,13 @@ function InstagramSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Placeholder images - In production, these would be fetched from Instagram API
+  // Optimized images with Cloudinary transformations for faster loading
   const images = [
-    'https://res.cloudinary.com/dusynu0kv/image/upload/v1764968906/s1q1nyc4y7lcvqxtsltz.jpg',
-    'https://res.cloudinary.com/dusynu0kv/image/upload/v1764968784/xritjgpwclz3vs0eccdi.jpg',
-    'https://res.cloudinary.com/dusynu0kv/image/upload/v1764968797/xwxzqp1biltadyyxsct7.jpg',
-    'https://res.cloudinary.com/dusynu0kv/image/upload/v1761658028/hero_jlpiil.jpg',
-    'https://res.cloudinary.com/dusynu0kv/image/upload/v1761734975/IMG_0011_kerlww.jpg',
+    'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_400/v1764968906/s1q1nyc4y7lcvqxtsltz.jpg',
+    'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_400/v1764968784/xritjgpwclz3vs0eccdi.jpg',
+    'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_400/v1764968797/xwxzqp1biltadyyxsct7.jpg',
+    'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_400/v1761658028/hero_jlpiil.jpg',
+    'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_400/v1761734975/IMG_0011_kerlww.jpg',
     '/IMG_4511 copy.JPG',
     '/A5B830C9-6BF5-4117-87BB-81014C55648B copy.jpg',
     '/freepik_edit (14).png'

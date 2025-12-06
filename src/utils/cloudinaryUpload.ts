@@ -119,7 +119,9 @@ export const optimizeCloudinaryUrl = (
   url: string,
   transformations: string = 'w_800,q_auto,f_auto'
 ): string => {
-  if (!url || !url.includes('cloudinary.com')) return url;
+  // Safety check - ensure url is a string
+  if (!url || typeof url !== 'string') return '';
+  if (!url.includes('cloudinary.com')) return url;
 
   const parts = url.split('/upload/');
   if (parts.length !== 2) return url;
@@ -127,14 +129,56 @@ export const optimizeCloudinaryUrl = (
   return `${parts[0]}/upload/${transformations}/${parts[1]}`;
 };
 
-export const getThumbnailUrl = (url: string): string => {
+export const getThumbnailUrl = (image: any): string => {
+  const url = extractImageUrl(image);
   return optimizeCloudinaryUrl(url, 'w_300,h_300,c_fill,q_auto,f_auto');
 };
 
-export const getProductImageUrl = (url: string): string => {
+/**
+ * Extract raw URL from any image input without optimization
+ * Handles: strings, objects with image_url/cloudinary_url, arrays, null, undefined
+ */
+export const extractImageUrl = (image: any): string => {
+  // Handle null/undefined
+  if (!image) return '';
+  
+  // Handle string URLs directly
+  if (typeof image === 'string') return image;
+  
+  // Handle array (return first item)
+  if (Array.isArray(image) && image.length > 0) {
+    return extractImageUrl(image[0]);
+  }
+  
+  // Handle object with various URL properties
+  if (typeof image === 'object' && image !== null) {
+    return image.cloudinary_url 
+      || image.image_url 
+      || image.secure_url
+      || image.url 
+      || image.src 
+      || image.main_image
+      || '';
+  }
+  
+  return '';
+};
+
+/**
+ * Safely extracts URL from various input types and optimizes it
+ * Handles: strings, objects with image_url/cloudinary_url, arrays, null, undefined
+ */
+export const getProductImageUrl = (image: any): string => {
+  const url = extractImageUrl(image);
+  if (!url) return '';
   return optimizeCloudinaryUrl(url, 'w_800,q_auto,f_auto');
 };
 
-export const getFullImageUrl = (url: string): string => {
+/**
+ * Get full resolution image URL
+ */
+export const getFullImageUrl = (image: any): string => {
+  const url = extractImageUrl(image);
+  if (!url) return '';
   return optimizeCloudinaryUrl(url, 'w_1920,q_auto,f_auto');
 };
