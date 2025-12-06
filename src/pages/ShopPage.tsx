@@ -246,14 +246,14 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                     loadProducts();
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                className="w-full pl-10 pr-4 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
               />
             </div>
 
             {/* Mobile Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="md:hidden flex items-center gap-2 px-4 py-2 border border-neutral-300 text-[10px] tracking-widest uppercase hover:bg-neutral-50 transition-colors"
+              className="md:hidden flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-[10px] tracking-widest uppercase hover:bg-neutral-50 transition-colors"
             >
               <SlidersHorizontal size={14} />
               Filters
@@ -264,7 +264,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full md:w-auto px-4 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+            className="w-full md:w-auto px-4 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
           >
             <option value="featured">Featured</option>
             <option value="newest">Newest</option>
@@ -284,7 +284,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
             <select
               value={selectedCollection}
               onChange={(e) => setSelectedCollection(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
             >
               <option value="all">All Collections</option>
               {collections.map((collection) => (
@@ -303,7 +303,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
             >
               {categories.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -324,18 +324,18 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 placeholder="Min"
                 value={priceRange.min}
                 onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
               />
               <input
                 type="number"
                 placeholder="Max"
                 value={priceRange.max}
                 onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
               />
               <button
                 onClick={loadProducts}
-                className="px-4 py-2 bg-neutral-900 text-white text-[10px] tracking-widest uppercase hover:bg-neutral-800 transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-neutral-900 text-white text-[10px] tracking-widest uppercase rounded-lg hover:bg-neutral-800 transition-colors whitespace-nowrap"
               >
                 Apply
               </button>
@@ -365,7 +365,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 <select
                   value={selectedCollection}
                   onChange={(e) => setSelectedCollection(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                  className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
                 >
                   <option value="all">All Collections</option>
                   {collections.map((collection) => (
@@ -384,7 +384,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                  className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
                 >
                   {categories.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -405,14 +405,14 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                     placeholder="Min"
                     value={priceRange.min}
                     onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                    className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
                   />
                   <input
                     type="number"
                     placeholder="Max"
                     value={priceRange.max}
                     onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                    className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-900"
                   />
                 </div>
               </div>
@@ -424,13 +424,13 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                     loadProducts();
                     setShowFilters(false);
                   }}
-                  className="flex-1 px-4 py-2 bg-neutral-900 text-white text-[10px] tracking-widest uppercase hover:bg-neutral-800 transition-colors"
+                  className="flex-1 px-4 py-2 bg-neutral-900 text-white text-[10px] tracking-widest uppercase rounded-lg hover:bg-neutral-800 transition-colors"
                 >
                   Apply Filters
                 </button>
                 <button
                   onClick={handleClearFilters}
-                  className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-900 text-[10px] tracking-widest uppercase hover:bg-neutral-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-900 text-[10px] tracking-widest uppercase rounded-lg hover:bg-neutral-50 transition-colors"
                 >
                   Clear All
                 </button>
@@ -444,7 +444,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-[3/4] bg-neutral-200 rounded-sm mb-3" />
+                <div className="aspect-[3/4] bg-neutral-200 rounded-xl mb-3" />
                 <div className="h-3 bg-neutral-200 rounded mb-2" />
                 <div className="h-3 bg-neutral-200 rounded w-2/3" />
               </div>
@@ -455,7 +455,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
             <p className="text-sm text-neutral-600 mb-6">No products found</p>
             <button
               onClick={handleClearFilters}
-              className="px-6 py-2 border border-neutral-900 text-neutral-900 text-[10px] tracking-widest uppercase hover:bg-neutral-900 hover:text-white transition-colors"
+              className="px-6 py-2 border border-neutral-900 text-neutral-900 text-[10px] tracking-widest uppercase rounded-lg hover:bg-neutral-900 hover:text-white transition-colors"
             >
               Clear Filters
             </button>
@@ -473,8 +473,8 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                     onClick={() => navigate(`/product/${product.id}`)}
                     className="group cursor-pointer"
                   >
-                    {/* Product Image */}
-                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3 rounded-sm">
+                    {/* Product Image - Rounded corners */}
+                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 mb-3 rounded-xl">
                       {mainImage ? (
                         <>
                           {/* Main Image */}
@@ -502,14 +502,14 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
 
                       {/* Sale Badge */}
                       {product.compare_at_price && product.compare_at_price > product.price && (
-                        <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase">
+                        <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 text-[9px] tracking-wider uppercase rounded-md">
                           Sale
                         </div>
                       )}
 
                       {/* New Badge */}
                       {product.is_new && (
-                        <div className="absolute top-3 left-3 bg-amber-500 text-white px-2 py-1 text-[9px] tracking-wider uppercase">
+                        <div className="absolute top-3 left-3 bg-amber-500 text-white px-2 py-1 text-[9px] tracking-wider uppercase rounded-md">
                           New
                         </div>
                       )}
@@ -549,7 +549,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`w-8 h-8 flex items-center justify-center border text-xs transition-colors ${
+                  className={`w-8 h-8 flex items-center justify-center border rounded-lg text-xs transition-colors ${
                     currentPage === 1
                       ? 'border-neutral-200 text-neutral-300 cursor-not-allowed'
                       : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
@@ -564,7 +564,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                     key={index}
                     onClick={() => typeof page === 'number' && handlePageChange(page)}
                     disabled={page === '...'}
-                    className={`w-8 h-8 flex items-center justify-center text-xs transition-colors ${
+                    className={`w-8 h-8 flex items-center justify-center text-xs rounded-lg transition-colors ${
                       page === currentPage
                         ? 'border border-neutral-900 bg-neutral-900 text-white font-medium'
                         : page === '...'
@@ -580,7 +580,7 @@ export default function ShopPage({ initialFilters }: ShopPageProps) {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={`w-8 h-8 flex items-center justify-center border text-xs transition-colors ${
+                  className={`w-8 h-8 flex items-center justify-center border rounded-lg text-xs transition-colors ${
                     currentPage === totalPages
                       ? 'border-neutral-200 text-neutral-300 cursor-not-allowed'
                       : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
