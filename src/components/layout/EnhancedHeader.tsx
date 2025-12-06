@@ -37,6 +37,7 @@ export default function EnhancedHeader() {
   const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.98]);
 
   const navigation = [
+    { name: 'Home', path: '/' },
     { name: 'Shop', path: '/shop' },
     { name: 'Collections', path: '/shop', isDropdown: true },
     { name: 'About', path: '/about' }
