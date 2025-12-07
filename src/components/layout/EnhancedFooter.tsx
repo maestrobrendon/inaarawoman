@@ -1,10 +1,9 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Instagram, Facebook, Twitter, ShieldCheck, Mail, ArrowRight } from 'lucide-react';
+import { Instagram, Facebook, Twitter, Mail, ArrowRight } from 'lucide-react';
 
 export default function EnhancedFooter() {
   const year = new Date().getFullYear();
-  const navigate = useNavigate();
   const { scrollYProgress } = useScroll();
   const footerY = useTransform(scrollYProgress, [0.85, 1], [100, 0]);
 
@@ -28,7 +27,6 @@ export default function EnhancedFooter() {
                 { name: 'Size Guide', path: '/size-guide' },
                 { name: 'Returns', path: '/shipping-returns' },
                 { name: 'Initiate Your Return', path: '/returns' },
-                { name: 'Click & Collect', path: '/click-collect' },
                 { name: 'FAQs', path: '/faq' }
               ].map((item) => (
                 <li key={item.name}>
@@ -51,10 +49,8 @@ export default function EnhancedFooter() {
             <ul className="space-y-3">
               {[
                 { name: 'Terms & Conditions', path: '/terms-conditions' },
-                { name: 'Collection Statement', path: '/collection-statement' },
                 { name: 'Privacy', path: '/privacy-policy' },
-                { name: 'Cookie Policy', path: '/cookie-policy' },
-                { name: 'Online Safety', path: '/online-safety' }
+                { name: 'Cookie Policy', path: '/cookie-policy' }
               ].map((item) => (
                 <li key={item.name}>
                   <Link 
@@ -76,8 +72,6 @@ export default function EnhancedFooter() {
             <ul className="space-y-3">
               {[
                 { name: 'About Us', path: '/about' },
-                { name: 'Careers', path: '/careers' },
-                { name: 'Boutiques', path: '/boutiques' },
                 { name: 'Lookbook', path: '/lookbook' },
                 { name: 'All Products', path: '/shop' },
                 { name: 'New Arrivals', path: '/shop' }
@@ -185,22 +179,11 @@ export default function EnhancedFooter() {
       <div className="border-t border-neutral-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-              <p className="text-[12px] text-neutral-600">
-                © {year} INAARA WOMAN
-              </p>
-              <motion.button
-                onClick={() => navigate('/admin/login')}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-[11px] font-semibold rounded-sm hover:bg-neutral-800 transition-colors uppercase tracking-wider"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ShieldCheck size={14} />
-                Admin Login
-              </motion.button>
-            </div>
+            <p className="text-[12px] text-neutral-600">
+              © {year} INAARA WOMAN
+            </p>
 
-            {/* Payment Icons (Optional - Add if needed) */}
+            {/* Payment Icons */}
             <div className="flex items-center gap-3">
               <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Payment Methods:</span>
               <div className="flex gap-2">
