@@ -1,31 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, MapPin, CreditCard, Loader } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { supabase } from '../lib/supabase';
+import {
+  validateCheckoutForm,
+  LoadingOverlay,
+  ShippingAddressForm,
+  PaymentMethodInfo,
+  CheckoutProgress,
+  handleCheckoutError
+} from '../utils/checkout-improvements';
 
 // Paystack Public Key
 const PAYSTACK_PUBLIC_KEY = 'pk_live_6fb4375c586d035dfa541d01357199850e6773fb';
-
-// Supported currencies
 const SUPPORTED_CURRENCIES = ['NGN', 'GHS', 'ZAR', 'USD'];
 
-// Get currency for Paystack
 const getCurrencyForPaystack = (currencyCode: string): string => {
-  if (SUPPORTED_CURRENCIES.includes(currencyCode)) {
-    return currencyCode;
-  }
-  return 'USD';
+  return SUPPORTED_CURRENCIES.includes(currencyCode) ? currencyCode : 'USD';
 };
 
-// Convert to smallest unit (kobo/cents)
 const convertToPaystackAmount = (amount: number): number => {
   return Math.round(amount * 100);
 };
 
-// Generate order number
 const generateOrderNumber = (): string => {
   const timestamp = Date.now();
   const random = Math.floor(Math.random() * 1000);
@@ -34,10 +34,13 @@ const generateOrderNumber = (): string => {
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, subtotal } = useCart();
+  const { items, subtotal, clearCart } = useCart();
   const { formatPrice, currency } = useCurrency();
+  
   const [loading, setLoading] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -65,22 +68,17 @@ export default function CheckoutPage() {
       ...prev,
       [name]: value
     }));
+    
+    // Clear error for this field when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
-  const isFormValid = () => {
-    return (
-      formData.firstName &&
-      formData.lastName &&
-      formData.email &&
-      formData.phone &&
-      formData.address &&
-      formData.city &&
-      formData.state &&
-      formData.country
-    );
-  };
-
-  // Helper function to get product image
   const getProductImage = (product: any): string => {
     if (product.main_image) return product.main_image;
     if (product.image) return product.image;
@@ -91,7 +89,6 @@ export default function CheckoutPage() {
     return '/placeholder.jpg';
   };
 
-  // Create or update customer
   const createOrUpdateCustomer = async (orderTotal: number): Promise<string> => {
     try {
       const { data: existingCustomer } = await supabase
@@ -150,7 +147,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // Send order confirmation email
   const sendOrderConfirmationEmail = async (orderData: any): Promise<void> => {
     try {
       const emailData = {
@@ -184,10 +180,10 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle payment success
   const handlePaymentSuccess = async (reference: any): Promise<void> => {
     try {
       setProcessingOrder(true);
+      setOrderError(null);
 
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -195,10 +191,8 @@ export default function CheckoutPage() {
       const totalAmount = subtotal + shippingFee;
       const orderNumber = generateOrderNumber();
 
-      // Create customer
       const customerId = await createOrUpdateCustomer(totalAmount);
 
-      // Prepare order data
       const orderData = {
         order_number: orderNumber,
         user_id: user?.id || null,
@@ -230,7 +224,6 @@ export default function CheckoutPage() {
         }))
       };
 
-      // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert([orderData])
@@ -239,23 +232,21 @@ export default function CheckoutPage() {
 
       if (orderError) throw orderError;
 
-      // Send email
       await sendOrderConfirmationEmail(orderData);
+      
+      clearCart();
 
-      // Navigate to confirmation
       navigate(`/order-confirmation/${order.id}`, {
         state: { orderNumber: orderNumber }
       });
 
     } catch (error) {
-      console.error('Error creating order:', error);
-      alert('Payment successful but there was an error processing your order. Please contact support with reference: ' + reference.reference);
-    } finally {
+      const errorMessage = handleCheckoutError(error, reference.reference);
+      setOrderError(errorMessage);
       setProcessingOrder(false);
     }
   };
 
-  // Paystack config
   const paystackCurrency = getCurrencyForPaystack(currency.code);
   const amountInKobo = convertToPaystackAmount(subtotal);
 
@@ -284,19 +275,24 @@ export default function CheckoutPage() {
   const initializePayment = usePaystackPayment(config);
 
   const handlePaymentClick = () => {
-    if (!isFormValid()) {
-      alert('Please fill in all required fields');
+    // Validate form
+    const validation = validateCheckoutForm(formData);
+    
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     setLoading(true);
-    initializePayment(
-      (reference: any) => handlePaymentSuccess(reference),
-      () => {
+    setOrderError(null);
+    
+    initializePayment({
+      onSuccess: (reference: any) => handlePaymentSuccess(reference),
+      onClose: () => {
         setLoading(false);
-        alert('Payment cancelled');
       }
-    );
+    });
   };
 
   if (items.length === 0) {
@@ -306,195 +302,56 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-neutral-50 py-8 md:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-neutral-900">Checkout</h1>
           <p className="text-neutral-600 mt-2">Complete your purchase</p>
         </div>
 
+        {/* Progress Indicator */}
+        <CheckoutProgress currentStep={2} />
+
+        {/* Loading Overlay */}
         {processingOrder && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 text-center max-w-sm">
-              <Loader className="animate-spin mx-auto mb-4 text-[#D4AF37]" size={48} />
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Processing Your Order</h3>
-              <p className="text-sm text-neutral-600">Please wait while we process your payment...</p>
+          <LoadingOverlay message="Processing Your Order" />
+        )}
+
+        {/* Error Alert */}
+        {orderError && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <h3 className="text-sm font-semibold text-red-900 mb-1">Payment Error</h3>
+              <p className="text-sm text-red-700">{orderError}</p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Shipping Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-                <MapPin size={20} />
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
                 Shipping Information
               </h2>
               
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                      placeholder="John"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                      placeholder="Doe"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                    placeholder="john.doe@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                    placeholder="+234 800 000 0000"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Street Address *
-                  </label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                    placeholder="123 Main Street"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                      placeholder="Lagos"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                      placeholder="Lagos"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Country *
-                    </label>
-                    <select
-                      name="country"
-                      value={formData.country}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                    >
-                      <option value="Nigeria">Nigeria</option>
-                      <option value="Ghana">Ghana</option>
-                      <option value="Kenya">Kenya</option>
-                      <option value="South Africa">South Africa</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="United States">United States</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Postal Code
-                    </label>
-                    <input
-                      type="text"
-                      name="postalCode"
-                      value={formData.postalCode}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                      placeholder="100001"
-                    />
-                  </div>
-                </div>
-              </div>
+              <ShippingAddressForm 
+                formData={formData}
+                onChange={handleInputChange}
+                errors={formErrors}
+              />
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-                <CreditCard size={20} />
-                Payment Method
-              </h2>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-900">
-                  <strong>Secure Payment with Paystack</strong>
-                </p>
-                <p className="text-sm text-blue-700 mt-2">
-                  Your payment information is encrypted and secure. We accept all major cards and payment methods.
-                </p>
-              </div>
-            </div>
+            <PaymentMethodInfo />
           </div>
 
           {/* Order Summary Sidebar */}
@@ -509,7 +366,7 @@ export default function CheckoutPage() {
                   const itemPrice = item.product.sale_price || item.product.price;
                   
                   return (
-                    <div key={`${item.product.id}-${item.size}-${item.color.name}-${index}`} className="flex gap-3">
+                    <div key={`${item.product.id}-${item.size}-${item.color?.name}-${index}`} className="flex gap-3">
                       <img
                         src={productImage}
                         alt={item.product.name}
@@ -518,10 +375,13 @@ export default function CheckoutPage() {
                       <div className="flex-1">
                         <p className="text-sm font-medium text-neutral-900">{item.product.name}</p>
                         <p className="text-xs text-neutral-600">Qty: {item.quantity}</p>
-                        <p className="text-xs text-neutral-500">
-                          {item.size && `Size: ${item.size}`}
-                          {item.color && item.color.name && ` • ${item.color.name}`}
-                        </p>
+                        {(item.size || item.color?.name) && (
+                          <p className="text-xs text-neutral-500">
+                            {item.size && `Size: ${item.size}`}
+                            {item.color?.name && item.size && ' • '}
+                            {item.color?.name}
+                          </p>
+                        )}
                         <p className="text-sm font-semibold text-neutral-900 mt-1">
                           {formatPrice(itemPrice * item.quantity)}
                         </p>
@@ -539,7 +399,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Shipping</span>
-                  <span className="text-green-600">FREE</span>
+                  <span className="text-green-600 font-medium">FREE</span>
                 </div>
               </div>
 
@@ -551,28 +411,47 @@ export default function CheckoutPage() {
               {/* Pay Button */}
               <button
                 onClick={handlePaymentClick}
-                disabled={!isFormValid() || loading || processingOrder}
-                className={`w-full py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                  isFormValid() && !loading && !processingOrder
-                    ? 'bg-neutral-900 text-white hover:bg-neutral-800'
-                    : 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                disabled={loading || processingOrder}
+                className={`w-full py-3 px-6 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center justify-center gap-2 ${
+                  loading || processingOrder
+                    ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                    : 'bg-neutral-900 text-white hover:bg-neutral-800 shadow-lg'
                 }`}
               >
                 {loading || processingOrder ? (
                   <>
-                    <Loader className="animate-spin" size={20} />
+                    <div className="w-5 h-5 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <CreditCard size={20} />
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
                     Pay {formatPrice(subtotal)}
                   </>
                 )}
               </button>
 
+              {/* Trust Indicators */}
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-neutral-600">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Secure 256-bit SSL encryption</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-neutral-600">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>PCI DSS compliant payments</span>
+                </div>
+              </div>
+
               <p className="text-xs text-neutral-500 text-center mt-4">
-                By placing your order, you agree to our Terms & Conditions
+                By placing your order, you agree to our{' '}
+                <a href="/terms" className="text-[#D4AF37] hover:underline">Terms & Conditions</a>
               </p>
             </div>
           </div>

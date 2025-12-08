@@ -1,9 +1,9 @@
 import { usePaystackPayment } from 'react-paystack';
 import { useNavigate } from 'react-router-dom';
-import { useCurrency } from '../../context/CurrencyContext';
-import { useCart } from '../../context/CartContext';
-import { supabase } from '../../lib/supabase';
-import { useToast } from '../../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
+import { useCart } from '../context/CartContext';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../context/ToastContext';
 
 // Paystack Configuration
 const PAYSTACK_PUBLIC_KEY = 'pk_live_6fb4375c586d035dfa541d01357199850e6773fb';
@@ -314,10 +314,10 @@ export default function PaystackPayment({
   const initializePayment = usePaystackPayment(config);
 
   const handleClick = (): void => {
-    initializePayment(
-      (reference: PaystackReference) => handlePaystackSuccess(reference),
-      () => handlePaystackClose()
-    );
+    initializePayment({
+      onSuccess: (reference: PaystackReference) => handlePaystackSuccess(reference),
+      onClose: () => handlePaystackClose()
+    });
   };
 
   return (

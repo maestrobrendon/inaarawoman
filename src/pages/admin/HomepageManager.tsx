@@ -7,23 +7,17 @@ import {
   RefreshCw, 
   Image as ImageIcon, 
   Type, 
-  ChevronDown,
   ChevronRight,
   Upload,
   Trash2,
   Plus,
-  Check,
-  X,
   ExternalLink,
   Layers,
   Layout,
   Sparkles,
   ShoppingBag,
   Instagram,
-  Truck,
   Shield,
-  Headphones,
-  RotateCcw,
   AlertCircle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
