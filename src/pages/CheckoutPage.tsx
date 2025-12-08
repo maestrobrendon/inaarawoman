@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CreditCard, Loader, AlertCircle } from 'lucide-react';
+import { MapPin, CreditCard, Loader, AlertCircle, Truck } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -11,6 +11,39 @@ const PAYSTACK_PUBLIC_KEY = 'pk_live_6fb4375c586d035dfa541d01357199850e6773fb';
 
 // Supported currencies
 const SUPPORTED_CURRENCIES = ['NGN', 'GHS', 'ZAR', 'USD'];
+
+// Nigerian States organized by zones
+const NIGERIAN_STATES = {
+  LAGOS: ['Lagos'],
+  ABUJA: ['FCT', 'Abuja'],
+  SOUTHERN: [
+    'Abia', 'Akwa Ibom', 'Anambra', 'Bayelsa', 'Cross River', 
+    'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Imo', 
+    'Ogun', 'Ondo', 'Osun', 'Oyo', 'Rivers'
+  ],
+  NORTHERN: [
+    'Adamawa', 'Bauchi', 'Benue', 'Borno', 'Gombe', 'Jigawa',
+    'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
+    'Nasarawa', 'Niger', 'Plateau', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+  ]
+};
+
+// International shipping zones (base price per kg in NGN)
+const INTERNATIONAL_ZONES = {
+  'Zone 1': { countries: ['United Kingdom', 'Guernsey', 'Ireland', 'Jersey'], pricePerKg: 58000 },
+  'Zone 2': { countries: ['Benin', 'Burkina Faso', 'Cameroon', 'Cape Verde', 'Central African Rep', 'Chad', 'Congo', 'Congo DPR', 'Cote D Ivoire', 'Gabon', 'Gambia', 'Ghana', 'Guinea Rep', 'Guinea-Bissau', 'Guinea-Equatorial', 'Liberia', 'Mali', 'Niger', 'Sao Tome And Principe', 'Senegal', 'Sierra Leone', 'Togo'], pricePerKg: 68700 },
+  'Zone 3': { countries: ['USA', 'Canada', 'Mexico'], pricePerKg: 69900 },
+  'Zone 4': { countries: ['France', 'Germany', 'Estonia', 'Belgium', 'Austria', 'Greece', 'Italy', 'Finland', 'Norway', 'Poland', 'Portugal', 'Poland', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'Turkey', 'Luxembourg', 'Malta', 'Netherlands', 'Hungary', 'Norway'], pricePerKg: 77200 },
+  'Zone 5': { countries: ['South Africa', 'Algeria', 'Angola', 'Botswana', 'Burundi', 'Comoros', 'Djibouti', 'Egypt', 'Eritrea', 'Eswatini', 'Ethiopia', 'Kenya', 'Lesotho', 'Libya', 'Madagascar', 'Malawi', 'Mauritania', 'Mauritius', 'Mayotte', 'Morocco', 'Mozambique', 'Namibia'], pricePerKg: 79500 },
+  'Zone 6': { countries: ['United Arab Emirates', 'Afghanistan', 'Bahrain', 'Iran', 'Iraq', 'Israel', 'Jordan', 'Kuwait', 'Lebanon', 'Oman', 'Qatar', 'Saudi Arabia', 'Syria', 'Yemen'], pricePerKg: 85300 },
+  'Zone 7': { countries: ['Pakistan', 'Armenia', 'Australia', 'Azerbaijan', 'Bangladesh', 'Bhutan', 'Brunei', 'Cambodia', 'China', 'Georgia', 'Hong Kong SAR China', 'India', 'Indonesia', 'Japan', 'Kazakhstan', 'Korea Rep Of', 'Korea D.P.R Of', 'Kyrgyzstan', 'Laos', 'Macau SAR China', 'Malaysia', 'Maldives'], pricePerKg: 93500 },
+  'Zone 8': { countries: ['Ecuador', 'American Samoa', 'Antigua', 'Argentina', 'Aruba', 'Bahamas', 'Barbados', 'Belize', 'Bermuda', 'Bolivia', 'Bonaire', 'Brazil', 'Cayman Islands', 'Chile', 'Colombia', 'Cook Islands', 'Costa Rica', 'Cuba', 'Curacao', 'Dominica', 'Dominican Rep'], pricePerKg: 100300 }
+};
+
+// Get all countries sorted alphabetically
+const ALL_COUNTRIES = ['Nigeria', ...Object.values(INTERNATIONAL_ZONES)
+  .flatMap(zone => zone.countries)
+  .sort()];
 
 // Get currency for Paystack
 const getCurrencyForPaystack = (currencyCode: string): string => {
@@ -32,6 +65,25 @@ const generateOrderNumber = (): string => {
   return `ORD-${timestamp}-${random}`;
 };
 
+// Calculate domestic (Nigerian) shipping fee
+const calculateNigerianShipping = (state: string): number => {
+  if (NIGERIAN_STATES.LAGOS.includes(state)) return 10000;
+  if (NIGERIAN_STATES.ABUJA.includes(state)) return 10000;
+  if (NIGERIAN_STATES.NORTHERN.includes(state)) return 12000;
+  if (NIGERIAN_STATES.SOUTHERN.includes(state)) return 5000;
+  return 5000; // Default
+};
+
+// Calculate international shipping fee (base 2kg package)
+const calculateInternationalShipping = (country: string, weight: number = 2): number => {
+  for (const zone of Object.values(INTERNATIONAL_ZONES)) {
+    if (zone.countries.includes(country)) {
+      return zone.pricePerKg * weight;
+    }
+  }
+  return 0;
+};
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
@@ -39,6 +91,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [shippingFee, setShippingFee] = useState(0);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -60,25 +113,52 @@ export default function CheckoutPage() {
     }
   }, [items, navigate]);
 
+  // Calculate shipping fee when country or state changes
+  useEffect(() => {
+    if (formData.country === 'Nigeria' && formData.state) {
+      const fee = calculateNigerianShipping(formData.state);
+      setShippingFee(fee);
+    } else if (formData.country !== 'Nigeria' && formData.country) {
+      const fee = calculateInternationalShipping(formData.country);
+      setShippingFee(fee);
+    } else {
+      setShippingFee(0);
+    }
+  }, [formData.country, formData.state]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Reset state when country changes
+    if (name === 'country') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        state: '' // Reset state when country changes
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const isFormValid = () => {
-    return (
-      formData.firstName &&
+    const baseValid = formData.firstName &&
       formData.lastName &&
       formData.email &&
       formData.phone &&
       formData.address &&
       formData.city &&
-      formData.state &&
-      formData.country
-    );
+      formData.country;
+    
+    // State is required for Nigeria
+    if (formData.country === 'Nigeria') {
+      return baseValid && formData.state;
+    }
+    
+    return baseValid;
   };
 
   // Helper function to get product image
@@ -227,11 +307,12 @@ export default function CheckoutPage() {
       const { data: { user } } = await supabase.auth.getUser();
       console.log('Current user:', user?.id || 'No user logged in');
 
-      const shippingFee = 0;
       const totalAmount = subtotal + shippingFee;
       const orderNumber = generateOrderNumber();
 
       console.log('Order number generated:', orderNumber);
+      console.log('Shipping fee:', shippingFee);
+      console.log('Total amount:', totalAmount);
 
       // Step 1: Create customer
       console.log('=== STEP 1: CREATE CUSTOMER ===');
@@ -255,7 +336,7 @@ export default function CheckoutPage() {
         customer_phone: formData.phone,
         shipping_address: formData.address,
         shipping_city: formData.city,
-        shipping_state: formData.state,
+        shipping_state: formData.state || formData.country,
         shipping_country: formData.country,
         shipping_postal_code: formData.postalCode,
         subtotal: subtotal,
@@ -339,7 +420,8 @@ export default function CheckoutPage() {
 
   // Paystack config
   const paystackCurrency = getCurrencyForPaystack(currency.code);
-  const amountInKobo = convertToPaystackAmount(subtotal);
+  const totalAmountForPayment = subtotal + shippingFee;
+  const amountInKobo = convertToPaystackAmount(totalAmountForPayment);
 
   const config = {
     reference: `INW-${new Date().getTime()}`,
@@ -385,6 +467,19 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return null;
   }
+
+  // Get available states based on selected country
+  const getAvailableStates = () => {
+    if (formData.country === 'Nigeria') {
+      return [
+        ...NIGERIAN_STATES.LAGOS,
+        ...NIGERIAN_STATES.ABUJA,
+        ...NIGERIAN_STATES.SOUTHERN,
+        ...NIGERIAN_STATES.NORTHERN
+      ].sort();
+    }
+    return [];
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 py-8 md:py-12">
@@ -492,6 +587,48 @@ export default function CheckoutPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Country *
+                  </label>
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                  >
+                    <option value="">Select Country</option>
+                    {ALL_COUNTRIES.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {formData.country === 'Nigeria' && (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      State *
+                    </label>
+                    <select
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    >
+                      <option value="">Select State</option>
+                      {getAvailableStates().map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Street Address *
                   </label>
                   <input
@@ -523,43 +660,6 @@ export default function CheckoutPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                      placeholder="Lagos"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Country *
-                    </label>
-                    <select
-                      name="country"
-                      value={formData.country}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-                    >
-                      <option value="Nigeria">Nigeria</option>
-                      <option value="Ghana">Ghana</option>
-                      <option value="Kenya">Kenya</option>
-                      <option value="South Africa">South Africa</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="United States">United States</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Postal Code
                     </label>
                     <input
@@ -572,6 +672,29 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
+
+                {/* Shipping Method Display */}
+                {shippingFee > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Truck className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+                      <div>
+                        <p className="text-sm font-semibold text-green-900 mb-1">
+                          Shipping Method
+                        </p>
+                        <p className="text-sm text-green-700">
+                          {formData.country === 'Nigeria' ? 
+                            'Express Delivery via GIGL (1-3 business days)' : 
+                            'International Express Delivery (3-7 business days)'
+                          }
+                        </p>
+                        <p className="text-sm font-bold text-green-900 mt-2">
+                          Shipping Fee: {formatPrice(shippingFee)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -637,13 +760,15 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Shipping</span>
-                  <span className="text-green-600">FREE</span>
+                  <span className={`font-semibold ${shippingFee === 0 ? 'text-neutral-500' : 'text-neutral-900'}`}>
+                    {shippingFee === 0 ? 'Select location' : formatPrice(shippingFee)}
+                  </span>
                 </div>
               </div>
 
               <div className="flex justify-between text-lg font-bold py-4 border-t border-neutral-200">
                 <span className="text-neutral-900">Total</span>
-                <span className="text-neutral-900">{formatPrice(subtotal)}</span>
+                <span className="text-neutral-900">{formatPrice(subtotal + shippingFee)}</span>
               </div>
 
               {/* Pay Button */}
@@ -664,7 +789,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <CreditCard size={20} />
-                    Pay {formatPrice(subtotal)}
+                    Pay {formatPrice(subtotal + shippingFee)}
                   </>
                 )}
               </button>
