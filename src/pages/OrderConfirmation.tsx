@@ -1,9 +1,17 @@
-import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle, Package, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { CheckCircle, Package, ArrowRight, Mail } from 'lucide-react';
 
 export default function OrderConfirmationPage() {
   const navigate = useNavigate();
   const { orderId } = useParams<{ orderId: string }>();
+  const location = useLocation();
+  const orderNumber = location.state?.orderNumber;
+
+  useEffect(() => {
+    // Scroll to top when page loads
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-50 py-12">
@@ -15,26 +23,36 @@ export default function OrderConfirmationPage() {
           </div>
           
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-neutral-900 mb-3">
-            Order Confirmed!
+            Order Confirmed! 🎉
           </h1>
           
           <p className="text-neutral-600 mb-6">
             Thank you for your purchase. Your order has been received and is being processed.
           </p>
 
-          {orderId && (
+          {orderNumber && (
             <div className="inline-block bg-neutral-50 border border-neutral-200 rounded-lg px-6 py-3 mb-6">
-              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Order ID</p>
+              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Order Number</p>
               <p className="text-lg font-mono font-bold text-neutral-900">
-                {orderId}
+                {orderNumber}
               </p>
             </div>
           )}
 
+          {/* Email Confirmation Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-900">
-              📧 A confirmation email has been sent to your email address with order details.
-            </p>
+            <div className="flex items-start gap-3">
+              <Mail className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+              <div className="text-left">
+                <p className="text-sm font-semibold text-blue-900 mb-1">
+                  📧 Check Your Email
+                </p>
+                <p className="text-sm text-blue-700">
+                  A confirmation email with your order details has been sent to your email address. 
+                  If you don't see it, please check your spam folder.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* What's Next */}
@@ -105,7 +123,7 @@ export default function OrderConfirmationPage() {
           <div className="mt-8 pt-6 border-t border-neutral-200">
             <p className="text-sm text-neutral-600">
               Need help? Contact us at{' '}
-              <a href="mailto:support@inaarawoman.com" className="text-[#D4AF37] hover:underline">
+              <a href="mailto:info@inaarawoman.com" className="text-[#D4AF37] hover:underline">
                 info@inaarawoman.com
               </a>
             </p>
