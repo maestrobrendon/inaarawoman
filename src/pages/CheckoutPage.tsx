@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, MapPin, CreditCard, Loader, AlertCircle } from 'lucide-react';
+import { MapPin, CreditCard, Loader, AlertCircle } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -374,12 +374,12 @@ export default function CheckoutPage() {
     setLoading(true);
     setOrderError(null);
     
-    initializePayment(
-      (reference: any) => handlePaymentSuccess(reference),
-      () => {
+    initializePayment({
+      onSuccess: (reference: any) => handlePaymentSuccess(reference),
+      onClose: () => {
         setLoading(false);
       }
-    );
+    });
   };
 
   if (items.length === 0) {
