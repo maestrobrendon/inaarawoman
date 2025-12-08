@@ -18,6 +18,7 @@ import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
 import LookbookPage from './pages/LookbookPage';
 import CheckoutPage from './pages/CheckoutPage';
+import OrderConfirmationPage from './pages/OrderConfirmation';
 import NotFoundPage from './pages/NotFoundPage';
 import PageTransition from './components/animations/PageTransition';
 import LoadingBar from './components/ui/LoadingBar';
@@ -71,6 +72,7 @@ function PublicLayout() {
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/lookbook" element={<LookbookPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/order-confirmation/:orderId" element={<OrderConfirmationPage />} />
             
             {/* Policy Pages */}
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
