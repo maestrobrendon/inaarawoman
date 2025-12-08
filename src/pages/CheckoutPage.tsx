@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CreditCard, Loader, AlertCircle } from 'lucide-react';
+import { ShoppingBag, MapPin, CreditCard, Loader, AlertCircle } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -305,15 +305,22 @@ export default function CheckoutPage() {
       console.log('=== STEP 4: SEND EMAIL ===');
       await sendOrderConfirmationEmail(orderData);
 
-      // Step 5: Clear cart
-      console.log('=== STEP 5: CLEAR CART ===');
-      clearCart();
-
-      // Step 6: Navigate to confirmation
-      console.log('=== STEP 6: NAVIGATE TO CONFIRMATION ===');
+      // Step 5: Navigate to confirmation FIRST (before clearing cart)
+      console.log('=== STEP 5: NAVIGATE TO CONFIRMATION ===');
+      console.log('Navigating to:', `/order-confirmation/${order.id}`);
+      console.log('Order number:', orderNumber);
+      
       navigate(`/order-confirmation/${order.id}`, {
-        state: { orderNumber: orderNumber }
+        state: { orderNumber: orderNumber },
+        replace: true
       });
+
+      // Step 6: Clear cart AFTER navigation with delay
+      console.log('=== STEP 6: CLEAR CART ===');
+      setTimeout(() => {
+        clearCart();
+        console.log('Cart cleared');
+      }, 500);
 
       console.log('=== ORDER PROCESS COMPLETE ===');
 
@@ -367,12 +374,12 @@ export default function CheckoutPage() {
     setLoading(true);
     setOrderError(null);
     
-    initializePayment({
-      onSuccess: (reference: any) => handlePaymentSuccess(reference),
-      onClose: () => {
+    initializePayment(
+      (reference: any) => handlePaymentSuccess(reference),
+      () => {
         setLoading(false);
       }
-    });
+    );
   };
 
   if (items.length === 0) {
