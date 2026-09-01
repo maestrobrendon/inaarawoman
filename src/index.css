@@ -1,3 +1,20 @@
+/* Self-hosted Instrument Serif — same-origin so it can't be blocked by
+   Google-Fonts blockers (e.g. Brave Shields). Files in /public/fonts. */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-latin-italic.woff2') format('woff2');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -42,6 +59,23 @@
 @layer components {
   .font-sans {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* `@layer base { * { font-family: 'Inter' } }` in this file targets every
+     element directly, so a bare child (e.g. a <span> inside an <h1 class="font-serif">)
+     is forced back to Inter and never inherits the serif. Cascade the serif to
+     descendants too. `.font-serif *` (0,0,1,1) + components layer beats the `*` reset. */
+  .font-serif,
+  .font-serif * {
+    font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 
   /* Mobile Typography */

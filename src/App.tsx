@@ -5,10 +5,10 @@ import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
-import AnnouncementBanner from './components/ui/AnnouncementBanner';
-import EnhancedHeader from './components/layout/EnhancedHeader';
-import EnhancedFooter from './components/layout/EnhancedFooter';
+import InaaraHeader from './components/layout/InaaraHeader';
+import InaaraFooter from './components/layout/InaaraFooter';
 import ClingrHomePage from './pages/ClingrHomePage';
+import InaaraHomePage from './pages/InaaraHomePage';
 import ShopPage from './pages/ShopPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CollectionPage from './pages/CollectionPage';
@@ -57,12 +57,12 @@ function PublicLayout() {
   return (
     <>
       <LoadingBar />
-      <AnnouncementBanner />
-      <EnhancedHeader />
+      <InaaraHeader />
       <main>
         <PageTransition pageKey={location.pathname}>
           <Routes>
-            <Route path="/" element={<ClingrHomePage />} />
+            <Route path="/" element={<InaaraHomePage />} />
+            <Route path="/home-classic" element={<ClingrHomePage />} />
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/collection/:slug" element={<CollectionPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
@@ -71,6 +71,7 @@ function PublicLayout() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/lookbook" element={<LookbookPage />} />
+            <Route path="/journal" element={<LookbookPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-confirmation/:orderId" element={<OrderConfirmationPage />} />
             
@@ -85,7 +86,7 @@ function PublicLayout() {
           </Routes>
         </PageTransition>
       </main>
-      <EnhancedFooter />
+      <InaaraFooter />
     </>
   );
 }
