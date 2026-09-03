@@ -13,6 +13,32 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- First-paint branded loader. Lives in the HTML so it's on screen before
+         the app bundle parses; React's <Preloader> animates it out and removes
+         it. Skipped instantly on repeat views within the session. -->
+    <div id="preloader" aria-hidden="true" style="position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;background:#fff">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <span style="font-family:'Instrument Serif',Georgia,serif;font-size:clamp(28px,7vw,52px);letter-spacing:.14em;color:#1a1a1a">INAARA</span>
+        <span id="preloader-underline" style="display:block;height:1px;width:clamp(120px,32vw,220px);transform-origin:left;transform:scaleX(0);background:#1a1a1a"></span>
+      </div>
+    </div>
+    <script>
+      (function () {
+        try {
+          var seen = sessionStorage.getItem('inaara:preloaded') === '1';
+          var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (seen || reduce) {
+            var el = document.getElementById('preloader');
+            if (el) el.remove();
+          } else {
+            var ul = document.getElementById('preloader-underline');
+            if (ul) { ul.style.transition = 'transform .5s cubic-bezier(.4,0,.2,1)'; requestAnimationFrame(function () { ul.style.transform = 'scaleX(1)'; }); }
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

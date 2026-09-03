@@ -1,4 +1,4 @@
-import { createElement, ElementType, ReactNode, useRef } from 'react';
+import { createElement, ElementType, ReactNode, useEffect, useRef } from 'react';
 import { gsap, ScrollTrigger, SplitText, useGSAP, EASE, MQ } from './gsap';
 
 interface SplitRevealProps {
@@ -35,6 +35,18 @@ export function SplitReveal({
 }: SplitRevealProps) {
   const ref = useRef<HTMLElement>(null);
 
+  // Absolute safety net: whatever happens with GSAP/SplitText/fonts, the
+  // headline must never stay invisible.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const el = ref.current;
+      if (el && parseFloat(getComputedStyle(el).opacity) < 0.05) {
+        el.style.opacity = '1';
+      }
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+
   useGSAP(
     () => {
       const el = ref.current;
@@ -50,14 +62,23 @@ export function SplitReveal({
         let split: SplitText | null = null;
         let tween: gsap.core.Tween | null = null;
         let st: ScrollTrigger | null = null;
+        let done = false;
 
         const build = () => {
-          split = SplitText.create(el, {
-            type: 'chars,words',
-            mask: 'chars',
-            charsClass: 'char',
-            wordsClass: 'split-word',
-          });
+          if (done) return;
+          done = true;
+          try {
+            split = SplitText.create(el, {
+              type: 'chars,words',
+              mask: 'chars',
+              charsClass: 'char',
+              wordsClass: 'split-word',
+            });
+          } catch {
+            gsap.set(el, { opacity: 1, clearProps: 'transform' });
+            onStart?.();
+            return;
+          }
           const chars = split.chars;
           gsap.set(el, { opacity: 1, perspective: 800 });
           gsap.set(chars, {
@@ -93,11 +114,18 @@ export function SplitReveal({
           }
         };
 
-        // Split after fonts settle so glyph metrics don't shift under the masks.
-        if (document.fonts?.status === 'loaded') build();
-        else document.fonts?.ready.then(build);
+        // Prefer splitting after fonts settle (stable glyph metrics), but never
+        // let a slow/blocked font keep the headline hidden — cap the wait.
+        let raf = 0;
+        if (document.fonts?.status === 'loaded') {
+          build();
+        } else {
+          document.fonts?.ready.then(build).catch(() => build());
+          raf = window.setTimeout(build, 500);
+        }
 
         return () => {
+          window.clearTimeout(raf);
           tween?.kill();
           st?.kill();
           split?.revert();
