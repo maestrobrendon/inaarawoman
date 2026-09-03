@@ -8,7 +8,7 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, useGSAP);
 
-gsap.defaults({ ease: 'power3.out', duration: 0.7 });
+gsap.defaults({ ease: 'power3.out', duration: 0.9 });
 
 // Mobile browsers fire resize on address-bar collapse; don't recompute triggers for it.
 ScrollTrigger.config({ ignoreMobileResize: true });

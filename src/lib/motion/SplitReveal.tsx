@@ -28,8 +28,8 @@ export function SplitReveal({
   className,
   style,
   trigger = 'load',
-  stagger = 0.03,
-  duration = 0.7,
+  stagger = 0.045,
+  duration = 0.95,
   delay = 0,
   onStart,
 }: SplitRevealProps) {
