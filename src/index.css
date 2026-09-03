@@ -205,11 +205,21 @@
   .text-body-sm { font-size: 14px; }
 }
 
-/* Short viewports (landscape phones, older shorter devices): the mobile hero
-   still fills the screen exactly, so shrink the headline + corner labels to
-   keep them inside it rather than letting content grow the container. */
-@media (max-width: 767px) and (max-height: 620px) {
-  .hero-headline { font-size: clamp(1.25rem, 5.4vh, 2.25rem) !important; top: 56% !important; }
+/* Short viewports (landscape phones, older/short devices, small laptop windows):
+   force the hero to exactly fill the visible screen — the wide-landscape-phone
+   case would otherwise hit the >=768px desktop rules and its 560px min-height,
+   pushing the bottom-anchored headline below the fold. Then shrink the type +
+   trim the headline's bottom padding so the whole block stays inside the hero. */
+@media (max-height: 620px) {
+  .hero-section {
+    height: 100vh !important;
+    height: 100svh !important;
+    min-height: 0 !important;
+  }
+  .hero-headline {
+    font-size: clamp(1.1rem, 4.7vh, 2.1rem) !important;
+    padding-bottom: clamp(22px, 5vh, 40px) !important;
+  }
   .hero-corner-label { font-size: clamp(9px, 2.4vh, 15px) !important; }
 }
 
