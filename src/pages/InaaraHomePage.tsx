@@ -22,6 +22,12 @@ import {
   Leaf,
   RotateCcw,
   ShieldCheck,
+  Truck,
+  Headphones,
+  Shield,
+  CreditCard,
+  Sparkles,
+  LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { ProductWithImages, ProductImage } from '../types';
@@ -30,92 +36,37 @@ import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
 import { getProductImageUrl, getFullImageUrl } from '../utils/cloudinaryUpload';
 import { useInstagramFeed } from '../hooks/useInstagramFeed';
+import { useHomepageContent } from '../hooks/useHomepageContent';
+import type {
+  HeroContent,
+  SeasonalDropContent,
+  CategoriesContent,
+  CollectionsContent,
+  ConfidenceContent,
+  InstagramContent,
+} from '../lib/homepageContent';
 
 // ============================================
 // DESIGN CONSTANTS
 // ============================================
 
-const HERO_IMAGE =
-  'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210022/Regal_Recline_in_Cobalt_and_Crimson_anuwia.png';
-const COLLECTIONS_IMAGE =
-  'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210023/Regal_Turquoise_in_an_Opulent_Parlor_lpw2ow.png';
-
-// Seasonal Drop left-panel lifestyle photo (static asset — swap for the real one).
-const SEASONAL_BANNER =
-  'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210664/Fierce_Glamour_in_Burgundy_and_Gold_ohafdu.png';
-
-const CATEGORY_CARDS = [
-  {
-    eyebrow: 'For Women',
-    title: 'Built For Daily\nConfidence',
-    image:
-      'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210660/ChatGPT_Image_Aug_31_2026_06_05_50_PM_p0une4.png',
-    href: '/shop?category=women',
-    size: 'large' as const,
-  },
-  {
-    eyebrow: 'For Women',
-    title: 'Designed For\nModern Living',
-    image:
-      'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210662/Glamorous_Ivory_Gown_Portrait_f7plar.png',
-    href: '/shop?category=women',
-    size: 'small' as const,
-  },
-  {
-    eyebrow: 'For Kids',
-    title: 'Comfort For Every\nAdventure',
-    image:
-      'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210664/Fierce_Glamour_in_Burgundy_and_Gold_ohafdu.png',
-    href: '/shop?category=kids',
-    size: 'small' as const,
-  },
-];
-
-// Collections preview — tabbed hero. One hero photo + 2 preview products per tab.
-const COLLECTION_TABS = ['Summer', 'Uzuri', 'Nivara', 'Amata'];
-const COLLECTION_HEROES = [
-  COLLECTIONS_IMAGE,
-  HERO_IMAGE,
-  SEASONAL_BANNER,
-  'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210660/ChatGPT_Image_Aug_31_2026_06_05_50_PM_p0une4.png',
-];
-// Per-image object-position so the model stays framed when the tall mobile
-// viewport hard-crops these wide photos (desktop is wide enough for centre).
-const COLLECTION_POS = [
-  'object-[24%_center] md:object-center', // Summer — model seated far left
-  'object-[56%_center] md:object-center', // Uzuri — reclining, centre-right
-  'object-[50%_top]', // Nivara — portrait, keep the head
-  'object-[50%_top]', // Amata — portrait, keep the head
-];
-
-const TICKER_WORDS = ['Made To Last', 'Designed To Move'];
-
 // Section heading — Inter Bold 51.1px / -1.68px tracking / 61.6px line-height (Figma).
 const SECTION_HEADING =
   'font-bold text-[#1a1a1a] tracking-[-0.033em] text-[2.35rem] leading-[1.06] md:text-[51px] md:leading-[61.6px] md:tracking-[-1.68px]';
 
-const CONFIDENCE_ITEMS = [
-  {
-    icon: Globe,
-    title: 'Worldwide Shipping',
-    description: 'We ship to over 100 countries with fast, reliable delivery. Track your order wherever you are.',
-  },
-  {
-    icon: Leaf,
-    title: 'Sustainable Cloths',
-    description: 'Every piece is made from responsibly sourced materials. Wear with purpose, live with less impact.',
-  },
-  {
-    icon: RotateCcw,
-    title: 'Free 30 Days Returns',
-    description: 'Not satisfied? Return within 30 days for a full refund. No questions asked, totally hassle-free.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Secure Payments',
-    description: 'Shop safely with encrypted checkout. We support all major payment methods for your convenience.',
-  },
-];
+// CMS-stored icon name -> lucide component (Shop With Confidence row).
+const ICON_MAP: Record<string, LucideIcon> = {
+  Globe,
+  Leaf,
+  RotateCcw,
+  ShieldCheck,
+  Truck,
+  Headphones,
+  Shield,
+  CreditCard,
+  Sparkles,
+  Heart,
+};
 
 // ============================================
 // HELPERS
@@ -189,7 +140,7 @@ function MobileCarousel({
   trackRef: React.RefObject<HTMLDivElement>;
 }) {
   const outer = useRef<HTMLDivElement>(null);
-  useRevealOnScroll(outer, { selector, stagger: 0.08, y: 24 });
+  useRevealOnScroll(outer, { selector, stagger: 0.14, y: 40 });
 
   useGSAP(
     () => {
@@ -333,7 +284,7 @@ function ProductCard({ product, grid = false }: { product: ProductWithImages; gr
     setVariant(i);
     const el = mainImgRef.current;
     if (el) {
-      gsap.fromTo(el, { opacity: 0.3 }, { opacity: 1, duration: 0.25, ease: 'power2.out' });
+      gsap.fromTo(el, { opacity: 0.3 }, { opacity: 1, duration: 0.4, ease: 'power2.out' });
     }
   }, []);
 
@@ -510,7 +461,17 @@ function SeasonalCard({ product }: { product: ProductWithImages }) {
 // SECTIONS
 // ============================================
 
-function Hero() {
+/** Render a string with literal "\n" as <br/> breaks. */
+function withBreaks(text: string) {
+  return text.split('\n').map((line, i, arr) => (
+    <span key={i}>
+      {line}
+      {i < arr.length - 1 && <br />}
+    </span>
+  ));
+}
+
+function Hero({ hero }: { hero: HeroContent }) {
   // Figma nodes 20:2543/20:2544 - reference canvas 1440 x 814.
   // Instrument Serif Regular, colour #FEF9F3, tracking -1% of font size.
   const bigSize = 'text-[clamp(2.55rem,11vw,103.35px)]';
@@ -533,10 +494,10 @@ function Hero() {
         gsap.from('.hero-corner-label', {
           opacity: 0,
           y: 12,
-          duration: 0.6,
-          delay: 0.3,
+          duration: 0.9,
+          delay: 0.5,
           ease: EASE.out,
-          stagger: 0.08,
+          stagger: 0.12,
           onComplete: () => gsap.set('.hero-corner-label', { clearProps: 'willChange' }),
         });
       });
@@ -574,8 +535,8 @@ function Hero() {
       className="hero-section relative flex w-full flex-col justify-end overflow-hidden bg-neutral-900 h-screen-mobile md:h-[min(56.53vw,90svh)] md:min-h-[560px]"
     >
       <img
-        src={getFullImageUrl(HERO_IMAGE)}
-        alt="Regal recline in cobalt and crimson"
+        src={getFullImageUrl(hero.image)}
+        alt=""
         className="hero-bg absolute inset-0 h-[112%] w-full object-cover object-center"
         style={{ willChange: 'transform' }}
       />
@@ -584,11 +545,11 @@ function Hero() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-black/5 to-black/55" />
 
       <p className={`hero-corner-label absolute left-[3.4%] top-[37.2%] w-[8vw] min-w-[92px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[1.2] whitespace-pre-line ${labelSize}`}>
-        {'Est. 2022\nShaped by light'}
+        {hero.label_left}
       </p>
 
       <p className={`hero-corner-label absolute right-[4.2%] top-[36.2%] w-[12vw] min-w-[150px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[1.2] whitespace-pre-line ${labelSize}`}>
-        {'Expressive by nature.\nConfident by choice.'}
+        {hero.label_right}
       </p>
 
       {/* Headline — the last flex child, so it's anchored to the bottom of the
@@ -601,15 +562,17 @@ function Hero() {
         trigger="load"
         className={`hero-headline relative z-10 mx-auto w-[92%] max-w-[1323px] pb-[clamp(28px,7vh,104px)] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[0.95] ${bigSize}`}
       >
-        <span className="block">Every version of</span>
+        <span className="block">{hero.headline_top}</span>
         <span className="block">
-          <span className="whitespace-nowrap">Of&nbsp;Her</span>{' '}
-          <span className="inline-block align-middle text-[43%] leading-[0.9] text-center -translate-y-[0.04em]">
-            has
-            <br />
-            somewhere
-          </span>{' '}
-          <span className="whitespace-nowrap">To&nbsp;Exist</span>
+          <span className="whitespace-nowrap">{hero.headline_lead}</span>{' '}
+          {hero.headline_small.trim() && (
+            <>
+              <span className="inline-block align-middle text-[43%] leading-[0.9] text-center -translate-y-[0.04em]">
+                {withBreaks(hero.headline_small)}
+              </span>{' '}
+            </>
+          )}
+          <span className="whitespace-nowrap">{hero.headline_tail}</span>
         </span>
       </SplitReveal>
     </section>
@@ -685,8 +648,9 @@ function ProductRail({ title, products, loading }: RailProps) {
 
 // Full-width infinite marquee — "* MADE TO LAST * DESIGNED TO MOVE * ..."
 // `reverse` runs it right-to-left for variety when it sits near another marquee.
-function Ticker({ reverse = false }: { reverse?: boolean }) {
-  const run = Array.from({ length: 6 }, (_, i) => TICKER_WORDS[i % TICKER_WORDS.length]);
+function Ticker({ words, reverse = false }: { words: string[]; reverse?: boolean }) {
+  const source = words.length ? words : ['Made To Last', 'Designed To Move'];
+  const run = Array.from({ length: 6 }, (_, i) => source[i % source.length]);
   return (
     <Marquee
       className="flex h-[72px] items-center bg-white md:h-24"
@@ -706,13 +670,19 @@ function Ticker({ reverse = false }: { reverse?: boolean }) {
   );
 }
 
-function SeasonalDrop({ products }: { products: ProductWithImages[] }) {
+function SeasonalDrop({
+  products,
+  content,
+}: {
+  products: ProductWithImages[];
+  content: SeasonalDropContent;
+}) {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const grid = products.slice(0, 4);
 
   // Editorial clip-path wipe (left -> right), tile by tile as the collage scrolls in.
-  useRevealOnScroll(ref, { selector: '.seasonal-tile', stagger: 0.1, variant: 'wipe' });
+  useRevealOnScroll(ref, { selector: '.seasonal-tile', stagger: 0.18, variant: 'wipe' });
 
   if (grid.length === 0) return null;
 
@@ -726,8 +696,8 @@ function SeasonalDrop({ products }: { products: ProductWithImages[] }) {
           {/* Left — lifestyle banner */}
           <div className="seasonal-tile relative h-[420px] overflow-hidden lg:h-full lg:w-[45%]">
             <img
-              src={getFullImageUrl(SEASONAL_BANNER)}
-              alt="Seasonal Drop"
+              src={getFullImageUrl(content.image)}
+              alt=""
               className="absolute inset-0 h-full w-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-br from-black/45 via-black/10 to-transparent" />
@@ -736,15 +706,13 @@ function SeasonalDrop({ products }: { products: ProductWithImages[] }) {
                 className="text-[38px] font-bold leading-[1.02] tracking-[-1.44px] text-white md:text-[46.4px] md:leading-[48px]"
                 style={{ textShadow: '0px 1px 6px rgba(0,0,0,0.4)' }}
               >
-                Seasonal
-                <br />
-                Drop
+                {withBreaks(content.heading)}
               </h2>
               <button
-                onClick={() => navigate('/shop')}
+                onClick={() => navigate(content.cta_link || '/shop')}
                 className="rounded-full bg-white px-[13px] py-[7px] text-[12px] leading-[14.4px] text-[#1a1a1a] shadow-[0px_0.75px_1.5px_0px_rgba(0,0,0,0.05)]"
               >
-                Shop Now
+                {content.cta_label || 'Shop Now'}
               </button>
             </div>
           </div>
@@ -764,7 +732,13 @@ function SeasonalDrop({ products }: { products: ProductWithImages[] }) {
 }
 
 // Bento card — light-grey tile, full-bleed photo, copy overlaid top-left (Figma 12:1309).
-function CategoryCard({ card, big = false }: { card: (typeof CATEGORY_CARDS)[number]; big?: boolean }) {
+function CategoryCard({
+  card,
+  big = false,
+}: {
+  card: CategoriesContent['cards'][number];
+  big?: boolean;
+}) {
   const navigate = useNavigate();
   const btnRef = useRef<HTMLButtonElement>(null);
   useMagnetic(btnRef);
@@ -780,7 +754,7 @@ function CategoryCard({ card, big = false }: { card: (typeof CATEGORY_CARDS)[num
           framing via md: overrides. */}
       <img
         src={getProductImageUrl(card.image)}
-        alt={card.title.replace('\n', ' ')}
+        alt=""
         loading="lazy"
         decoding="async"
         className="absolute inset-y-0 right-0 h-full w-[58%] object-cover object-top transition-transform duration-300 group-hover:scale-105 md:inset-0 md:w-full md:object-[75%_top]"
@@ -812,18 +786,19 @@ function CategoryCard({ card, big = false }: { card: (typeof CATEGORY_CARDS)[num
   );
 }
 
-function ShopByCategories() {
-  const [large, ...rest] = CATEGORY_CARDS;
+function ShopByCategories({ content }: { content: CategoriesContent }) {
+  const [large, ...rest] = content.cards;
+  if (!large) return null;
 
   return (
     <section className="bg-white py-14 md:py-20">
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-[50px]">
         <h2 className="mb-8 text-[2.4rem] font-bold tracking-[-0.033em] text-[#1a1a1a] md:text-[46px] md:tracking-[-1.5px]">
-          Shop by Categories
+          {content.heading}
         </h2>
         <RevealGroup
           selector=".category-card"
-          stagger={0.15}
+          stagger={0.22}
           className="grid grid-cols-1 gap-[7.5px] lg:h-[547.5px] lg:grid-cols-[421.875fr_515.625fr]"
         >
           <CategoryCard card={large} big />
@@ -879,7 +854,14 @@ function FloatingCard({
 // 1.1 -> 1, tab words stagger in) once; a plain scroll reveal on mobile (no pin
 // — pinning fights the mobile address-bar collapse). Tab switch crossfades the
 // photo via GSAP and slides a shared underline (transform only) to the tab.
-function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
+function CollectionsPreview({
+  products,
+  content,
+}: {
+  products: ProductWithImages[];
+  content: CollectionsContent;
+}) {
+  const tabs = content.tabs;
   const [active, setActive] = useState(0);
   const pair = products.slice(active * 2, active * 2 + 2);
   const section = useRef<HTMLElement>(null);
@@ -908,7 +890,7 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
     () => {
       imgs.current.forEach((el, i) => {
         if (!el) return;
-        gsap.to(el, { opacity: i === active ? 1 : 0, duration: 0.5, ease: 'power2.out' });
+        gsap.to(el, { opacity: i === active ? 1 : 0, duration: 0.7, ease: 'power2.out' });
       });
       moveUnderline(active);
     },
@@ -944,9 +926,9 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
               gsap.to('.collections-word', {
                 opacity: 1,
                 y: 0,
-                duration: 0.6,
+                duration: 0.9,
                 ease: EASE.out,
-                stagger: 0.08,
+                stagger: 0.13,
                 onComplete: () => gsap.set('.collections-word', { clearProps: 'willChange' }),
               });
               moveUnderline(active);
@@ -979,17 +961,17 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
       className="relative w-full overflow-hidden bg-neutral-900 h-[min(100svh,1000px)] min-h-[720px]"
     >
       <div className="collections-media absolute inset-0" style={{ willChange: 'transform' }}>
-        {COLLECTION_HEROES.map((src, i) => (
+        {tabs.map((tab, i) => (
           <img
             key={i}
             ref={(el) => {
               if (el) imgs.current[i] = el;
             }}
-            src={getFullImageUrl(src)}
-            alt={COLLECTION_TABS[i]}
+            src={getFullImageUrl(tab.image)}
+            alt=""
             loading={i === 0 ? undefined : 'lazy'}
             decoding="async"
-            className={`absolute inset-0 h-full w-full object-cover ${COLLECTION_POS[i]}`}
+            className={`absolute inset-0 h-full w-full object-cover ${tab.object_position}`}
             style={{ opacity: i === 0 ? 1 : 0 }}
           />
         ))}
@@ -1000,9 +982,9 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
         ref={navRef}
         className="absolute inset-x-0 top-[100px] z-10 flex flex-nowrap justify-center gap-x-5 px-4 sm:gap-x-8 md:top-[120px]"
       >
-        {COLLECTION_TABS.map((name, i) => (
+        {tabs.map((tab, i) => (
           <button
-            key={name}
+            key={tab.name + i}
             data-tab
             data-cursor
             onClick={() => setActive(i)}
@@ -1010,7 +992,7 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
               i === active ? 'opacity-100' : 'opacity-60 hover:opacity-100'
             }`}
           >
-            {name}
+            {tab.name}
           </button>
         ))}
         <span
@@ -1027,7 +1009,17 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
   );
 }
 
-function BestSellers({ products, loading }: { products: ProductWithImages[]; loading: boolean }) {
+function BestSellers({
+  products,
+  loading,
+  title,
+  confidence,
+}: {
+  products: ProductWithImages[];
+  loading: boolean;
+  title: string;
+  confidence: ConfidenceContent;
+}) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState('All');
   const firstRender = useRef(true);
@@ -1047,7 +1039,7 @@ function BestSellers({ products, loading }: { products: ProductWithImages[]; loa
       gsap.fromTo(
         el.children,
         { opacity: 0, y: 16 },
-        { opacity: 1, y: 0, duration: 0.3, ease: EASE.out, stagger: 0.04, overwrite: true },
+        { opacity: 1, y: 0, duration: 0.5, ease: EASE.out, stagger: 0.07, overwrite: true },
       );
     },
     { scope: gridRef, dependencies: [active] },
@@ -1056,7 +1048,7 @@ function BestSellers({ products, loading }: { products: ProductWithImages[]; loa
   return (
     <section className="py-14 md:py-20 bg-white">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
-        <h2 className={`mb-6 ${SECTION_HEADING}`}>Best Sellers</h2>
+        <h2 className={`mb-6 ${SECTION_HEADING}`}>{title}</h2>
 
         <div className="flex flex-wrap gap-2 mb-10">
           {categories.map((cat) => (
@@ -1088,7 +1080,7 @@ function BestSellers({ products, loading }: { products: ProductWithImages[]; loa
         ) : (
           <RevealGroup
             selector=".product-card"
-            stagger={0.06}
+            stagger={0.1}
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5"
           >
             <div ref={gridRef} className="contents">
@@ -1100,27 +1092,40 @@ function BestSellers({ products, loading }: { products: ProductWithImages[]; loa
         )}
 
         {/* Shop with confidence */}
-        <div className="mt-12 bg-[#f1f1f1] rounded-2xl p-7 md:p-10">
-          <h3 className="mb-8 text-2xl font-bold tracking-[-0.02em] text-[#1a1a1a] md:text-[28px]">Shop With Confidence</h3>
-          <RevealGroup selector=".usp-item" stagger={0.1} y={18} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {CONFIDENCE_ITEMS.map((item) => (
-              <div key={item.title} className="usp-item">
-                <item.icon size={22} strokeWidth={1.5} className="text-[#1a1a1a] mb-3" />
-                <h4 className="text-sm font-medium text-[#1a1a1a] mb-1.5 capitalize">{item.title}</h4>
-                <p className="text-xs leading-relaxed text-[#444]">{item.description}</p>
-              </div>
-            ))}
-          </RevealGroup>
-        </div>
+        {confidence.show && confidence.items.length > 0 && (
+          <div className="mt-12 bg-[#f1f1f1] rounded-2xl p-7 md:p-10">
+            <h3 className="mb-8 text-2xl font-bold tracking-[-0.02em] text-[#1a1a1a] md:text-[28px]">
+              {confidence.heading}
+            </h3>
+            <RevealGroup selector=".usp-item" stagger={0.16} y={24} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {confidence.items.map((item, i) => {
+                const Icon = ICON_MAP[item.icon] ?? ShieldCheck;
+                return (
+                  <div key={item.title + i} className="usp-item">
+                    <Icon size={22} strokeWidth={1.5} className="text-[#1a1a1a] mb-3" />
+                    <h4 className="text-sm font-medium text-[#1a1a1a] mb-1.5 capitalize">{item.title}</h4>
+                    <p className="text-xs leading-relaxed text-[#444]">{item.description}</p>
+                  </div>
+                );
+              })}
+            </RevealGroup>
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
-const INSTAGRAM_URL = 'https://www.instagram.com/inaarawoman_/';
-
-function InstagramSection({ products }: { products: ProductWithImages[] }) {
+function InstagramSection({
+  products,
+  content,
+}: {
+  products: ProductWithImages[];
+  content: InstagramContent;
+}) {
   const { posts, loading } = useInstagramFeed(12);
+  const handle = content.handle || '@inaarawoman_';
+  const instagramUrl = `https://www.instagram.com/${handle.replace(/^@/, '')}/`;
 
   // Real IG feed when configured; otherwise fall back to product imagery.
   const tiles: { image: string; permalink: string; caption?: string }[] = posts.length
@@ -1129,20 +1134,20 @@ function InstagramSection({ products }: { products: ProductWithImages[] }) {
         .map((p) => primaryImage(p))
         .filter(Boolean)
         .slice(0, 12)
-        .map((src) => ({ image: getProductImageUrl(src), permalink: INSTAGRAM_URL }));
+        .map((src) => ({ image: getProductImageUrl(src), permalink: instagramUrl }));
 
   return (
     <section className="bg-white py-14 md:py-20">
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-[50px]">
         <div className="mb-10 text-center">
-          <h2 className={SECTION_HEADING}>Follow us on Instagram</h2>
+          <h2 className={SECTION_HEADING}>{content.heading}</h2>
           <p className="mx-auto mt-3 max-w-md text-xs text-[#757575]">
             See how our community styles their favourite pieces, from everyday essentials to new arrivals.
           </p>
         </div>
 
         <div className="rounded-2xl bg-[#1a1a1a] p-2.5 sm:p-3">
-          <RevealGroup selector=".ig-tile" stagger={0.05} y={16} className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+          <RevealGroup selector=".ig-tile" stagger={0.09} y={20} className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
             {loading && !tiles.length
               ? [...Array(6)].map((_, i) => (
                   <div key={i} className="aspect-square animate-pulse rounded-lg bg-white/10" />
@@ -1169,12 +1174,12 @@ function InstagramSection({ products }: { products: ProductWithImages[] }) {
 
         <div className="mt-8 text-center">
           <a
-            href={INSTAGRAM_URL}
+            href={instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-medium text-[#1a1a1a] transition-colors hover:text-[#757575]"
           >
-            @inaarawoman_
+            {handle}
           </a>
         </div>
       </div>
@@ -1191,6 +1196,7 @@ export default function InaaraHomePage() {
   const [bestSellers, setBestSellers] = useState<ProductWithImages[]>([]);
   const [seasonal, setSeasonal] = useState<ProductWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+  const { content } = useHomepageContent();
   const root = useRef<HTMLDivElement>(null);
 
   // One delegated tap-feedback listener for every [data-tap] on the page.
@@ -1211,12 +1217,13 @@ export default function InaaraHomePage() {
     void load();
   }, []);
 
-  // Products arriving shifts layout below the fold — refresh triggers once settled.
+  // Products / CMS content arriving shifts layout below the fold — refresh
+  // triggers once settled.
   useEffect(() => {
     if (loading) return;
     const t = window.setTimeout(() => ScrollTrigger.refresh(), 200);
     return () => window.clearTimeout(t);
-  }, [loading]);
+  }, [loading, content]);
 
   const load = async () => {
     setLoading(true);
@@ -1243,14 +1250,29 @@ export default function InaaraHomePage() {
 
   return (
     <div ref={root} className="min-h-screen bg-white">
-      <Hero />
-      <ProductRail title="New Arrival is here" products={newArrivals} loading={loading} />
-      <Ticker />
-      <SeasonalDrop products={seasonal} />
-      <ShopByCategories />
-      <CollectionsPreview products={seasonal} />
-      <BestSellers products={bestSellers} loading={loading} />
-      <InstagramSection products={seasonal} />
+      <Hero hero={content.hero} />
+      {content.new_arrivals.show && (
+        <ProductRail title={content.new_arrivals.title} products={newArrivals} loading={loading} />
+      )}
+      <Ticker words={content.marquee.words} />
+      {content.seasonal_drop.show && (
+        <SeasonalDrop products={seasonal} content={content.seasonal_drop} />
+      )}
+      {content.categories.show && <ShopByCategories content={content.categories} />}
+      {content.collections.show && (
+        <CollectionsPreview products={seasonal} content={content.collections} />
+      )}
+      {content.best_sellers.show && (
+        <BestSellers
+          products={bestSellers}
+          loading={loading}
+          title={content.best_sellers.title}
+          confidence={content.confidence}
+        />
+      )}
+      {content.instagram.show && (
+        <InstagramSection products={seasonal} content={content.instagram} />
+      )}
     </div>
   );
 }
