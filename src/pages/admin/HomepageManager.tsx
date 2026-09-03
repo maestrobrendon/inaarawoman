@@ -1,1284 +1,938 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from '../../lib/motion/compat';
-import { 
-  Home, 
-  Save, 
-  Eye, 
-  RefreshCw, 
-  Image as ImageIcon, 
-  Type, 
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Home,
+  Save,
+  Eye,
+  EyeOff,
+  RefreshCw,
   ChevronRight,
-  Upload,
-  Trash2,
   Plus,
-  ExternalLink,
-  Layers,
-  Layout,
-  Sparkles,
+  Trash2,
+  Type,
+  Image as ImageIcon,
   ShoppingBag,
-  Instagram,
+  Megaphone,
+  Sparkles,
+  Layout,
   Shield,
-  AlertCircle
+  Instagram,
+  AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../context/ToastContext';
+import { useUnsavedGuard } from '../../hooks/useUnsavedGuard';
+import MediaUpload from '../../components/admin/MediaUpload';
+import {
+  HOMEPAGE_DEFAULTS,
+  HomepageContent,
+  HomepageSectionKey,
+  mergeHomepageContent,
+  clearHomepageContentCache,
+  dbKey,
+  DB_KEY_PREFIX,
+} from '../../lib/homepageContent';
 
-// ============================================
-// TYPES
-// ============================================
+// ── Small field primitives ──────────────────────────────────────────────────
 
-interface HeroSlide {
-  image: string;
-  title: string;
-  subtitle: string;
-  mobilePosition: string;
+const inputCls =
+  'w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20';
+
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-neutral-700">{label}</label>
+      <input
+        className={inputCls}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {hint && <p className="mt-1 text-[11px] text-neutral-400">{hint}</p>}
+    </div>
+  );
 }
 
-interface CategoryItem {
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  link: string;
-  alignment: 'left' | 'right';
+function TextArea({
+  label,
+  value,
+  onChange,
+  rows = 3,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  rows?: number;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-neutral-700">{label}</label>
+      <textarea
+        className={`${inputCls} resize-none`}
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {hint && <p className="mt-1 text-[11px] text-neutral-400">{hint}</p>}
+    </div>
+  );
 }
 
-interface BenefitItem {
-  icon: string;
-  title: string;
-  description: string;
+function Toggle({
+  label,
+  checked,
+  onChange,
+  description,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  description?: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="text-sm font-medium text-neutral-900">{label}</p>
+        {description && <p className="mt-0.5 text-xs text-neutral-500">{description}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${
+          checked ? 'bg-amber-500' : 'bg-neutral-200'
+        }`}
+      >
+        <span
+          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  );
 }
 
-interface HomepageContent {
-  announcement: {
-    text: string;
-    is_visible: boolean;
-  };
-  hero: {
-    slides: HeroSlide[];
-    autoplay_speed: number;
-  };
-  best_sellers: {
-    title: string;
-    view_all_link: string;
-    show_section: boolean;
-  };
-  about_section: {
-    image: string;
-    title: string;
-    description: string;
-    button_text: string;
-    button_link: string;
-    show_section: boolean;
-  };
-  new_arrivals: {
-    title: string;
-    view_all_link: string;
-    show_section: boolean;
-  };
-  category_showcase: {
-    categories: CategoryItem[];
-    show_section: boolean;
-  };
-  benefits: {
-    title: string;
-    subtitle: string;
-    items: BenefitItem[];
-    show_section: boolean;
-  };
-  instagram: {
-    handle: string;
-    images: string[];
-    show_section: boolean;
-  };
+function StringList({
+  label,
+  items,
+  onChange,
+  placeholder,
+  max = 8,
+}: {
+  label: string;
+  items: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+  max?: number;
+}) {
+  const set = (i: number, v: string) => onChange(items.map((it, j) => (j === i ? v : it)));
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-neutral-700">{label}</label>
+      <div className="space-y-2">
+        {items.map((it, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              className={inputCls}
+              value={it}
+              placeholder={placeholder}
+              onChange={(e) => set(i, e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => onChange(items.filter((_, j) => j !== i))}
+              className="flex-shrink-0 rounded-lg p-2 text-neutral-400 hover:bg-red-50 hover:text-red-500"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+        {items.length < max && (
+          <button
+            type="button"
+            onClick={() => onChange([...items, ''])}
+            className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:underline"
+          >
+            <Plus size={14} /> Add
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  main_image?: string;
-  images?: string[];
-  is_bestseller: boolean;
-  is_new: boolean;
-  show_on_homepage: boolean;
-  homepage_section: string;
-  homepage_position: number;
-}
-
-// ============================================
-// DEFAULT CONTENT
-// ============================================
-
-const defaultContent: HomepageContent = {
-  announcement: {
-    text: 'DISCOVER OUR NIVARA COLLECTION',
-    is_visible: true,
-  },
-  hero: {
-    slides: [
-      {
-        image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1764968906/s1q1nyc4y7lcvqxtsltz.jpg',
-        title: 'Bold Layers,\nConfident Looks.',
-        subtitle: 'Layer up with confidence and stylish all season',
-        mobilePosition: 'object-left'
-      },
-      {
-        image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1764968784/xritjgpwclz3vs0eccdi.jpg',
-        title: 'Elegant\nSimplicity.',
-        subtitle: 'Discover timeless pieces for the modern woman',
-        mobilePosition: 'object-center'
-      },
-      {
-        image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1761658028/hero_jlpiil.jpg',
-        title: 'Define Your\nStyle.',
-        subtitle: 'Curated collections that speak to your individuality',
-        mobilePosition: 'object-center'
-      }
-    ],
-    autoplay_speed: 8000,
-  },
-  best_sellers: {
-    title: 'Best Sellers',
-    view_all_link: '/shop',
-    show_section: true,
-  },
-  about_section: {
-    image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1920/v1764968797/xwxzqp1biltadyyxsct7.jpg',
-    title: 'Our Story, Your Style',
-    description: 'Crafting timeless fashion with quality, innovation, and sophistication at the core',
-    button_text: 'Explore About us',
-    button_link: '/about',
-    show_section: true,
-  },
-  new_arrivals: {
-    title: 'New in',
-    view_all_link: '/shop',
-    show_section: true,
-  },
-  category_showcase: {
-    categories: [
-      {
-        title: 'Elevate Your Style',
-        subtitle: 'New in Dresses',
-        description: 'Discover sophisticated silhouettes and luxurious fabrics, designed for timeless style',
-        image: '/IMG_4511 copy.JPG',
-        link: '/shop?category=dresses',
-        alignment: 'left'
-      },
-      {
-        title: 'Discover Nivara SS26',
-        subtitle: 'New in Collection',
-        description: 'Experience premium fabrics and modern fits, designed for effortless everyday style',
-        image: 'https://res.cloudinary.com/dusynu0kv/image/upload/q_auto,f_auto,w_1200/v1761734975/IMG_0011_kerlww.jpg',
-        link: '/shop?category=tops',
-        alignment: 'right'
-      }
-    ],
-    show_section: true,
-  },
-  benefits: {
-    title: 'Why Shop with Inaara',
-    subtitle: 'Enjoy exclusive benefits designed for a seamless shopping experience',
-    items: [
-      { icon: 'Truck', title: 'Fast Shipping', description: 'Get your order in 4-7 business days.' },
-      { icon: 'Headphones', title: 'Here to help', description: 'Customer service is available Monday through Friday.' },
-      { icon: 'Shield', title: 'Secure Payment', description: 'We keep your payment information safe.' },
-      { icon: 'RotateCcw', title: '10-Days Return Policy', description: "We think you'll love it. If you don't, let us know!" }
-    ],
-    show_section: true,
-  },
-  instagram: {
-    handle: '@inaarawoman_',
-    images: [],
-    show_section: true,
-  },
-};
-
-// ============================================
-// HELPER COMPONENTS
-// ============================================
 
 interface SectionCardProps {
   title: string;
   icon: React.ReactNode;
-  isExpanded: boolean;
+  open: boolean;
   onToggle: () => void;
-  children: React.ReactNode;
   badge?: string;
-  badgeColor?: string;
+  badgeOk?: boolean;
+  children: React.ReactNode;
 }
 
-function SectionCard({ title, icon, isExpanded, onToggle, children, badge, badgeColor = 'bg-green-100 text-green-700' }: SectionCardProps) {
+function SectionCard({ title, icon, open, onToggle, badge, badgeOk, children }: SectionCardProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
       <button
+        type="button"
         onClick={onToggle}
-        className="w-full px-6 py-5 flex items-center justify-between hover:bg-neutral-50 transition-colors"
+        className="flex w-full items-center justify-between px-5 py-4 hover:bg-neutral-50"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-neutral-100 rounded-xl flex items-center justify-center text-neutral-600">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600">
             {icon}
           </div>
           <span className="font-medium text-neutral-900">{title}</span>
           {badge && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${badgeColor}`}>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                badgeOk ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'
+              }`}
+            >
               {badge}
             </span>
           )}
         </div>
-        <motion.div
-          animate={{ rotate: isExpanded ? 90 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronRight size={20} className="text-neutral-400" />
-        </motion.div>
-      </button>
-      
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
-          >
-            <div className="px-6 pb-6 pt-2 border-t border-neutral-100">
-              {children}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-interface InputFieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: string;
-  multiline?: boolean;
-  rows?: number;
-}
-
-function InputField({ label, value, onChange, placeholder, type = 'text', multiline = false, rows = 3 }: InputFieldProps) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-neutral-700 mb-2">{label}</label>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors resize-none"
-        />
-      ) : (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
-        />
-      )}
-    </div>
-  );
-}
-
-interface ToggleSwitchProps {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  description?: string;
-}
-
-function ToggleSwitch({ label, checked, onChange, description }: ToggleSwitchProps) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="font-medium text-neutral-900 text-sm">{label}</p>
-        {description && <p className="text-xs text-neutral-500 mt-0.5">{description}</p>}
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors ${
-          checked ? 'bg-amber-500' : 'bg-neutral-200'
-        }`}
-      >
-        <motion.div
-          animate={{ x: checked ? 20 : 2 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow"
+        <ChevronRight
+          size={18}
+          className={`text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
         />
       </button>
-    </div>
-  );
-}
-
-interface ImageUploadProps {
-  label: string;
-  value: string;
-  onChange: (url: string) => void;
-  aspectRatio?: string;
-}
-
-function ImageUpload({ label, value, onChange, aspectRatio = 'aspect-video' }: ImageUploadProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'inaara_uploads');
-
-      const response = await fetch(
-        'https://api.cloudinary.com/v1_1/dusynu0kv/image/upload',
-        { method: 'POST', body: formData }
-      );
-
-      const data = await response.json();
-      if (data.secure_url) {
-        onChange(data.secure_url);
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload image');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-neutral-700 mb-2">{label}</label>
-      <div className="space-y-3">
-        {value && (
-          <div className={`${aspectRatio} bg-neutral-100 rounded-xl overflow-hidden relative group`}>
-            <img src={value} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 bg-white rounded-lg hover:bg-neutral-100 transition-colors"
-              >
-                <Upload size={18} />
-              </button>
-              <button
-                onClick={() => onChange('')}
-                className="p-2 bg-white rounded-lg hover:bg-red-50 text-red-500 transition-colors"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {!value && (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className={`w-full ${aspectRatio} border-2 border-dashed border-neutral-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-amber-500 hover:bg-amber-50/50 transition-colors ${
-              isUploading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {isUploading ? (
-              <RefreshCw size={24} className="text-neutral-400 animate-spin" />
-            ) : (
-              <Upload size={24} className="text-neutral-400" />
-            )}
-            <span className="text-sm text-neutral-500">
-              {isUploading ? 'Uploading...' : 'Click to upload image'}
-            </span>
-          </button>
-        )}
-
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Or paste image URL..."
-          className="w-full px-4 py-2 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-        />
+      <div className="collapsible" data-open={open}>
+        <div>
+          <div className="space-y-4 border-t border-neutral-100 px-5 pb-6 pt-4">{children}</div>
+        </div>
       </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
     </div>
   );
 }
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
+const ICON_OPTIONS = [
+  'Globe',
+  'Leaf',
+  'RotateCcw',
+  'ShieldCheck',
+  'Truck',
+  'Headphones',
+  'Shield',
+  'CreditCard',
+  'Sparkles',
+  'Heart',
+];
+
+// ── Main ────────────────────────────────────────────────────────────────────
+
+const SECTION_ORDER: HomepageSectionKey[] = [
+  'banner',
+  'hero',
+  'new_arrivals',
+  'marquee',
+  'seasonal_drop',
+  'categories',
+  'collections',
+  'best_sellers',
+  'confidence',
+  'instagram',
+];
 
 export default function HomepageManager() {
-  const [content, setContent] = useState<HomepageContent>(defaultContent);
-  const [products, setProducts] = useState<Product[]>([]);
+  const { showToast } = useToast();
+  const [content, setContent] = useState<HomepageContent>(HOMEPAGE_DEFAULTS);
+  const originalRef = useRef<string>(JSON.stringify(HOMEPAGE_DEFAULTS));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'sections' | 'products'>('sections');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['announcement']));
-  const [hasChanges, setHasChanges] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [open, setOpen] = useState<Set<string>>(new Set(['banner']));
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
+
+  const dirty = useMemo(
+    () => JSON.stringify(content) !== originalRef.current,
+    [content],
+  );
+  useUnsavedGuard(dirty);
 
   useEffect(() => {
-    loadContent();
-    loadProducts();
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_content')
+          .select('section_key, content')
+          .like('section_key', `${DB_KEY_PREFIX}%`)
+          .eq('is_active', true);
+        if (error) throw error;
+        const merged = mergeHomepageContent(data);
+        setContent(merged);
+        originalRef.current = JSON.stringify(merged);
+      } catch (err) {
+        console.error('Load homepage content failed:', err);
+        showToast('Could not load saved content — showing defaults', 'error');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadContent = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('homepage_content')
-        .select('*')
-        .eq('is_active', true);
+  const toggle = (k: string) =>
+    setOpen((prev) => {
+      const n = new Set(prev);
+      n.has(k) ? n.delete(k) : n.add(k);
+      return n;
+    });
 
-      if (error) throw error;
+  function patch<K extends HomepageSectionKey>(key: K, updates: Partial<HomepageContent[K]>) {
+    setContent((prev) => ({ ...prev, [key]: { ...prev[key], ...updates } }));
+  }
 
-      if (data && data.length > 0) {
-        // Merge database content with default content
-        const mergedContent = { ...defaultContent };
-        data.forEach((item: any) => {
-          if (item.section_key && item.content) {
-            (mergedContent as any)[item.section_key] = {
-              ...(defaultContent as any)[item.section_key],
-              ...item.content
-            };
-          }
-        });
-        setContent(mergedContent);
-      }
-    } catch (error) {
-      console.error('Error loading content:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, price, main_image, images, is_bestseller, is_new, show_on_homepage, homepage_section, homepage_position')
-        .eq('status', 'active')
-        .order('homepage_position');
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    }
-  };
-
-  const updateContent = (section: keyof HomepageContent, updates: any) => {
-    setContent(prev => ({
-      ...prev,
-      [section]: { ...prev[section], ...updates }
-    }));
-    setHasChanges(true);
-  };
-
-  const saveSection = async (sectionKey: string) => {
+  async function saveAll() {
     setSaving(true);
     try {
-      const sectionContent = (content as any)[sectionKey];
-      
+      const rows = SECTION_ORDER.map((key) => ({
+        section_key: dbKey(key),
+        content: content[key],
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }));
       const { error } = await supabase
         .from('homepage_content')
-        .upsert({
-          section_key: sectionKey,
-          content: sectionContent,
-          is_active: true,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'section_key'
-        });
-
+        .upsert(rows, { onConflict: 'section_key' });
       if (error) throw error;
-      
-      setLastSaved(new Date());
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Error saving section:', error);
-      alert('Failed to save changes');
+      originalRef.current = JSON.stringify(content);
+      clearHomepageContentCache();
+      setPreviewKey((k) => k + 1);
+      showToast('Homepage updated', 'success');
+    } catch (err) {
+      console.error('Save homepage content failed:', err);
+      showToast(
+        err instanceof Error ? err.message : 'Save failed — please try again',
+        'error',
+      );
     } finally {
       setSaving(false);
     }
-  };
-
-  const saveAllChanges = async () => {
-    setSaving(true);
-    try {
-      const sections = Object.keys(content);
-      
-      for (const sectionKey of sections) {
-        const sectionContent = (content as any)[sectionKey];
-        
-        await supabase
-          .from('homepage_content')
-          .upsert({
-            section_key: sectionKey,
-            content: sectionContent,
-            is_active: true,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'section_key'
-          });
-      }
-      
-      setLastSaved(new Date());
-      setHasChanges(false);
-      alert('All changes saved successfully!');
-    } catch (error) {
-      console.error('Error saving:', error);
-      alert('Failed to save changes');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
-    });
-  };
-
-  const updateHeroSlide = (index: number, field: keyof HeroSlide, value: string) => {
-    const newSlides = [...content.hero.slides];
-    newSlides[index] = { ...newSlides[index], [field]: value };
-    updateContent('hero', { slides: newSlides });
-  };
-
-  const addHeroSlide = () => {
-    const newSlides = [...content.hero.slides, {
-      image: '',
-      title: 'New Slide',
-      subtitle: 'Add your subtitle here',
-      mobilePosition: 'object-center'
-    }];
-    updateContent('hero', { slides: newSlides });
-  };
-
-  const removeHeroSlide = (index: number) => {
-    if (content.hero.slides.length <= 1) {
-      alert('You must have at least one slide');
-      return;
-    }
-    const newSlides = content.hero.slides.filter((_, i) => i !== index);
-    updateContent('hero', { slides: newSlides });
-  };
-
-  const updateCategoryItem = (index: number, field: keyof CategoryItem, value: string) => {
-    const newCategories = [...content.category_showcase.categories];
-    newCategories[index] = { ...newCategories[index], [field]: value };
-    updateContent('category_showcase', { categories: newCategories });
-  };
-
-  const updateBenefitItem = (index: number, field: keyof BenefitItem, value: string) => {
-    const newItems = [...content.benefits.items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    updateContent('benefits', { items: newItems });
-  };
-
-  const bestSellerProducts = products.filter(p => p.is_bestseller);
-  const newArrivalProducts = products.filter(p => p.is_new);
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
-          <p className="text-neutral-600">Loading homepage content...</p>
+          <RefreshCw className="h-7 w-7 animate-spin text-amber-500" />
+          <p className="text-sm text-neutral-600">Loading homepage content…</p>
         </div>
       </div>
     );
   }
 
+  const editor = (
+    <div className="space-y-4">
+      {/* Banner */}
+      <SectionCard
+        title="Announcement Banner"
+        icon={<Megaphone size={18} />}
+        open={open.has('banner')}
+        onToggle={() => toggle('banner')}
+        badge={content.banner.enabled ? 'Visible' : 'Hidden'}
+        badgeOk={content.banner.enabled}
+      >
+        <Toggle
+          label="Show banner"
+          checked={content.banner.enabled}
+          onChange={(v) => patch('banner', { enabled: v })}
+          description="The scrolling strip above the header"
+        />
+        <StringList
+          label="Messages (cycled in the strip)"
+          items={content.banner.messages}
+          onChange={(messages) => patch('banner', { messages })}
+          placeholder="e.g. New Season Sale"
+          max={6}
+        />
+      </SectionCard>
+
+      {/* Hero */}
+      <SectionCard
+        title="Hero"
+        icon={<ImageIcon size={18} />}
+        open={open.has('hero')}
+        onToggle={() => toggle('hero')}
+      >
+        <MediaUpload
+          label="Background image"
+          value={content.hero.image}
+          onChange={(image) => patch('hero', { image })}
+          aspectRatio="aspect-[16/9]"
+        />
+        <TextField
+          label="Headline — line 1"
+          value={content.hero.headline_top}
+          onChange={(v) => patch('hero', { headline_top: v })}
+          placeholder="Every version of"
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField
+            label="Large word — before"
+            value={content.hero.headline_lead}
+            onChange={(v) => patch('hero', { headline_lead: v })}
+            placeholder="Of Her"
+          />
+          <TextField
+            label="Large word — after"
+            value={content.hero.headline_tail}
+            onChange={(v) => patch('hero', { headline_tail: v })}
+            placeholder="To Exist"
+          />
+        </div>
+        <TextArea
+          label="Small stacked text (between the large words)"
+          value={content.hero.headline_small}
+          onChange={(v) => patch('hero', { headline_small: v })}
+          rows={2}
+          hint="Use a line break for the stack. Leave empty to hide."
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextArea
+            label="Corner label — left"
+            value={content.hero.label_left}
+            onChange={(v) => patch('hero', { label_left: v })}
+            rows={2}
+          />
+          <TextArea
+            label="Corner label — right"
+            value={content.hero.label_right}
+            onChange={(v) => patch('hero', { label_right: v })}
+            rows={2}
+          />
+        </div>
+      </SectionCard>
+
+      {/* New arrivals */}
+      <SectionCard
+        title="New Arrivals rail"
+        icon={<ShoppingBag size={18} />}
+        open={open.has('new_arrivals')}
+        onToggle={() => toggle('new_arrivals')}
+        badge={content.new_arrivals.show ? 'Visible' : 'Hidden'}
+        badgeOk={content.new_arrivals.show}
+      >
+        <Toggle
+          label="Show section"
+          checked={content.new_arrivals.show}
+          onChange={(v) => patch('new_arrivals', { show: v })}
+        />
+        <TextField
+          label="Section title"
+          value={content.new_arrivals.title}
+          onChange={(v) => patch('new_arrivals', { title: v })}
+        />
+        <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+          Products come from those marked <strong>New</strong> in the product editor.
+        </p>
+      </SectionCard>
+
+      {/* Marquee */}
+      <SectionCard
+        title="Marquee strip"
+        icon={<Type size={18} />}
+        open={open.has('marquee')}
+        onToggle={() => toggle('marquee')}
+      >
+        <StringList
+          label="Words (repeated across the strip)"
+          items={content.marquee.words}
+          onChange={(words) => patch('marquee', { words })}
+          placeholder="e.g. Made To Last"
+          max={6}
+        />
+      </SectionCard>
+
+      {/* Seasonal drop */}
+      <SectionCard
+        title="Seasonal Drop"
+        icon={<Sparkles size={18} />}
+        open={open.has('seasonal_drop')}
+        onToggle={() => toggle('seasonal_drop')}
+        badge={content.seasonal_drop.show ? 'Visible' : 'Hidden'}
+        badgeOk={content.seasonal_drop.show}
+      >
+        <Toggle
+          label="Show section"
+          checked={content.seasonal_drop.show}
+          onChange={(v) => patch('seasonal_drop', { show: v })}
+        />
+        <MediaUpload
+          label="Lifestyle image"
+          value={content.seasonal_drop.image}
+          onChange={(image) => patch('seasonal_drop', { image })}
+          aspectRatio="aspect-[4/5]"
+        />
+        <TextArea
+          label="Heading"
+          value={content.seasonal_drop.heading}
+          onChange={(v) => patch('seasonal_drop', { heading: v })}
+          rows={2}
+          hint="Line break allowed, e.g. 'Seasonal' / 'Drop'."
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField
+            label="Button label"
+            value={content.seasonal_drop.cta_label}
+            onChange={(v) => patch('seasonal_drop', { cta_label: v })}
+          />
+          <TextField
+            label="Button link"
+            value={content.seasonal_drop.cta_link}
+            onChange={(v) => patch('seasonal_drop', { cta_link: v })}
+            placeholder="/shop"
+          />
+        </div>
+      </SectionCard>
+
+      {/* Categories */}
+      <SectionCard
+        title="Shop by Categories"
+        icon={<Layout size={18} />}
+        open={open.has('categories')}
+        onToggle={() => toggle('categories')}
+        badge={content.categories.show ? 'Visible' : 'Hidden'}
+        badgeOk={content.categories.show}
+      >
+        <Toggle
+          label="Show section"
+          checked={content.categories.show}
+          onChange={(v) => patch('categories', { show: v })}
+        />
+        <TextField
+          label="Section heading"
+          value={content.categories.heading}
+          onChange={(v) => patch('categories', { heading: v })}
+        />
+        {content.categories.cards.map((card, i) => (
+          <div key={i} className="space-y-3 rounded-xl bg-neutral-50 p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-neutral-900">
+                Card {i + 1} {i === 0 && <span className="text-neutral-400">(large)</span>}
+              </h4>
+              {content.categories.cards.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    patch('categories', {
+                      cards: content.categories.cards.filter((_, j) => j !== i),
+                    })
+                  }
+                  className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            <MediaUpload
+              label="Image"
+              value={card.image}
+              onChange={(image) =>
+                patch('categories', {
+                  cards: content.categories.cards.map((c, j) =>
+                    j === i ? { ...c, image } : c,
+                  ),
+                })
+              }
+              aspectRatio="aspect-[4/5]"
+            />
+            <TextField
+              label="Eyebrow"
+              value={card.eyebrow}
+              onChange={(eyebrow) =>
+                patch('categories', {
+                  cards: content.categories.cards.map((c, j) =>
+                    j === i ? { ...c, eyebrow } : c,
+                  ),
+                })
+              }
+            />
+            <TextArea
+              label="Title"
+              value={card.title}
+              rows={2}
+              hint="Line break allowed."
+              onChange={(title) =>
+                patch('categories', {
+                  cards: content.categories.cards.map((c, j) =>
+                    j === i ? { ...c, title } : c,
+                  ),
+                })
+              }
+            />
+            <TextField
+              label="Link"
+              value={card.href}
+              onChange={(href) =>
+                patch('categories', {
+                  cards: content.categories.cards.map((c, j) =>
+                    j === i ? { ...c, href } : c,
+                  ),
+                })
+              }
+              placeholder="/shop?category=women"
+            />
+          </div>
+        ))}
+        {content.categories.cards.length < 5 && (
+          <button
+            type="button"
+            onClick={() =>
+              patch('categories', {
+                cards: [
+                  ...content.categories.cards,
+                  {
+                    eyebrow: 'For Women',
+                    title: 'New Category',
+                    image: '',
+                    href: '/shop',
+                    size: 'small' as const,
+                  },
+                ],
+              })
+            }
+            className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:underline"
+          >
+            <Plus size={14} /> Add card
+          </button>
+        )}
+      </SectionCard>
+
+      {/* Collections */}
+      <SectionCard
+        title="Collections Preview"
+        icon={<Layout size={18} />}
+        open={open.has('collections')}
+        onToggle={() => toggle('collections')}
+        badge={content.collections.show ? 'Visible' : 'Hidden'}
+        badgeOk={content.collections.show}
+      >
+        <Toggle
+          label="Show section"
+          checked={content.collections.show}
+          onChange={(v) => patch('collections', { show: v })}
+        />
+        {content.collections.tabs.map((tab, i) => (
+          <div key={i} className="space-y-3 rounded-xl bg-neutral-50 p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-neutral-900">Tab {i + 1}</h4>
+              {content.collections.tabs.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    patch('collections', {
+                      tabs: content.collections.tabs.filter((_, j) => j !== i),
+                    })
+                  }
+                  className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            <TextField
+              label="Tab name"
+              value={tab.name}
+              onChange={(name) =>
+                patch('collections', {
+                  tabs: content.collections.tabs.map((t, j) =>
+                    j === i ? { ...t, name } : t,
+                  ),
+                })
+              }
+            />
+            <MediaUpload
+              label="Image"
+              value={tab.image}
+              onChange={(image) =>
+                patch('collections', {
+                  tabs: content.collections.tabs.map((t, j) =>
+                    j === i ? { ...t, image } : t,
+                  ),
+                })
+              }
+              aspectRatio="aspect-video"
+            />
+            <TextField
+              label="Focus point (advanced)"
+              value={tab.object_position}
+              onChange={(object_position) =>
+                patch('collections', {
+                  tabs: content.collections.tabs.map((t, j) =>
+                    j === i ? { ...t, object_position } : t,
+                  ),
+                })
+              }
+              hint="CSS object-position classes, e.g. object-[50%_top] or object-center"
+            />
+          </div>
+        ))}
+        {content.collections.tabs.length < 6 && (
+          <button
+            type="button"
+            onClick={() =>
+              patch('collections', {
+                tabs: [
+                  ...content.collections.tabs,
+                  { name: 'New Tab', image: '', object_position: 'object-center' },
+                ],
+              })
+            }
+            className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:underline"
+          >
+            <Plus size={14} /> Add tab
+          </button>
+        )}
+      </SectionCard>
+
+      {/* Best sellers */}
+      <SectionCard
+        title="Best Sellers rail"
+        icon={<Sparkles size={18} />}
+        open={open.has('best_sellers')}
+        onToggle={() => toggle('best_sellers')}
+        badge={content.best_sellers.show ? 'Visible' : 'Hidden'}
+        badgeOk={content.best_sellers.show}
+      >
+        <Toggle
+          label="Show section"
+          checked={content.best_sellers.show}
+          onChange={(v) => patch('best_sellers', { show: v })}
+        />
+        <TextField
+          label="Section title"
+          value={content.best_sellers.title}
+          onChange={(v) => patch('best_sellers', { title: v })}
+        />
+        <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+          Products come from those marked <strong>Best Seller</strong> in the product editor.
+        </p>
+      </SectionCard>
+
+      {/* Confidence */}
+      <SectionCard
+        title="Shop With Confidence"
+        icon={<Shield size={18} />}
+        open={open.has('confidence')}
+        onToggle={() => toggle('confidence')}
+        badge={content.confidence.show ? 'Visible' : 'Hidden'}
+        badgeOk={content.confidence.show}
+      >
+        <Toggle
+          label="Show section"
+          checked={content.confidence.show}
+          onChange={(v) => patch('confidence', { show: v })}
+        />
+        <TextField
+          label="Heading"
+          value={content.confidence.heading}
+          onChange={(v) => patch('confidence', { heading: v })}
+        />
+        {content.confidence.items.map((item, i) => (
+          <div key={i} className="space-y-3 rounded-xl bg-neutral-50 p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-neutral-900">Item {i + 1}</h4>
+              {content.confidence.items.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    patch('confidence', {
+                      items: content.confidence.items.filter((_, j) => j !== i),
+                    })
+                  }
+                  className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-neutral-700">Icon</label>
+              <select
+                className={inputCls}
+                value={item.icon}
+                onChange={(e) =>
+                  patch('confidence', {
+                    items: content.confidence.items.map((it, j) =>
+                      j === i ? { ...it, icon: e.target.value } : it,
+                    ),
+                  })
+                }
+              >
+                {ICON_OPTIONS.map((ic) => (
+                  <option key={ic} value={ic}>
+                    {ic}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <TextField
+              label="Title"
+              value={item.title}
+              onChange={(title) =>
+                patch('confidence', {
+                  items: content.confidence.items.map((it, j) =>
+                    j === i ? { ...it, title } : it,
+                  ),
+                })
+              }
+            />
+            <TextArea
+              label="Description"
+              value={item.description}
+              rows={2}
+              onChange={(description) =>
+                patch('confidence', {
+                  items: content.confidence.items.map((it, j) =>
+                    j === i ? { ...it, description } : it,
+                  ),
+                })
+              }
+            />
+          </div>
+        ))}
+        {content.confidence.items.length < 6 && (
+          <button
+            type="button"
+            onClick={() =>
+              patch('confidence', {
+                items: [
+                  ...content.confidence.items,
+                  { icon: 'ShieldCheck', title: 'New benefit', description: '' },
+                ],
+              })
+            }
+            className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:underline"
+          >
+            <Plus size={14} /> Add item
+          </button>
+        )}
+      </SectionCard>
+
+      {/* Instagram */}
+      <SectionCard
+        title="Instagram"
+        icon={<Instagram size={18} />}
+        open={open.has('instagram')}
+        onToggle={() => toggle('instagram')}
+        badge={content.instagram.show ? 'Visible' : 'Hidden'}
+        badgeOk={content.instagram.show}
+      >
+        <Toggle
+          label="Show section"
+          checked={content.instagram.show}
+          onChange={(v) => patch('instagram', { show: v })}
+        />
+        <TextField
+          label="Heading"
+          value={content.instagram.heading}
+          onChange={(v) => patch('instagram', { heading: v })}
+        />
+        <TextField
+          label="Handle"
+          value={content.instagram.handle}
+          onChange={(v) => patch('instagram', { handle: v })}
+          placeholder="@inaarawoman_"
+        />
+        <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+          Tiles use the live Instagram feed when configured, otherwise recent product photos.
+        </p>
+      </SectionCard>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+          <h1 className="flex items-center gap-3 text-2xl font-semibold text-neutral-900">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
               <Home className="text-amber-600" size={22} />
-            </div>
+            </span>
             Homepage Manager
           </h1>
-          <p className="text-neutral-500 text-sm mt-1">
-            Customize your homepage content, images, and layout
+          <p className="mt-1 text-sm text-neutral-500">
+            Every field here maps to a live section of the storefront homepage.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {lastSaved && (
-            <span className="text-xs text-neutral-400">
-              Saved {lastSaved.toLocaleTimeString()}
-            </span>
-          )}
           <button
-            onClick={() => window.open('/', '_blank')}
-            className="flex items-center gap-2 px-4 py-2 border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-sm"
+            onClick={() => setShowPreview((v) => !v)}
+            className="flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50"
           >
-            <Eye size={18} />
-            Preview
+            {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showPreview ? 'Hide preview' : 'Live preview'}
           </button>
           <button
-            onClick={saveAllChanges}
-            disabled={saving || !hasChanges}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-              hasChanges
+            onClick={saveAll}
+            disabled={saving || !dirty}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+              dirty
                 ? 'bg-amber-500 text-white hover:bg-amber-600'
-                : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
+                : 'cursor-not-allowed bg-neutral-100 text-neutral-400'
             }`}
           >
-            {saving ? (
-              <RefreshCw size={18} className="animate-spin" />
-            ) : (
-              <Save size={18} />
-            )}
-            {saving ? 'Saving...' : 'Save All Changes'}
+            {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>
       </div>
 
-      {/* Unsaved Changes Banner */}
-      <AnimatePresence>
-        {hasChanges && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between"
+      {dirty && (
+        <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="text-amber-600" size={18} />
+            <p className="text-sm text-amber-800">You have unsaved changes</p>
+          </div>
+          <button
+            onClick={saveAll}
+            className="text-sm font-medium text-amber-700 hover:text-amber-900"
           >
-            <div className="flex items-center gap-3">
-              <AlertCircle className="text-amber-600" size={20} />
-              <p className="text-sm text-amber-800">You have unsaved changes</p>
-            </div>
-            <button
-              onClick={saveAllChanges}
-              className="text-sm font-medium text-amber-700 hover:text-amber-800"
-            >
-              Save now
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-neutral-100 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveTab('sections')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'sections'
-              ? 'bg-white text-neutral-900 shadow-sm'
-              : 'text-neutral-600 hover:text-neutral-900'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Layout size={16} />
-            Page Sections
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab('products')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'products'
-              ? 'bg-white text-neutral-900 shadow-sm'
-              : 'text-neutral-600 hover:text-neutral-900'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <ShoppingBag size={16} />
-            Featured Products
-          </span>
-        </button>
-      </div>
-
-      {/* Sections Tab */}
-      {activeTab === 'sections' && (
-        <div className="space-y-4">
-          {/* Announcement Bar */}
-          <SectionCard
-            title="Announcement Bar"
-            icon={<Type size={20} />}
-            isExpanded={expandedSections.has('announcement')}
-            onToggle={() => toggleSection('announcement')}
-            badge={content.announcement.is_visible ? 'Visible' : 'Hidden'}
-            badgeColor={content.announcement.is_visible ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}
-          >
-            <div className="space-y-4">
-              <InputField
-                label="Announcement Text"
-                value={content.announcement.text}
-                onChange={(value) => updateContent('announcement', { text: value })}
-                placeholder="Enter announcement text..."
-              />
-              <ToggleSwitch
-                label="Show Announcement Bar"
-                checked={content.announcement.is_visible}
-                onChange={(checked) => updateContent('announcement', { is_visible: checked })}
-                description="Toggle the scrolling announcement bar at the top of the page"
-              />
-              <button
-                onClick={() => saveSection('announcement')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Section
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* Hero Section */}
-          <SectionCard
-            title="Hero Slideshow"
-            icon={<ImageIcon size={20} />}
-            isExpanded={expandedSections.has('hero')}
-            onToggle={() => toggleSection('hero')}
-            badge={`${content.hero.slides.length} slides`}
-          >
-            <div className="space-y-6">
-              {content.hero.slides.map((slide, index) => (
-                <div key={index} className="p-4 bg-neutral-50 rounded-xl space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-neutral-900">Slide {index + 1}</h4>
-                    <button
-                      onClick={() => removeHeroSlide(index)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  
-                  <ImageUpload
-                    label="Slide Image"
-                    value={slide.image}
-                    onChange={(url) => updateHeroSlide(index, 'image', url)}
-                    aspectRatio="aspect-[16/9]"
-                  />
-                  
-                  <InputField
-                    label="Title (use \n for line break)"
-                    value={slide.title}
-                    onChange={(value) => updateHeroSlide(index, 'title', value)}
-                    multiline
-                    rows={2}
-                  />
-                  
-                  <InputField
-                    label="Subtitle"
-                    value={slide.subtitle}
-                    onChange={(value) => updateHeroSlide(index, 'subtitle', value)}
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Mobile Image Position
-                    </label>
-                    <select
-                      value={slide.mobilePosition}
-                      onChange={(e) => updateHeroSlide(index, 'mobilePosition', e.target.value)}
-                      className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                    >
-                      <option value="object-left">Left</option>
-                      <option value="object-center">Center</option>
-                      <option value="object-right">Right</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
-
-              <button
-                onClick={addHeroSlide}
-                className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-xl text-neutral-500 hover:border-amber-500 hover:text-amber-600 transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus size={18} />
-                Add New Slide
-              </button>
-
-              <button
-                onClick={() => saveSection('hero')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Hero Section
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* Best Sellers Section */}
-          <SectionCard
-            title="Best Sellers Section"
-            icon={<Sparkles size={20} />}
-            isExpanded={expandedSections.has('best_sellers')}
-            onToggle={() => toggleSection('best_sellers')}
-            badge={content.best_sellers.show_section ? 'Visible' : 'Hidden'}
-            badgeColor={content.best_sellers.show_section ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}
-          >
-            <div className="space-y-4">
-              <InputField
-                label="Section Title"
-                value={content.best_sellers.title}
-                onChange={(value) => updateContent('best_sellers', { title: value })}
-              />
-              <InputField
-                label="View All Link"
-                value={content.best_sellers.view_all_link}
-                onChange={(value) => updateContent('best_sellers', { view_all_link: value })}
-              />
-              <ToggleSwitch
-                label="Show Section"
-                checked={content.best_sellers.show_section}
-                onChange={(checked) => updateContent('best_sellers', { show_section: checked })}
-              />
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-xs text-blue-700">
-                  <strong>Note:</strong> Products marked as "Best Seller" in the product editor will appear here automatically.
-                  Currently showing {bestSellerProducts.length} products.
-                </p>
-              </div>
-              <button
-                onClick={() => saveSection('best_sellers')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Section
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* About Section */}
-          <SectionCard
-            title="About / Story Section"
-            icon={<Layers size={20} />}
-            isExpanded={expandedSections.has('about_section')}
-            onToggle={() => toggleSection('about_section')}
-            badge={content.about_section.show_section ? 'Visible' : 'Hidden'}
-            badgeColor={content.about_section.show_section ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}
-          >
-            <div className="space-y-4">
-              <ImageUpload
-                label="Background Image"
-                value={content.about_section.image}
-                onChange={(url) => updateContent('about_section', { image: url })}
-                aspectRatio="aspect-[16/9]"
-              />
-              <InputField
-                label="Title"
-                value={content.about_section.title}
-                onChange={(value) => updateContent('about_section', { title: value })}
-              />
-              <InputField
-                label="Description"
-                value={content.about_section.description}
-                onChange={(value) => updateContent('about_section', { description: value })}
-                multiline
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <InputField
-                  label="Button Text"
-                  value={content.about_section.button_text}
-                  onChange={(value) => updateContent('about_section', { button_text: value })}
-                />
-                <InputField
-                  label="Button Link"
-                  value={content.about_section.button_link}
-                  onChange={(value) => updateContent('about_section', { button_link: value })}
-                />
-              </div>
-              <ToggleSwitch
-                label="Show Section"
-                checked={content.about_section.show_section}
-                onChange={(checked) => updateContent('about_section', { show_section: checked })}
-              />
-              <button
-                onClick={() => saveSection('about_section')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Section
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* New Arrivals Section */}
-          <SectionCard
-            title="New Arrivals Section"
-            icon={<ShoppingBag size={20} />}
-            isExpanded={expandedSections.has('new_arrivals')}
-            onToggle={() => toggleSection('new_arrivals')}
-            badge={content.new_arrivals.show_section ? 'Visible' : 'Hidden'}
-            badgeColor={content.new_arrivals.show_section ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}
-          >
-            <div className="space-y-4">
-              <InputField
-                label="Section Title"
-                value={content.new_arrivals.title}
-                onChange={(value) => updateContent('new_arrivals', { title: value })}
-              />
-              <InputField
-                label="View All Link"
-                value={content.new_arrivals.view_all_link}
-                onChange={(value) => updateContent('new_arrivals', { view_all_link: value })}
-              />
-              <ToggleSwitch
-                label="Show Section"
-                checked={content.new_arrivals.show_section}
-                onChange={(checked) => updateContent('new_arrivals', { show_section: checked })}
-              />
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-xs text-blue-700">
-                  <strong>Note:</strong> Products marked as "New" in the product editor will appear here automatically.
-                  Currently showing {newArrivalProducts.length} products.
-                </p>
-              </div>
-              <button
-                onClick={() => saveSection('new_arrivals')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Section
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* Category Showcase */}
-          <SectionCard
-            title="Category Showcase"
-            icon={<Layout size={20} />}
-            isExpanded={expandedSections.has('category_showcase')}
-            onToggle={() => toggleSection('category_showcase')}
-            badge={content.category_showcase.show_section ? 'Visible' : 'Hidden'}
-            badgeColor={content.category_showcase.show_section ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}
-          >
-            <div className="space-y-6">
-              <ToggleSwitch
-                label="Show Section"
-                checked={content.category_showcase.show_section}
-                onChange={(checked) => updateContent('category_showcase', { show_section: checked })}
-              />
-
-              {content.category_showcase.categories.map((category, index) => (
-                <div key={index} className="p-4 bg-neutral-50 rounded-xl space-y-4">
-                  <h4 className="font-medium text-neutral-900">Category {index + 1}</h4>
-                  
-                  <ImageUpload
-                    label="Category Image"
-                    value={category.image}
-                    onChange={(url) => updateCategoryItem(index, 'image', url)}
-                    aspectRatio="aspect-[4/5]"
-                  />
-                  
-                  <InputField
-                    label="Subtitle (small text)"
-                    value={category.subtitle}
-                    onChange={(value) => updateCategoryItem(index, 'subtitle', value)}
-                  />
-                  
-                  <InputField
-                    label="Title"
-                    value={category.title}
-                    onChange={(value) => updateCategoryItem(index, 'title', value)}
-                  />
-                  
-                  <InputField
-                    label="Description"
-                    value={category.description}
-                    onChange={(value) => updateCategoryItem(index, 'description', value)}
-                    multiline
-                  />
-                  
-                  <InputField
-                    label="Button Link"
-                    value={category.link}
-                    onChange={(value) => updateCategoryItem(index, 'link', value)}
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Layout Alignment
-                    </label>
-                    <select
-                      value={category.alignment}
-                      onChange={(e) => updateCategoryItem(index, 'alignment', e.target.value)}
-                      className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                    >
-                      <option value="left">Image Left, Text Right</option>
-                      <option value="right">Image Right, Text Left</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
-
-              <button
-                onClick={() => saveSection('category_showcase')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Section
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* Benefits Section */}
-          <SectionCard
-            title="Why Shop With Us"
-            icon={<Shield size={20} />}
-            isExpanded={expandedSections.has('benefits')}
-            onToggle={() => toggleSection('benefits')}
-            badge={content.benefits.show_section ? 'Visible' : 'Hidden'}
-            badgeColor={content.benefits.show_section ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}
-          >
-            <div className="space-y-4">
-              <InputField
-                label="Section Title"
-                value={content.benefits.title}
-                onChange={(value) => updateContent('benefits', { title: value })}
-              />
-              <InputField
-                label="Subtitle"
-                value={content.benefits.subtitle}
-                onChange={(value) => updateContent('benefits', { subtitle: value })}
-              />
-              <ToggleSwitch
-                label="Show Section"
-                checked={content.benefits.show_section}
-                onChange={(checked) => updateContent('benefits', { show_section: checked })}
-              />
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-neutral-700">Benefits List</h4>
-                {content.benefits.items.map((item, index) => (
-                  <div key={index} className="p-4 bg-neutral-50 rounded-xl space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Icon</label>
-                        <select
-                          value={item.icon}
-                          onChange={(e) => updateBenefitItem(index, 'icon', e.target.value)}
-                          className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                        >
-                          <option value="Truck">Truck (Shipping)</option>
-                          <option value="Headphones">Headphones (Support)</option>
-                          <option value="Shield">Shield (Security)</option>
-                          <option value="RotateCcw">Return Arrow (Returns)</option>
-                        </select>
-                      </div>
-                      <InputField
-                        label="Title"
-                        value={item.title}
-                        onChange={(value) => updateBenefitItem(index, 'title', value)}
-                      />
-                    </div>
-                    <InputField
-                      label="Description"
-                      value={item.description}
-                      onChange={(value) => updateBenefitItem(index, 'description', value)}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => saveSection('benefits')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Section
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* Instagram Section */}
-          <SectionCard
-            title="Instagram Section"
-            icon={<Instagram size={20} />}
-            isExpanded={expandedSections.has('instagram')}
-            onToggle={() => toggleSection('instagram')}
-            badge={content.instagram.show_section ? 'Visible' : 'Hidden'}
-            badgeColor={content.instagram.show_section ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}
-          >
-            <div className="space-y-4">
-              <InputField
-                label="Instagram Handle"
-                value={content.instagram.handle}
-                onChange={(value) => updateContent('instagram', { handle: value })}
-                placeholder="@yourusername"
-              />
-              <ToggleSwitch
-                label="Show Section"
-                checked={content.instagram.show_section}
-                onChange={(checked) => updateContent('instagram', { show_section: checked })}
-              />
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-xs text-blue-700">
-                  <strong>Note:</strong> Instagram images are currently loaded from the homepage code.
-                  To change images, update the InstagramSection component in the code.
-                </p>
-              </div>
-              <button
-                onClick={() => saveSection('instagram')}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg text-sm hover:bg-neutral-800 transition-colors"
-              >
-                <Save size={16} />
-                Save Section
-              </button>
-            </div>
-          </SectionCard>
+            Save now
+          </button>
         </div>
       )}
 
-      {/* Products Tab */}
-      {activeTab === 'products' && (
-        <div className="space-y-6">
-          {/* Info Banner */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-            <h3 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
-              <AlertCircle size={18} />
-              How Product Display Works
-            </h3>
-            <p className="text-sm text-amber-800 mb-4">
-              Products are displayed on the homepage based on their settings in the product editor.
-              Mark products as "Best Seller" or "New" to show them in the respective sections.
-            </p>
-            <a
-              href="/admin/products"
-              className="inline-flex items-center gap-2 text-sm font-medium text-amber-700 hover:text-amber-800"
-            >
-              Go to Products
-              <ExternalLink size={14} />
-            </a>
-          </div>
-
-          {/* Best Sellers Products */}
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-neutral-900">Best Sellers</h3>
-                  <p className="text-sm text-neutral-500 mt-0.5">
-                    {bestSellerProducts.length} products marked as best sellers
-                  </p>
-                </div>
-                <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                  {bestSellerProducts.length} products
-                </span>
-              </div>
+      {showPreview ? (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-1">{editor}</div>
+          <div className="sticky top-4 hidden h-[calc(100vh-160px)] overflow-hidden rounded-2xl border border-neutral-200 bg-white lg:block">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-2">
+              <span className="text-xs font-medium text-neutral-500">Live preview</span>
+              <button
+                onClick={() => setPreviewKey((k) => k + 1)}
+                className="flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-800"
+              >
+                <RefreshCw size={12} /> Refresh
+              </button>
             </div>
-
-            {bestSellerProducts.length > 0 ? (
-              <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {bestSellerProducts.map((product) => (
-                    <div key={product.id} className="group">
-                      <div className="aspect-[3/4] bg-neutral-100 rounded-xl overflow-hidden mb-2">
-                        {product.main_image || product.images?.[0] ? (
-                          <img
-                            src={product.main_image || product.images?.[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-neutral-300">
-                            <ImageIcon size={32} />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs font-medium text-neutral-900 truncate">{product.name}</p>
-                      <p className="text-xs text-neutral-500">₦{product.price.toLocaleString()}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="p-12 text-center">
-                <Sparkles className="mx-auto text-neutral-300 mb-3" size={40} />
-                <p className="text-neutral-500 mb-2">No best sellers yet</p>
-                <p className="text-sm text-neutral-400">
-                  Edit products and mark them as "Best Seller" to show here
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* New Arrivals Products */}
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-neutral-900">New Arrivals</h3>
-                  <p className="text-sm text-neutral-500 mt-0.5">
-                    {newArrivalProducts.length} products marked as new
-                  </p>
-                </div>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                  {newArrivalProducts.length} products
-                </span>
-              </div>
-            </div>
-
-            {newArrivalProducts.length > 0 ? (
-              <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {newArrivalProducts.map((product) => (
-                    <div key={product.id} className="group">
-                      <div className="aspect-[3/4] bg-neutral-100 rounded-xl overflow-hidden mb-2">
-                        {product.main_image || product.images?.[0] ? (
-                          <img
-                            src={product.main_image || product.images?.[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-neutral-300">
-                            <ImageIcon size={32} />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs font-medium text-neutral-900 truncate">{product.name}</p>
-                      <p className="text-xs text-neutral-500">₦{product.price.toLocaleString()}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="p-12 text-center">
-                <ShoppingBag className="mx-auto text-neutral-300 mb-3" size={40} />
-                <p className="text-neutral-500 mb-2">No new arrivals yet</p>
-                <p className="text-sm text-neutral-400">
-                  Edit products and mark them as "New" to show here
-                </p>
-              </div>
-            )}
+            <iframe
+              key={previewKey}
+              src="/"
+              title="Homepage preview"
+              className="h-[calc(100%-37px)] w-full"
+            />
           </div>
         </div>
+      ) : (
+        editor
       )}
     </div>
   );

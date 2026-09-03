@@ -6,6 +6,7 @@ import { Search, Heart, ShoppingBag, ChevronDown, Menu, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useHomepageContent } from '../../hooks/useHomepageContent';
 import CartDrawer from '../cart/CartDrawer';
 
 const LOGO = 'https://res.cloudinary.com/dusynu0kv/image/upload/v1765001554/z0mkjqsdbnr4ppai6ukp.png';
@@ -25,14 +26,16 @@ const SHOP_MENU = [
   { name: 'Two Piece', path: '/shop?category=two-piece' },
 ];
 
-const TICKER = ['New Season Sale', 'Up To 30% Off'];
-
 function PromoTicker() {
+  const { content } = useHomepageContent();
+  const { enabled, messages } = content.banner;
+  const list = messages.filter((m) => m.trim());
+  if (!enabled || list.length === 0) return null;
   return (
     <Marquee className="h-[26px] w-full bg-[#1a1a1a] text-white" duration={34}>
-      {Array.from({ length: 12 }).map((_, i) => (
+      {Array.from({ length: Math.max(12, list.length * 3) }).map((_, i) => (
         <span key={i} className="mx-[38px] text-[11px] font-semibold uppercase tracking-[0.14em]">
-          {TICKER[i % 2]}
+          {list[i % list.length]}
         </span>
       ))}
     </Marquee>
@@ -66,6 +69,9 @@ export default function InaaraHeader() {
   const { itemCount } = useCart();
   const { wishlistIds } = useWishlist();
   const { currency, setCurrency, currencies } = useCurrency();
+  const { content } = useHomepageContent();
+  const bannerShown =
+    content.banner.enabled && content.banner.messages.some((m) => m.trim());
 
   const wishlistCount = wishlistIds ? wishlistIds.size : 0;
   const transparent = isHome && !scrolled;
@@ -348,8 +354,9 @@ export default function InaaraHeader() {
         )}
       </AnimatePresence>
 
-      {/* Spacer keeps non-home pages clear of the fixed header */}
-      {!isHome && <div className="h-[101px]" />}
+      {/* Spacer keeps non-home pages clear of the fixed header (75px row +
+          26px promo strip when the banner is showing) */}
+      {!isHome && <div style={{ height: bannerShown ? 101 : 75 }} />}
 
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </>
