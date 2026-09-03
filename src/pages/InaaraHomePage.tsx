@@ -544,7 +544,7 @@ function Hero() {
   return (
     <section
       ref={section}
-      className="relative w-full overflow-hidden bg-neutral-900 h-screen-mobile md:h-[min(56.53vw,90svh)] md:min-h-[560px]"
+      className="hero-section relative flex w-full flex-col justify-end overflow-hidden bg-neutral-900 h-screen-mobile md:h-[min(56.53vw,90svh)] md:min-h-[560px]"
     >
       <img
         src={getFullImageUrl(HERO_IMAGE)}
@@ -552,7 +552,9 @@ function Hero() {
         className="hero-bg absolute inset-0 h-[112%] w-full object-cover object-center"
         style={{ willChange: 'transform' }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+      {/* Legibility wash — heavier toward the bottom so the bottom-anchored
+          headline always has contrast behind it, even on short viewports. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-black/5 to-black/55" />
 
       <p className={`hero-corner-label absolute left-[3.4%] top-[37.2%] w-[8vw] min-w-[92px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[1.2] whitespace-pre-line ${labelSize}`}>
         {'Est. 2022\nShaped by light'}
@@ -562,17 +564,20 @@ function Hero() {
         {'Expressive by nature.\nConfident by choice.'}
       </p>
 
-      {/* Headline - per-character flip-up reveal on load, one continuous
-          left-to-right stagger across both size runs. */}
+      {/* Headline — the last flex child, so it's anchored to the bottom of the
+          column and its top offset scales with hero height automatically.
+          `pb` is real breathing room (clamped) so it never touches the edge.
+          Per-character flip-up reveal on load, one continuous left-to-right
+          stagger across both size runs. */}
       <SplitReveal
         as="h1"
         trigger="load"
-        className={`hero-headline absolute inset-x-0 top-[60%] mx-auto w-[92%] max-w-[1323px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[0.9] ${bigSize}`}
+        className={`hero-headline relative z-10 mx-auto w-[92%] max-w-[1323px] pb-[clamp(28px,7vh,104px)] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[0.95] ${bigSize}`}
       >
         <span className="block">Every version of</span>
         <span className="block">
           <span className="whitespace-nowrap">Of&nbsp;Her</span>{' '}
-          <span className="inline-block align-middle text-[43%] leading-[0.85] text-center -translate-y-[0.06em]">
+          <span className="inline-block align-middle text-[43%] leading-[0.9] text-center -translate-y-[0.04em]">
             has
             <br />
             somewhere
