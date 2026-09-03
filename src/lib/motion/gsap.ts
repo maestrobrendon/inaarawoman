@@ -15,6 +15,12 @@ gsap.defaults({ ease: 'power3.out', duration: 0.7 });
 // Mobile browsers fire resize on address-bar collapse; don't recompute triggers for it.
 ScrollTrigger.config({ ignoreMobileResize: true });
 
+// Console handles for QA / debugging (gsap ships its own globals anyway).
+if (typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).gsap = gsap;
+  (window as unknown as Record<string, unknown>).ScrollTrigger = ScrollTrigger;
+}
+
 // Shared easing vocabulary — keep the whole site on the same curves.
 export const EASE = {
   out: 'power4.out',
