@@ -52,7 +52,6 @@ const CATEGORY_CARDS = [
       'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210660/ChatGPT_Image_Aug_31_2026_06_05_50_PM_p0une4.png',
     href: '/shop?category=women',
     size: 'large' as const,
-    pos: 'object-[28%_top] md:object-[75%_top]',
   },
   {
     eyebrow: 'For Women',
@@ -61,7 +60,6 @@ const CATEGORY_CARDS = [
       'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210662/Glamorous_Ivory_Gown_Portrait_f7plar.png',
     href: '/shop?category=women',
     size: 'small' as const,
-    pos: 'object-[28%_top] md:object-[75%_top]',
   },
   {
     eyebrow: 'For Kids',
@@ -70,7 +68,6 @@ const CATEGORY_CARDS = [
       'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210664/Fierce_Glamour_in_Burgundy_and_Gold_ohafdu.png',
     href: '/shop?category=kids',
     size: 'small' as const,
-    pos: 'object-[28%_top] md:object-[75%_top]',
   },
 ];
 
@@ -777,17 +774,21 @@ function CategoryCard({ card, big = false }: { card: (typeof CATEGORY_CARDS)[num
       onClick={() => navigate(card.href)}
       className="category-card group relative h-full min-h-[300px] cursor-pointer overflow-hidden rounded-xl bg-[#f5f5f5]"
     >
+      {/* Mobile: the photo is a portrait, so instead of a full-bleed crop that
+          buries the model behind the copy, sit it in the right ~58% of the card
+          (the copy gets the clear left column). Desktop keeps the full-bleed
+          framing via md: overrides. */}
       <img
         src={getProductImageUrl(card.image)}
         alt={card.title.replace('\n', ' ')}
         loading="lazy"
         decoding="async"
-        className={`absolute inset-0 h-full w-full object-cover ${card.pos} transition-transform duration-300 group-hover:scale-105`}
+        className="absolute inset-y-0 right-0 h-full w-[58%] object-cover object-top transition-transform duration-300 group-hover:scale-105 md:inset-0 md:w-full md:object-[75%_top]"
       />
-      {/* Keeps the top-left copy legible over the full-bleed photo. */}
+      {/* Blends the photo's left edge into the copy column. */}
       <div
-        className={`absolute inset-0 bg-gradient-to-r from-[#f5f5f5] via-[#f5f5f5]/75 to-transparent ${
-          big ? 'to-[52%]' : 'to-[58%]'
+        className={`absolute inset-0 bg-gradient-to-r from-[#f5f5f5] via-[#f5f5f5] to-transparent md:via-[#f5f5f5]/75 ${
+          big ? 'to-[46%] md:to-[52%]' : 'to-[50%] md:to-[58%]'
         }`}
       />
       <div className="relative z-10 h-full p-[27px]">
