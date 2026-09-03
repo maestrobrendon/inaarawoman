@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from '../lib/motion/compat';
 import { ChevronDown, Package, Truck, Globe, Clock, MapPin, AlertCircle, CreditCard } from 'lucide-react';
 
 interface AccordionItem {
@@ -403,29 +403,20 @@ function AccordionSection({ item, isOpen, onClick }: { item: AccordionItem; isOp
             {item.title}
           </h3>
         </div>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex-shrink-0"
+        <div
+          className={`flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
         >
           <ChevronDown size={20} className="text-neutral-600" />
-        </motion.div>
+        </div>
       </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="overflow-hidden"
-          >
-            <div className="px-6 pb-6 text-sm text-neutral-700 leading-relaxed">
-              {item.content}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Height-free collapsible: grid-template-rows 0fr <-> 1fr (see index.css) */}
+      <div className="collapsible" data-open={isOpen}>
+        <div>
+          <div className="px-6 pb-6 text-sm text-neutral-700 leading-relaxed">
+            {item.content}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

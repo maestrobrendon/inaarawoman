@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from '../../lib/motion/compat';
+import { gsap, ScrollTrigger, useGSAP, MQ, Marquee } from '../../lib/motion';
 import { Search, Heart, ShoppingBag, ChevronDown, Menu, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -28,26 +29,13 @@ const TICKER = ['New Season Sale', 'Up To 30% Off'];
 
 function PromoTicker() {
   return (
-    <div className="h-[26px] w-full overflow-hidden bg-[#1a1a1a] text-white">
-      <motion.div
-        className="flex h-full w-max items-center whitespace-nowrap"
-        animate={{ x: ['0%', '-50%'] }}
-        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-      >
-        {[...Array(2)].map((_, block) => (
-          <div key={block} className="flex shrink-0 items-center">
-            {[...Array(12)].map((_, i) => (
-              <span
-                key={i}
-                className="mx-[38px] text-[11px] font-semibold uppercase tracking-[0.14em]"
-              >
-                {TICKER[i % 2]}
-              </span>
-            ))}
-          </div>
-        ))}
-      </motion.div>
-    </div>
+    <Marquee className="h-[26px] w-full bg-[#1a1a1a] text-white" duration={34}>
+      {Array.from({ length: 12 }).map((_, i) => (
+        <span key={i} className="mx-[38px] text-[11px] font-semibold uppercase tracking-[0.14em]">
+          {TICKER[i % 2]}
+        </span>
+      ))}
+    </Marquee>
   );
 }
 
@@ -82,12 +70,46 @@ export default function InaaraHeader() {
   const wishlistCount = wishlistIds ? wishlistIds.size : 0;
   const transparent = isHome && !scrolled;
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+  const logoRef = useRef<HTMLImageElement>(null);
+
+  // Scroll-linked header: eases (short scrub) from transparent-over-hero to a
+  // solid blurred bar, shrinking the row + logo ~15%. Transform + opacity only.
+  useGSAP(
+    () => {
+      const st = ScrollTrigger.create({
+        start: 'top top-=8',
+        end: 'top top-=88',
+        onUpdate: (self) => setScrolled(self.progress > 0.15),
+      });
+
+      const mm = gsap.matchMedia();
+      mm.add(MQ.motionOk, () => {
+        gsap.set(bgRef.current, { opacity: isHome ? 0 : 1 });
+        const tween = gsap.timeline({
+          scrollTrigger: { start: 'top top-=8', end: 'top top-=88', scrub: 0.3 },
+        });
+        if (isHome) tween.to(bgRef.current, { opacity: 1 }, 0);
+        tween
+          .to(rowRef.current, { scale: 0.9, transformOrigin: 'center top' }, 0)
+          .to(logoRef.current, { scale: 0.88 }, 0);
+        return () => {
+          tween.scrollTrigger?.kill();
+          tween.kill();
+        };
+      });
+      mm.add(MQ.reduce, () => {
+        gsap.set(bgRef.current, { opacity: 1 });
+      });
+
+      return () => {
+        st.kill();
+        mm.revert();
+      };
+    },
+    { dependencies: [isHome] },
+  );
 
   useEffect(() => {
     setMobileOpen(false);
@@ -112,20 +134,24 @@ export default function InaaraHeader() {
       <header className="fixed inset-x-0 top-0 z-50">
         <PromoTicker />
 
-        <div
-          className={`w-full transition-colors duration-300 ${
-            transparent
-              ? 'bg-transparent'
-              : 'border-b border-[#e8e6e3] bg-white/95 backdrop-blur-md'
-          }`}
-        >
-          <div className="mx-auto flex h-[75px] max-w-[1360px] items-center px-5 sm:px-8 lg:px-[50px]">
+        <div className="relative w-full">
+          <div
+            ref={bgRef}
+            aria-hidden
+            className="absolute inset-0 border-b border-[#e8e6e3] bg-white/95 backdrop-blur-md"
+            style={{ opacity: isHome ? 0 : 1 }}
+          />
+          <div
+            ref={rowRef}
+            className="relative mx-auto flex h-[75px] max-w-[1360px] items-center px-5 [&_a]:transition-colors [&_button]:transition-colors sm:px-8 lg:px-[50px]"
+          >
             {/* Logo */}
             <Link to="/" className="flex shrink-0 items-center" aria-label="INAARA home">
               <img
+                ref={logoRef}
                 src={LOGO}
                 alt="INAARA"
-                className={`h-6 w-auto object-contain ${transparent ? 'brightness-0 invert' : ''}`}
+                className={`h-6 w-auto origin-left object-contain transition-[filter] duration-300 ${transparent ? 'brightness-0 invert' : ''}`}
               />
             </Link>
 

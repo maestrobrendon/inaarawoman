@@ -1,6 +1,17 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, Variants } from 'framer-motion';
+import {
+  gsap,
+  ScrollTrigger,
+  useGSAP,
+  EASE,
+  MQ,
+  Marquee,
+  SplitReveal,
+  useRevealOnScroll,
+  useMagnetic,
+  useTapFeedback,
+} from '../lib/motion';
 import {
   Heart,
   ChevronLeft,
@@ -102,22 +113,6 @@ const CONFIDENCE_ITEMS = [
 ];
 
 // ============================================
-// ANIMATION
-// ============================================
-
-const ease: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 28 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
-};
-
-const stagger: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-
-// ============================================
 // HELPERS
 // ============================================
 
@@ -150,39 +145,83 @@ const discountPct = (p: ProductWithImages): number | null => {
   return Math.round(((compare - p.price) / compare) * 100);
 };
 
-function useReveal(threshold = 0.15) {
+// Section wrapper: staggers its matching children into view once on scroll.
+// Replaces the old useReveal + framer variants pattern.
+function RevealGroup({
+  children,
+  className,
+  selector = ':scope > *',
+  stagger = 0.08,
+  y = 24,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  selector?: string;
+  stagger?: number;
+  y?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
-      return;
-    }
-    // Already in / near the viewport on mount → reveal immediately (covers
-    // above-the-fold sections and environments where IO callbacks don't fire).
-    if (el.getBoundingClientRect().top < (window.innerHeight || 0) + 200) {
-      setVisible(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(el);
-        }
-      },
-      { threshold, rootMargin: '0px 0px 200px 0px' }
-    );
-    observer.observe(el);
-    // Hard fallback so a section can never stay permanently hidden.
-    const t = window.setTimeout(() => setVisible(true), 1200);
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(t);
-    };
-  }, [threshold]);
-  return { ref, visible };
+  useRevealOnScroll(ref, { selector, stagger, y });
+  return (
+    <div ref={ref} className={className}>
+      {children}
+    </div>
+  );
+}
+
+// Horizontal product rail. Reveals its cards with a staggered rise on scroll,
+// and on mobile (touch) scales down the cards that aren't snapped to centre so
+// the active one "pops" — transform/opacity only, driven by quickTo.
+function MobileCarousel({
+  children,
+  className,
+  selector,
+  trackRef,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  selector: string;
+  trackRef: React.RefObject<HTMLDivElement>;
+}) {
+  const outer = useRef<HTMLDivElement>(null);
+  useRevealOnScroll(outer, { selector, stagger: 0.08, y: 24 });
+
+  useGSAP(
+    () => {
+      const track = trackRef.current;
+      if (!track) return;
+      const mm = gsap.matchMedia();
+      mm.add(`${MQ.motionOk} and (max-width: 1023px)`, () => {
+        const cards = gsap.utils.toArray<HTMLElement>(track.querySelectorAll(selector));
+        const setters = cards.map((c) => ({
+          s: gsap.quickTo(c, 'scale', { duration: 0.3, ease: 'power2.out' }),
+          o: gsap.quickTo(c, 'opacity', { duration: 0.3, ease: 'power2.out' }),
+        }));
+        const update = () => {
+          const mid = track.scrollLeft + track.clientWidth / 2;
+          cards.forEach((c, i) => {
+            const cc = c.offsetLeft + c.offsetWidth / 2;
+            const d = Math.min(Math.abs(cc - mid) / c.offsetWidth, 1);
+            setters[i].s(gsap.utils.mapRange(0, 1, 1, 0.95, d));
+            setters[i].o(gsap.utils.mapRange(0, 1, 1, 0.85, d));
+          });
+        };
+        update();
+        track.addEventListener('scroll', update, { passive: true });
+        return () => track.removeEventListener('scroll', update);
+      });
+      return () => mm.revert();
+    },
+    { scope: outer, dependencies: [] },
+  );
+
+  return (
+    <div ref={outer}>
+      <div ref={trackRef} className={className} style={{ scrollbarWidth: 'none' }}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 // ============================================
@@ -217,17 +256,42 @@ function useCardWishlist(product: ProductWithImages) {
 }
 
 // Swatch — 24px (or 18px) white ring with a coloured inner dot; first ring is #828282.
-function SwatchDots({ colors, size = 24 }: { colors: Swatch[]; size?: number }) {
+// `onSelect` (mobile) lets a tap crossfade the card image to that variant.
+function SwatchDots({
+  colors,
+  size = 24,
+  onSelect,
+  activeIndex,
+}: {
+  colors: Swatch[];
+  size?: number;
+  onSelect?: (index: number) => void;
+  activeIndex?: number;
+}) {
   if (colors.length === 0) return null;
   const inset = size >= 24 ? 2 : 3;
+  const interactive = !!onSelect;
   return (
     <div className="flex items-center gap-[3px] shrink-0">
       {colors.slice(0, 3).map((c, i) => (
-        <span
+        <button
           key={i}
+          type="button"
           title={c.name}
+          aria-label={c.name || `Colour ${i + 1}`}
+          disabled={!interactive}
+          onClick={
+            interactive
+              ? (e) => {
+                  e.stopPropagation();
+                  onSelect?.(i);
+                }
+              : undefined
+          }
           className={`grid place-items-center rounded-full bg-white border ${
             i === 0 ? 'border-[#828282]' : 'border-black/[0.09]'
+          } ${interactive ? 'cursor-pointer' : 'cursor-default'} ${
+            activeIndex === i ? 'ring-2 ring-[#1a1a1a] ring-offset-1' : ''
           }`}
           style={{ width: size, height: size }}
         >
@@ -235,7 +299,7 @@ function SwatchDots({ colors, size = 24 }: { colors: Swatch[]; size?: number }) 
             className="rounded-full"
             style={{ width: `calc(100% - ${inset}px)`, height: `calc(100% - ${inset}px)`, background: c.hex }}
           />
-        </span>
+        </button>
       ))}
     </div>
   );
@@ -252,11 +316,26 @@ function ProductCard({ product, grid = false }: { product: ProductWithImages; gr
   const secondary = secondaryImage(product);
   const compare = comparePrice(product);
   const pct = discountPct(product);
+  const swatches = swatchesOf(product);
+
+  // Mobile "discovery moment": tapping a swatch crossfades the main image to
+  // the matching gallery photo (falls back to the primary if none).
+  const gallery = (product.images ?? []).map((i) => imgUrl(i)).filter(Boolean);
+  const [variant, setVariant] = useState(0);
+  const mainImgRef = useRef<HTMLImageElement>(null);
+  const variantSrc = getProductImageUrl(gallery[variant] || primary);
+  const selectVariant = useCallback((i: number) => {
+    setVariant(i);
+    const el = mainImgRef.current;
+    if (el) {
+      gsap.fromTo(el, { opacity: 0.3 }, { opacity: 1, duration: 0.25, ease: 'power2.out' });
+    }
+  }, []);
 
   return (
-    <motion.div
-      variants={fadeUp}
-      className={`group cursor-pointer overflow-hidden rounded-xl bg-white shadow-[0px_0px_3.8px_1px_rgba(0,0,0,0.04),0px_0px_0px_1px_rgba(0,0,0,0.04)] ${
+    <div
+      data-tap
+      className={`product-card group cursor-pointer overflow-hidden rounded-xl bg-white shadow-[0px_0px_3.8px_1px_rgba(0,0,0,0.04),0px_0px_0px_1px_rgba(0,0,0,0.04)] ${
         grid ? 'w-full' : 'w-[clamp(258px,78vw,401px)] shrink-0'
       }`}
       onClick={() => navigate(`/product/${product.id}`)}
@@ -266,11 +345,13 @@ function ProductCard({ product, grid = false }: { product: ProductWithImages; gr
       <div className="relative aspect-[401/393] overflow-hidden bg-[#f5f5f5]">
         {primary && (
           <img
-            src={getProductImageUrl(primary)}
+            ref={mainImgRef}
+            src={variantSrc}
             alt={product.name}
             loading="lazy"
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-              hovered && secondary !== primary ? 'opacity-0' : 'opacity-100'
+            decoding="async"
+            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-500 group-hover:scale-[1.03] ${
+              hovered && secondary !== primary && variant === 0 ? 'opacity-0' : 'opacity-100'
             }`}
           />
         )}
@@ -279,8 +360,9 @@ function ProductCard({ product, grid = false }: { product: ProductWithImages; gr
             src={getProductImageUrl(secondary)}
             alt={product.name}
             loading="lazy"
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-              hovered ? 'opacity-100' : 'opacity-0'
+            decoding="async"
+            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-500 group-hover:scale-[1.03] ${
+              hovered && variant === 0 ? 'opacity-100' : 'opacity-0'
             }`}
           />
         )}
@@ -330,9 +412,13 @@ function ProductCard({ product, grid = false }: { product: ProductWithImages; gr
             )}
           </div>
         </div>
-        <SwatchDots colors={swatchesOf(product)} />
+        <SwatchDots
+          colors={swatches}
+          onSelect={gallery.length > 1 ? selectVariant : undefined}
+          activeIndex={gallery.length > 1 ? variant : undefined}
+        />
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -398,39 +484,90 @@ function SeasonalCard({ product }: { product: ProductWithImages }) {
 // ============================================
 
 function Hero() {
-  // Figma nodes 20:2543/20:2544 — reference canvas 1440 x 814.
-  // Instrument Serif Regular, colour #FEF9F3, tracking -1% of font size,
-  // display leading 90% / corner-label leading 120%. Every element below is
-  // positioned as a percentage of the 1440 x 814 hero box so it scales cleanly.
-  // Font sizes are vw-based (fontpx / 1440 * 100) with a clamp floor for small screens.
-  const bigSize = 'text-[clamp(2rem,6.6vw,103.35px)]';
+  // Figma nodes 20:2543/20:2544 - reference canvas 1440 x 814.
+  // Instrument Serif Regular, colour #FEF9F3, tracking -1% of font size.
+  const bigSize = 'text-[clamp(1.6rem,6.6vw,103.35px)]';
   const labelSize = 'text-[clamp(12px,1.44vw,20.67px)]';
 
+  const section = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      const root = section.current;
+      if (!root) return;
+      const mm = gsap.matchMedia();
+
+      // Corner labels settle in just after the headline stagger begins.
+      mm.add(MQ.reduce, () => {
+        gsap.set('.hero-corner-label', { opacity: 1, y: 0 });
+      });
+      mm.add(MQ.motionOk, () => {
+        gsap.set('.hero-corner-label', { willChange: 'transform,opacity' });
+        gsap.from('.hero-corner-label', {
+          opacity: 0,
+          y: 12,
+          duration: 0.6,
+          delay: 0.3,
+          ease: EASE.out,
+          stagger: 0.08,
+          onComplete: () => gsap.set('.hero-corner-label', { clearProps: 'willChange' }),
+        });
+      });
+
+      // Background image parallax - lags the page slightly as you scroll past.
+      // Aggressive on desktop, barely perceptible on mobile.
+      mm.add(
+        {
+          isMobile: `${MQ.motionOk} and (max-width: 1023px)`,
+          isDesktop: `${MQ.motionOk} and (min-width: 1024px)`,
+        },
+        (ctx) => {
+          const { isMobile } = ctx.conditions as { isMobile: boolean };
+          gsap.to('.hero-bg', {
+            yPercent: isMobile ? 4 : 12,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: root,
+              start: 'top top',
+              end: 'bottom top',
+              scrub: true,
+            },
+          });
+        },
+      );
+
+      return () => mm.revert();
+    },
+    { scope: section, dependencies: [] },
+  );
+
   return (
-    <section className="relative w-full overflow-hidden bg-neutral-900 h-[min(56.53vw,90svh)] min-h-[560px]">
+    <section
+      ref={section}
+      className="relative w-full overflow-hidden bg-neutral-900 h-screen-mobile md:h-[min(56.53vw,90svh)] md:min-h-[560px]"
+    >
       <img
         src={getFullImageUrl(HERO_IMAGE)}
         alt="Regal recline in cobalt and crimson"
-        className="absolute inset-0 w-full h-full object-cover object-center"
+        className="hero-bg absolute inset-0 h-[112%] w-full object-cover object-center"
+        style={{ willChange: 'transform' }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
 
-      {/* Top-left corner label — left 49/1440, top 303/814 */}
-      <p className={`absolute left-[3.4%] top-[37.2%] w-[8vw] min-w-[92px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[1.2] whitespace-pre-line ${labelSize}`}>
+      <p className={`hero-corner-label absolute left-[3.4%] top-[37.2%] w-[8vw] min-w-[92px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[1.2] whitespace-pre-line ${labelSize}`}>
         {'Est. 2022\nShaped by light'}
       </p>
 
-      {/* Top-right corner label — right 61/1440, top 295/814 */}
-      <p className={`absolute right-[4.2%] top-[36.2%] w-[12vw] min-w-[150px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[1.2] whitespace-pre-line ${labelSize}`}>
+      <p className={`hero-corner-label absolute right-[4.2%] top-[36.2%] w-[12vw] min-w-[150px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[1.2] whitespace-pre-line ${labelSize}`}>
         {'Expressive by nature.\nConfident by choice.'}
       </p>
 
-      {/* Headline block — spans y 514–724.6 (63%–89%) of 814, ~74px side margins */}
-      <motion.h1
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease }}
-        className={`absolute inset-x-0 top-[60%] mx-auto w-[92%] max-w-[1323px] overflow-hidden text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[0.9] ${bigSize}`}
+      {/* Headline - per-character flip-up reveal on load, one continuous
+          left-to-right stagger across both size runs. */}
+      <SplitReveal
+        as="h1"
+        trigger="load"
+        className={`hero-headline absolute inset-x-0 top-[60%] mx-auto w-[92%] max-w-[1323px] text-center font-serif text-[#FEF9F3] tracking-[-0.01em] leading-[0.9] ${bigSize}`}
       >
         <span className="block">Every version of</span>
         <span className="block">
@@ -442,7 +579,7 @@ function Hero() {
           </span>{' '}
           <span className="whitespace-nowrap">To&nbsp;Exist</span>
         </span>
-      </motion.h1>
+      </SplitReveal>
     </section>
   );
 }
@@ -456,7 +593,6 @@ interface RailProps {
 function ProductRail({ title, products, loading }: RailProps) {
   const navigate = useNavigate();
   const railRef = useRef<HTMLDivElement>(null);
-  const { ref, visible } = useReveal();
 
   const scroll = (dir: 1 | -1) => {
     railRef.current?.scrollBy({ left: dir * 425, behavior: 'smooth' });
@@ -498,67 +634,65 @@ function ProductRail({ title, products, loading }: RailProps) {
         ) : products.length === 0 ? (
           <p className="py-10 text-sm text-neutral-400">Nothing to show here yet.</p>
         ) : (
-          <motion.div ref={ref} initial="hidden" animate={visible ? 'visible' : 'hidden'} variants={stagger}>
-            <div
-              ref={railRef}
-              className="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto px-5 py-2 sm:mx-0 sm:px-0"
-              style={{ scrollbarWidth: 'none' }}
-            >
-              {products.map((p) => (
-                <div key={p.id} className="snap-start">
-                  <ProductCard product={p} />
-                </div>
-              ))}
-            </div>
-          </motion.div>
+          <MobileCarousel
+            trackRef={railRef}
+            className="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto px-5 py-2 sm:mx-0 sm:px-0"
+            selector=".snap-start"
+          >
+            {products.map((p) => (
+              <div key={p.id} className="snap-start">
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </MobileCarousel>
         )}
       </div>
     </section>
   );
 }
 
-// Full-width infinite ticker — "✳ MADE TO LAST ✳ DESIGNED TO MOVE ✳ …"
-function Ticker() {
-  const run = Array.from({ length: 8 }, (_, i) => TICKER_WORDS[i % TICKER_WORDS.length]);
+// Full-width infinite marquee — "* MADE TO LAST * DESIGNED TO MOVE * ..."
+// `reverse` runs it right-to-left for variety when it sits near another marquee.
+function Ticker({ reverse = false }: { reverse?: boolean }) {
+  const run = Array.from({ length: 6 }, (_, i) => TICKER_WORDS[i % TICKER_WORDS.length]);
   return (
-    <div className="flex h-[72px] items-center overflow-hidden bg-white md:h-24">
-      <motion.div
-        className="flex w-max shrink-0 items-center whitespace-nowrap"
-        animate={{ x: ['0%', '-50%'] }}
-        transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
-      >
-        {[...run, ...run].map((word, i) => (
-          <span key={i} className="flex items-center">
-            <Asterisk strokeWidth={1.5} className="mx-5 h-9 w-9 text-[#1a1a1a] md:mx-7 md:h-[42px] md:w-[42px]" />
-            <span className="text-[26px] font-medium uppercase leading-none tracking-[-0.03em] text-[#1a1a1a] md:text-[42px] md:tracking-[-1.305px]">
-              {word}
-            </span>
+    <Marquee
+      className="flex h-[72px] items-center bg-white md:h-24"
+      direction={reverse ? 'right' : 'left'}
+      duration={26}
+      pauseOnHover
+    >
+      {run.map((word, i) => (
+        <span key={i} className="flex items-center">
+          <Asterisk strokeWidth={1.5} className="mx-5 h-9 w-9 text-[#1a1a1a] md:mx-7 md:h-[42px] md:w-[42px]" />
+          <span className="text-[26px] font-medium uppercase leading-none tracking-[-0.03em] text-[#1a1a1a] md:text-[42px] md:tracking-[-1.305px]">
+            {word}
           </span>
-        ))}
-      </motion.div>
-    </div>
+        </span>
+      ))}
+    </Marquee>
   );
 }
 
 function SeasonalDrop({ products }: { products: ProductWithImages[] }) {
   const navigate = useNavigate();
-  const { ref, visible } = useReveal();
+  const ref = useRef<HTMLDivElement>(null);
   const grid = products.slice(0, 4);
+
+  // Editorial clip-path wipe (left -> right), tile by tile as the collage scrolls in.
+  useRevealOnScroll(ref, { selector: '.seasonal-tile', stagger: 0.1, variant: 'wipe' });
 
   if (grid.length === 0) return null;
 
   return (
     <section className="bg-white py-14 md:py-20">
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-[50px]">
-        <motion.div
+        <div
           ref={ref}
-          initial="hidden"
-          animate={visible ? 'visible' : 'hidden'}
-          variants={stagger}
           className="flex flex-col overflow-hidden rounded-2xl border-[0.75px] border-[#cecece] lg:h-[714px] lg:flex-row"
         >
           {/* Left — lifestyle banner */}
-          <div className="relative h-[420px] overflow-hidden lg:h-full lg:w-[45%]">
+          <div className="seasonal-tile relative h-[420px] overflow-hidden lg:h-full lg:w-[45%]">
             <img
               src={getFullImageUrl(SEASONAL_BANNER)}
               alt="Seasonal Drop"
@@ -586,10 +720,12 @@ function SeasonalDrop({ products }: { products: ProductWithImages[] }) {
           {/* Right — flush 2×2 grid (hairline borders, no gap) */}
           <div className="grid grid-cols-2 grid-rows-2 lg:w-[55%]">
             {grid.map((p) => (
-              <SeasonalCard key={p.id} product={p} />
+              <div key={p.id} className="seasonal-tile h-full">
+                <SeasonalCard product={p} />
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -598,15 +734,19 @@ function SeasonalDrop({ products }: { products: ProductWithImages[] }) {
 // Bento card — light-grey tile, full-bleed photo, copy overlaid top-left (Figma 12:1309).
 function CategoryCard({ card, big = false }: { card: (typeof CATEGORY_CARDS)[number]; big?: boolean }) {
   const navigate = useNavigate();
+  const btnRef = useRef<HTMLButtonElement>(null);
+  useMagnetic(btnRef);
   return (
-    <motion.div
-      variants={fadeUp}
+    <div
+      data-tap
       onClick={() => navigate(card.href)}
-      className="group relative h-full min-h-[300px] cursor-pointer overflow-hidden rounded-xl bg-[#f5f5f5]"
+      className="category-card group relative h-full min-h-[300px] cursor-pointer overflow-hidden rounded-xl bg-[#f5f5f5]"
     >
       <img
         src={getProductImageUrl(card.image)}
         alt={card.title.replace('\n', ' ')}
+        loading="lazy"
+        decoding="async"
         className={`absolute inset-0 h-full w-full object-cover ${card.pos} transition-transform duration-300 group-hover:scale-105`}
       />
       {/* Keeps the top-left copy legible over the full-bleed photo. */}
@@ -624,17 +764,19 @@ function CategoryCard({ card, big = false }: { card: (typeof CATEGORY_CARDS)[num
         >
           {card.title}
         </h3>
-        {/* Fixed offset ≈ 27px pad + eyebrow row + ~2-line headline (Figma). */}
-        <button className="absolute left-[27px] top-[164px] rounded-full bg-[#1a1a1a] px-4 py-2 text-[13px] text-white transition-colors hover:bg-[#333]">
+        {/* Fixed offset ~ 27px pad + eyebrow row + ~2-line headline (Figma). */}
+        <button
+          ref={btnRef}
+          className="absolute left-[27px] top-[164px] rounded-full bg-[#1a1a1a] px-4 py-2 text-[13px] text-white transition-colors hover:bg-[#333]"
+        >
           Shop Now
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function ShopByCategories() {
-  const { ref, visible } = useReveal();
   const [large, ...rest] = CATEGORY_CARDS;
 
   return (
@@ -643,11 +785,9 @@ function ShopByCategories() {
         <h2 className="mb-8 text-[2.4rem] font-bold tracking-[-0.033em] text-[#1a1a1a] md:text-[46px] md:tracking-[-1.5px]">
           Shop by Categories
         </h2>
-        <motion.div
-          ref={ref}
-          initial="hidden"
-          animate={visible ? 'visible' : 'hidden'}
-          variants={stagger}
+        <RevealGroup
+          selector=".category-card"
+          stagger={0.15}
           className="grid grid-cols-1 gap-[7.5px] lg:h-[547.5px] lg:grid-cols-[421.875fr_515.625fr]"
         >
           <CategoryCard card={large} big />
@@ -656,7 +796,7 @@ function ShopByCategories() {
               <CategoryCard key={card.title} card={card} />
             ))}
           </div>
-        </motion.div>
+        </RevealGroup>
       </div>
     </section>
   );
@@ -699,39 +839,150 @@ function FloatingCard({
   );
 }
 
-// Tabbed collections hero — click a tab → crossfade the photo + swap the 2 preview cards.
+// Tabbed collections hero. A short pin-and-reveal beat on desktop (image eases
+// 1.1 -> 1, tab words stagger in) once; a plain scroll reveal on mobile (no pin
+// — pinning fights the mobile address-bar collapse). Tab switch crossfades the
+// photo via GSAP and slides a shared underline (transform only) to the tab.
 function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
   const [active, setActive] = useState(0);
   const pair = products.slice(active * 2, active * 2 + 2);
+  const section = useRef<HTMLElement>(null);
+  const imgs = useRef<HTMLImageElement[]>([]);
+  const navRef = useRef<HTMLElement>(null);
+  const underline = useRef<HTMLSpanElement>(null);
+
+  const moveUnderline = useCallback((i: number) => {
+    const nav = navRef.current;
+    const bar = underline.current;
+    if (!nav || !bar) return;
+    const btn = nav.querySelectorAll<HTMLButtonElement>('[data-tab]')[i];
+    if (!btn) return;
+    const nb = nav.getBoundingClientRect();
+    const bb = btn.getBoundingClientRect();
+    gsap.to(bar, {
+      x: bb.left - nb.left,
+      scaleX: bb.width / 100,
+      duration: 0.4,
+      ease: EASE.out,
+    });
+  }, []);
+
+  // Tab crossfade + underline slide.
+  useGSAP(
+    () => {
+      imgs.current.forEach((el, i) => {
+        if (!el) return;
+        gsap.to(el, { opacity: i === active ? 1 : 0, duration: 0.5, ease: 'power2.out' });
+      });
+      moveUnderline(active);
+    },
+    { scope: section, dependencies: [active] },
+  );
+
+  // Pin-and-reveal beat.
+  useGSAP(
+    () => {
+      const root = section.current;
+      if (!root) return;
+      const mm = gsap.matchMedia();
+
+      mm.add(MQ.reduce, () => {
+        gsap.set('.collections-word', { opacity: 1, y: 0 });
+        moveUnderline(0);
+      });
+
+      mm.add(
+        {
+          isMobile: `${MQ.motionOk} and (max-width: 1023px)`,
+          isDesktop: `${MQ.motionOk} and (min-width: 1024px)`,
+        },
+        (ctx) => {
+          const { isMobile } = ctx.conditions as { isMobile: boolean };
+
+          gsap.set('.collections-word', { opacity: 0, y: 20, willChange: 'transform,opacity' });
+          ScrollTrigger.create({
+            trigger: root,
+            start: isMobile ? 'top 80%' : 'top 60%',
+            once: true,
+            onEnter: () => {
+              gsap.to('.collections-word', {
+                opacity: 1,
+                y: 0,
+                duration: 0.6,
+                ease: EASE.out,
+                stagger: 0.08,
+                onComplete: () => gsap.set('.collections-word', { clearProps: 'willChange' }),
+              });
+              moveUnderline(active);
+            },
+          });
+
+          const activeImg = () => imgs.current[active];
+          gsap.fromTo(
+            '.collections-media',
+            { scale: 1.1 },
+            {
+              scale: 1,
+              ease: 'none',
+              scrollTrigger: isMobile
+                ? { trigger: root, start: 'top bottom', end: 'top top', scrub: true }
+                : { trigger: root, start: 'top top', end: '+=70%', pin: true, scrub: true },
+            },
+          );
+          void activeImg;
+        },
+      );
+      return () => mm.revert();
+    },
+    { scope: section, dependencies: [] },
+  );
 
   return (
-    <section className="relative w-full overflow-hidden bg-neutral-900 h-[min(100svh,1000px)] min-h-[720px]">
-      {COLLECTION_HEROES.map((src, i) => (
-        <img
-          key={i}
-          src={getFullImageUrl(src)}
-          alt={COLLECTION_TABS[i]}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-            i === active ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
-      ))}
+    <section
+      ref={section}
+      className="relative w-full overflow-hidden bg-neutral-900 h-[min(100svh,1000px)] min-h-[720px]"
+    >
+      <div className="collections-media absolute inset-0" style={{ willChange: 'transform' }}>
+        {COLLECTION_HEROES.map((src, i) => (
+          <img
+            key={i}
+            ref={(el) => {
+              if (el) imgs.current[i] = el;
+            }}
+            src={getFullImageUrl(src)}
+            alt={COLLECTION_TABS[i]}
+            loading={i === 0 ? undefined : 'lazy'}
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ opacity: i === 0 ? 1 : 0 }}
+          />
+        ))}
+      </div>
       <div className="absolute inset-0 bg-black/25" />
 
-      <nav className="absolute inset-x-0 top-[7%] z-10 flex flex-wrap justify-center gap-x-8 gap-y-2 px-4">
+      <nav
+        ref={navRef}
+        className="absolute inset-x-0 top-[7%] z-10 flex flex-wrap justify-center gap-x-8 gap-y-2 px-4"
+      >
         {COLLECTION_TABS.map((name, i) => (
           <button
             key={name}
+            data-tab
+            data-cursor
             onClick={() => setActive(i)}
-            className={`text-2xl font-medium text-white transition-all md:text-[30px] ${
-              i === active
-                ? 'underline decoration-1 underline-offset-[10px] opacity-100'
-                : 'opacity-60 hover:opacity-100'
+            className={`collections-word relative text-2xl font-medium text-white transition-opacity md:text-[30px] ${
+              i === active ? 'opacity-100' : 'opacity-60 hover:opacity-100'
             }`}
           >
             {name}
           </button>
         ))}
+        <span
+          ref={underline}
+          aria-hidden
+          className="pointer-events-none absolute -bottom-2 left-0 block h-px w-[100px] origin-left bg-white"
+          style={{ transform: 'scaleX(0)' }}
+        />
       </nav>
 
       {pair[0] && <FloatingCard product={pair[0]} side="left" />}
@@ -741,11 +992,30 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
 }
 
 function BestSellers({ products, loading }: { products: ProductWithImages[]; loading: boolean }) {
-  const { ref, visible } = useReveal();
+  const gridRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState('All');
+  const firstRender = useRef(true);
 
   const categories = ['All', ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))];
   const filtered = active === 'All' ? products : products.filter((p) => p.category === active);
+
+  // On tab change: quick fade-out, DOM swaps, staggered fade-in of the new set.
+  useGSAP(
+    () => {
+      const el = gridRef.current;
+      if (!el || firstRender.current) {
+        firstRender.current = false;
+        return;
+      }
+      gsap.killTweensOf(el.children);
+      gsap.fromTo(
+        el.children,
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.3, ease: EASE.out, stagger: 0.04, overwrite: true },
+      );
+    },
+    { scope: gridRef, dependencies: [active] },
+  );
 
   return (
     <section className="py-14 md:py-20 bg-white">
@@ -777,34 +1047,34 @@ function BestSellers({ products, loading }: { products: ProductWithImages[]; loa
           </div>
         ) : filtered.length === 0 ? (
           <p className="text-neutral-400 text-sm py-10">
-            No best sellers yet. Mark products as “Best Seller” in the admin dashboard.
+            No best sellers yet. Mark products as a Best Seller in the admin dashboard.
           </p>
         ) : (
-          <motion.div
-            ref={ref}
-            initial="hidden"
-            animate={visible ? 'visible' : 'hidden'}
-            variants={stagger}
+          <RevealGroup
+            selector=".product-card"
+            stagger={0.06}
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5"
           >
-            {filtered.map((p) => (
-              <ProductCard key={p.id} product={p} grid />
-            ))}
-          </motion.div>
+            <div ref={gridRef} className="contents">
+              {filtered.map((p) => (
+                <ProductCard key={p.id} product={p} grid />
+              ))}
+            </div>
+          </RevealGroup>
         )}
 
         {/* Shop with confidence */}
         <div className="mt-12 bg-[#f1f1f1] rounded-2xl p-7 md:p-10">
           <h3 className="mb-8 text-2xl font-bold tracking-[-0.02em] text-[#1a1a1a] md:text-[28px]">Shop With Confidence</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <RevealGroup selector=".usp-item" stagger={0.1} y={18} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {CONFIDENCE_ITEMS.map((item) => (
-              <div key={item.title}>
+              <div key={item.title} className="usp-item">
                 <item.icon size={22} strokeWidth={1.5} className="text-[#1a1a1a] mb-3" />
                 <h4 className="text-sm font-medium text-[#1a1a1a] mb-1.5 capitalize">{item.title}</h4>
                 <p className="text-xs leading-relaxed text-[#444]">{item.description}</p>
               </div>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </div>
     </section>
@@ -836,7 +1106,7 @@ function InstagramSection({ products }: { products: ProductWithImages[] }) {
         </div>
 
         <div className="rounded-2xl bg-[#1a1a1a] p-2.5 sm:p-3">
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+          <RevealGroup selector=".ig-tile" stagger={0.05} y={16} className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
             {loading && !tiles.length
               ? [...Array(6)].map((_, i) => (
                   <div key={i} className="aspect-square animate-pulse rounded-lg bg-white/10" />
@@ -847,7 +1117,7 @@ function InstagramSection({ products }: { products: ProductWithImages[] }) {
                     href={t.permalink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative aspect-square overflow-hidden rounded-lg"
+                    className="ig-tile group relative aspect-square overflow-hidden rounded-lg"
                   >
                     <img
                       src={t.image}
@@ -858,7 +1128,7 @@ function InstagramSection({ products }: { products: ProductWithImages[] }) {
                     <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/25" />
                   </a>
                 ))}
-          </div>
+          </RevealGroup>
         </div>
 
         <div className="mt-8 text-center">
@@ -885,10 +1155,32 @@ export default function InaaraHomePage() {
   const [bestSellers, setBestSellers] = useState<ProductWithImages[]>([]);
   const [seasonal, setSeasonal] = useState<ProductWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+  const root = useRef<HTMLDivElement>(null);
+
+  // One delegated tap-feedback listener for every [data-tap] on the page.
+  useTapFeedback(root);
+
+  // Late images change section heights — keep ScrollTrigger's positions honest.
+  useGSAP(() => {
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+    const t = window.setTimeout(() => ScrollTrigger.refresh(), 1500);
+    return () => {
+      window.removeEventListener('load', onLoad);
+      window.clearTimeout(t);
+    };
+  }, []);
 
   useEffect(() => {
     void load();
   }, []);
+
+  // Products arriving shifts layout below the fold — refresh triggers once settled.
+  useEffect(() => {
+    if (loading) return;
+    const t = window.setTimeout(() => ScrollTrigger.refresh(), 200);
+    return () => window.clearTimeout(t);
+  }, [loading]);
 
   const load = async () => {
     setLoading(true);
@@ -914,7 +1206,7 @@ export default function InaaraHomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div ref={root} className="min-h-screen bg-white">
       <Hero />
       <ProductRail title="New Arrival is here" products={newArrivals} loading={loading} />
       <Ticker />

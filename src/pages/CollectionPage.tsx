@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from '../lib/motion/compat';
 import { ChevronDown, X, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/product/ProductCard';

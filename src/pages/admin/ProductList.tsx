@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from '../../lib/motion/compat';
 import { Plus, Search, Filter, Home, Edit, Trash2, Image } from 'lucide-react';
 import { getThumbnailUrl } from '../../utils/cloudinaryUpload';
 import { supabase } from '../../lib/supabase';

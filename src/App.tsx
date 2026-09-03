@@ -7,7 +7,6 @@ import { ToastProvider } from './context/ToastContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import InaaraHeader from './components/layout/InaaraHeader';
 import InaaraFooter from './components/layout/InaaraFooter';
-import ClingrHomePage from './pages/ClingrHomePage';
 import InaaraHomePage from './pages/InaaraHomePage';
 import ShopPage from './pages/ShopPage';
 import ProductDetailPage from './pages/ProductDetailPage';
@@ -22,6 +21,10 @@ import OrderConfirmationPage from './pages/OrderConfirmation';
 import NotFoundPage from './pages/NotFoundPage';
 import PageTransition from './components/animations/PageTransition';
 import LoadingBar from './components/ui/LoadingBar';
+import Preloader from './components/motion/Preloader';
+import Cursor from './components/motion/Cursor';
+import LenisController from './lib/motion/LenisController';
+import './lib/motion/gsap';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './components/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -56,13 +59,13 @@ function PublicLayout() {
 
   return (
     <>
+      <LenisController />
       <LoadingBar />
       <InaaraHeader />
       <main>
         <PageTransition pageKey={location.pathname}>
           <Routes>
             <Route path="/" element={<InaaraHomePage />} />
-            <Route path="/home-classic" element={<ClingrHomePage />} />
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/collection/:slug" element={<CollectionPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
@@ -130,6 +133,8 @@ function App() {
             <CartProvider>
               <WishlistProvider>
                 <div className="min-h-screen bg-white">
+                  <Preloader />
+                  <Cursor />
                   <Routes>
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route
