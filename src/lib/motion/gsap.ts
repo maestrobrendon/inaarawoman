@@ -3,12 +3,10 @@
 // (never import the "gsap/all" bundle).
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import { SplitText } from 'gsap/SplitText';
-import { Draggable } from 'gsap/Draggable';
 import { useGSAP } from '@gsap/react';
 
-gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, SplitText, Draggable, useGSAP);
+gsap.registerPlugin(ScrollTrigger, SplitText, useGSAP);
 
 gsap.defaults({ ease: 'power3.out', duration: 0.7 });
 
@@ -37,4 +35,4 @@ export const MQ = {
   mobile: '(max-width: 1023px)',
 } as const;
 
-export { gsap, ScrollTrigger, SplitText, Draggable, useGSAP };
+export { gsap, ScrollTrigger, SplitText, useGSAP };

@@ -1,4 +1,4 @@
-export { gsap, ScrollTrigger, SplitText, Draggable, useGSAP, EASE, MQ } from './gsap';
+export { gsap, ScrollTrigger, SplitText, useGSAP, EASE, MQ } from './gsap';
 export { getReducedMotion, useReducedMotion } from './prefersReducedMotion';
 export { useRevealOnScroll } from './useRevealOnScroll';
 export { Reveal } from './Reveal';
