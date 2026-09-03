@@ -516,7 +516,7 @@ function SeasonalCard({ product }: { product: ProductWithImages }) {
 function Hero() {
   // Figma nodes 20:2543/20:2544 - reference canvas 1440 x 814.
   // Instrument Serif Regular, colour #FEF9F3, tracking -1% of font size.
-  const bigSize = 'text-[clamp(1.6rem,6.6vw,103.35px)]';
+  const bigSize = 'text-[clamp(2.55rem,11vw,103.35px)]';
   const labelSize = 'text-[clamp(12px,1.44vw,20.67px)]';
 
   const section = useRef<HTMLElement>(null);
