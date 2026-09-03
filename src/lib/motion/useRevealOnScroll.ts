@@ -34,12 +34,12 @@ export function useRevealOnScroll(
   opts: RevealOptions = {},
 ) {
   const {
-    y = 24,
+    y = 40,
     from = 0,
-    duration = 0.7,
-    stagger = 0.08,
+    duration = 1,
+    stagger = 0.14,
     selector,
-    start = 'top 85%',
+    start = 'top 78%',
     delay = 0,
     variant = 'fade',
   } = opts;
@@ -69,8 +69,8 @@ export function useRevealOnScroll(
         },
         (ctx) => {
           const { isMobile } = ctx.conditions as { isMobile: boolean };
-          const st = isMobile ? 'top 90%' : start;
-          const dist = isMobile ? Math.min(y, 16) : y;
+          const st = isMobile ? 'top 84%' : start;
+          const dist = isMobile ? Math.min(y, 24) : y;
 
           const hidden =
             variant === 'wipe'
