@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from '../lib/motion/compat';
 import { useNavigate } from 'react-router-dom';
 import { Home, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Button from '../components/ui/Button';

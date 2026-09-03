@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from '../../lib/motion/compat';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import Button from '../../components/ui/Button';

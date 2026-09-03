@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from '../../lib/motion/compat';
 import { Mail, Check, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 

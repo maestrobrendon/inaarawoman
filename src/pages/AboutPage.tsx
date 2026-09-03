@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '../lib/motion/compat';
 
 export default function AboutPage() {
   const [isHovered, setIsHovered] = useState(false);

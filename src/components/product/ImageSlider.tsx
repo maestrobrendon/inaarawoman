@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from '../../lib/motion/compat';
 import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
 
 interface ImageSliderProps {
