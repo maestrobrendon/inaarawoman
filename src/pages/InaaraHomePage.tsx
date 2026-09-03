@@ -52,7 +52,7 @@ const CATEGORY_CARDS = [
       'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210660/ChatGPT_Image_Aug_31_2026_06_05_50_PM_p0une4.png',
     href: '/shop?category=women',
     size: 'large' as const,
-    pos: 'object-[75%_top]',
+    pos: 'object-[28%_top] md:object-[75%_top]',
   },
   {
     eyebrow: 'For Women',
@@ -61,7 +61,7 @@ const CATEGORY_CARDS = [
       'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210662/Glamorous_Ivory_Gown_Portrait_f7plar.png',
     href: '/shop?category=women',
     size: 'small' as const,
-    pos: 'object-[75%_top]',
+    pos: 'object-[28%_top] md:object-[75%_top]',
   },
   {
     eyebrow: 'For Kids',
@@ -70,7 +70,7 @@ const CATEGORY_CARDS = [
       'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210664/Fierce_Glamour_in_Burgundy_and_Gold_ohafdu.png',
     href: '/shop?category=kids',
     size: 'small' as const,
-    pos: 'object-[75%_top]',
+    pos: 'object-[28%_top] md:object-[75%_top]',
   },
 ];
 
