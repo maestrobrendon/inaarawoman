@@ -82,6 +82,14 @@ const COLLECTION_HEROES = [
   SEASONAL_BANNER,
   'https://res.cloudinary.com/du5nhfcgd/image/upload/v1788210660/ChatGPT_Image_Aug_31_2026_06_05_50_PM_p0une4.png',
 ];
+// Per-image object-position so the model stays framed when the tall mobile
+// viewport hard-crops these wide photos (desktop is wide enough for centre).
+const COLLECTION_POS = [
+  'object-[24%_center] md:object-center', // Summer — model seated far left
+  'object-[56%_center] md:object-center', // Uzuri — reclining, centre-right
+  'object-[50%_top]', // Nivara — portrait, keep the head
+  'object-[50%_top]', // Amata — portrait, keep the head
+];
 
 const TICKER_WORDS = ['Made To Last', 'Designed To Move'];
 
@@ -400,13 +408,34 @@ function ProductCard({ product, grid = false }: { product: ProductWithImages; gr
         )}
       </div>
 
-      <div className="flex h-[78px] items-center justify-between gap-2 px-4">
+      {/* Grid cards (Best Sellers, 2-up on mobile) are too narrow for a
+          name/price + swatches row without the swatches overrunning the price,
+          so there the swatches drop to their own line. Rail cards keep the row. */}
+      <div
+        className={`px-4 ${
+          grid
+            ? 'flex flex-col gap-1.5 py-3'
+            : 'flex h-[78px] items-center justify-between gap-2'
+        }`}
+      >
         <div className="min-w-0">
-          <p className="truncate text-[17px] font-medium leading-[21.6px] text-[#1a1a1a]">{product.name}</p>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="text-[16.5px] font-medium text-[#1a1a1a]">{formatPrice(product.price)}</span>
+          <p
+            className={`truncate font-medium text-[#1a1a1a] ${
+              grid ? 'text-[14px] leading-[18px]' : 'text-[17px] leading-[21.6px]'
+            }`}
+          >
+            {product.name}
+          </p>
+          <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${grid ? 'mt-0.5' : 'mt-1'}`}>
+            <span className={`font-medium text-[#1a1a1a] ${grid ? 'text-[13.5px]' : 'text-[16.5px]'}`}>
+              {formatPrice(product.price)}
+            </span>
             {compare && (
-              <span className="text-[15px] font-medium tracking-[-0.36px] text-[#757575] line-through">
+              <span
+                className={`font-medium tracking-[-0.36px] text-[#757575] line-through ${
+                  grid ? 'text-[12px]' : 'text-[15px]'
+                }`}
+              >
                 {formatPrice(compare)}
               </span>
             )}
@@ -414,6 +443,7 @@ function ProductCard({ product, grid = false }: { product: ProductWithImages; gr
         </div>
         <SwatchDots
           colors={swatches}
+          size={grid ? 18 : 24}
           onSelect={gallery.length > 1 ? selectVariant : undefined}
           activeIndex={gallery.length > 1 ? variant : undefined}
         />
@@ -958,7 +988,7 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
             alt={COLLECTION_TABS[i]}
             loading={i === 0 ? undefined : 'lazy'}
             decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover ${COLLECTION_POS[i]}`}
             style={{ opacity: i === 0 ? 1 : 0 }}
           />
         ))}
@@ -967,7 +997,7 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
 
       <nav
         ref={navRef}
-        className="absolute inset-x-0 top-[7%] z-10 flex flex-wrap justify-center gap-x-8 gap-y-2 px-4"
+        className="absolute inset-x-0 top-[100px] z-10 flex flex-nowrap justify-center gap-x-5 px-4 sm:gap-x-8 md:top-[120px]"
       >
         {COLLECTION_TABS.map((name, i) => (
           <button
@@ -975,7 +1005,7 @@ function CollectionsPreview({ products }: { products: ProductWithImages[] }) {
             data-tab
             data-cursor
             onClick={() => setActive(i)}
-            className={`collections-word relative text-2xl font-medium text-white transition-opacity md:text-[30px] ${
+            className={`collections-word relative whitespace-nowrap text-lg font-medium text-white transition-opacity sm:text-2xl md:text-[30px] ${
               i === active ? 'opacity-100' : 'opacity-60 hover:opacity-100'
             }`}
           >
