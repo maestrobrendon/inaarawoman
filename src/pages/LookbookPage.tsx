@@ -29,7 +29,7 @@ export default function LookbookPage() {
       <section className="relative h-[50vh] flex items-center justify-center bg-gradient-to-br from-amber-50 to-rose-50">
         <div className="text-center px-4 max-w-4xl mx-auto">
           <h1 className="font-serif text-5xl md:text-6xl font-bold text-neutral-900 mb-6">
-            Lookbook
+            Collections
           </h1>
           <p className="text-lg text-neutral-700 leading-relaxed">
             Discover our collections and the stories behind each design
