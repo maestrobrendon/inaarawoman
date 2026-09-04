@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Mail, Instagram, Facebook, Twitter } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Twitter } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
 import Button from '../components/ui/Button';
+import { useStoreSettings } from '../hooks/useStoreSettings';
 
 export default function ContactPage() {
+  const { settings } = useStoreSettings();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -93,13 +95,36 @@ export default function ContactPage() {
                   <div>
                     <p className="font-medium text-neutral-900">Email</p>
                     <a
-                      href="mailto:info@inaarawoman.com"
+                      href={`mailto:${settings.store_email}`}
                       className="text-neutral-600 hover:text-neutral-900 transition-colors"
                     >
-                      info@inaarawoman.com
+                      {settings.store_email}
                     </a>
                   </div>
                 </div>
+                {settings.store_phone && (
+                  <div className="flex items-start gap-4">
+                    <Phone className="text-neutral-600 mt-1 flex-shrink-0" size={20} />
+                    <div>
+                      <p className="font-medium text-neutral-900">Phone</p>
+                      <a
+                        href={`tel:${settings.store_phone.replace(/\s+/g, '')}`}
+                        className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                      >
+                        {settings.store_phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {settings.store_address && (
+                  <div className="flex items-start gap-4">
+                    <MapPin className="text-neutral-600 mt-1 flex-shrink-0" size={20} />
+                    <div>
+                      <p className="font-medium text-neutral-900">Address</p>
+                      <p className="whitespace-pre-line text-neutral-600">{settings.store_address}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
