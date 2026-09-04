@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Instagram, Facebook, Twitter } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageCircle, Instagram, Facebook, Twitter } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
 import Button from '../components/ui/Button';
@@ -112,6 +112,22 @@ export default function ContactPage() {
                         className="text-neutral-600 hover:text-neutral-900 transition-colors"
                       >
                         {settings.store_phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {(settings.store_whatsapp || settings.store_phone) && (
+                  <div className="flex items-start gap-4">
+                    <MessageCircle className="text-neutral-600 mt-1 flex-shrink-0" size={20} />
+                    <div>
+                      <p className="font-medium text-neutral-900">WhatsApp</p>
+                      <a
+                        href={`https://wa.me/${(settings.store_whatsapp || settings.store_phone).replace(/[^\d]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                      >
+                        Chat with us on WhatsApp
                       </a>
                     </div>
                   </div>

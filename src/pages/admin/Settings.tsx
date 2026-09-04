@@ -99,6 +99,9 @@ export default function Settings() {
     const descriptions: Record<string, string> = {
       store_name: 'Store name',
       store_email: 'Store contact email',
+      store_phone: 'Store contact phone',
+      store_whatsapp: 'WhatsApp number for order follow-up',
+      store_address: 'Store address',
       store_currency: 'Store currency',
       tax_rate: 'Default tax rate percentage',
       low_stock_threshold: 'Low stock alert threshold',
@@ -195,6 +198,14 @@ export default function Settings() {
                 onChange={(e) => handleChange('store_phone', e.target.value)}
                 placeholder="+234 XXX XXX XXXX"
                 helperText="Shown on Contact / footer when set. Leave blank to hide."
+              />
+
+              <Input
+                label="WhatsApp Number"
+                value={settings.store_whatsapp || ''}
+                onChange={(e) => handleChange('store_whatsapp', e.target.value)}
+                placeholder="+234 XXX XXX XXXX"
+                helperText="Used in the order-confirmation email's 'Need help?' button (wa.me link) and the footer. Falls back to Store Phone if blank."
               />
 
               <div>
