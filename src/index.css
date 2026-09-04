@@ -234,17 +234,6 @@
   }
 }
 
-/* Custom cursor takes over only on fine-pointer desktop; touch keeps its native
-   caret/tap ring. Scoped tightly so it never hides the pointer on a laptop
-   trackpad-plus-touchscreen edge case that reports coarse. */
-@media (min-width: 1024px) and (pointer: fine) {
-  .has-custom-cursor,
-  .has-custom-cursor a,
-  .has-custom-cursor button,
-  .has-custom-cursor [data-cursor] {
-    cursor: none;
-  }
-}
 
 /* Backdrop Filter Support */
 @supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {

@@ -22,7 +22,6 @@ import NotFoundPage from './pages/NotFoundPage';
 import PageTransition from './components/animations/PageTransition';
 import LoadingBar from './components/ui/LoadingBar';
 import Preloader from './components/motion/Preloader';
-import Cursor from './components/motion/Cursor';
 import LenisController from './lib/motion/LenisController';
 import './lib/motion/gsap';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -134,7 +133,6 @@ function App() {
               <WishlistProvider>
                 <div className="min-h-screen bg-white">
                   <Preloader />
-                  <Cursor />
                   <Routes>
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route
