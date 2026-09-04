@@ -13,7 +13,7 @@ const LOGO = 'https://res.cloudinary.com/dusynu0kv/image/upload/v1765001554/z0mk
 
 const NAV: { name: string; path: string; dropdown?: boolean }[] = [
   { name: 'Shop', path: '/shop', dropdown: true },
-  { name: 'Journal', path: '/journal' },
+  { name: 'Collections', path: '/lookbook' },
   { name: 'About', path: '/about' },
   { name: 'Contact', path: '/contact' },
 ];
