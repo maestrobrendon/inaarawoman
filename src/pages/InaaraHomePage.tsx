@@ -909,47 +909,43 @@ function CollectionsPreview({
         moveUnderline(0);
       });
 
-      mm.add(
-        {
-          isMobile: `${MQ.motionOk} and (max-width: 1023px)`,
-          isDesktop: `${MQ.motionOk} and (min-width: 1024px)`,
-        },
-        (ctx) => {
-          const { isMobile } = ctx.conditions as { isMobile: boolean };
+      mm.add(MQ.motionOk, () => {
+        gsap.set('.collections-word', { opacity: 0, y: 20, willChange: 'transform,opacity' });
+        const st = ScrollTrigger.create({
+          trigger: root,
+          start: 'top 75%',
+          once: true,
+          onEnter: () => {
+            gsap.to('.collections-word', {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: EASE.out,
+              stagger: 0.13,
+              onComplete: () => gsap.set('.collections-word', { clearProps: 'willChange' }),
+            });
+            moveUnderline(active);
+          },
+        });
 
-          gsap.set('.collections-word', { opacity: 0, y: 20, willChange: 'transform,opacity' });
-          ScrollTrigger.create({
-            trigger: root,
-            start: isMobile ? 'top 80%' : 'top 60%',
-            once: true,
-            onEnter: () => {
-              gsap.to('.collections-word', {
-                opacity: 1,
-                y: 0,
-                duration: 0.9,
-                ease: EASE.out,
-                stagger: 0.13,
-                onComplete: () => gsap.set('.collections-word', { clearProps: 'willChange' }),
-              });
-              moveUnderline(active);
-            },
-          });
+        // Subtle parallax zoom on the media as the section passes — no pin
+        // (pinning here fought Lenis and left a blank scroll region).
+        const zoom = gsap.fromTo(
+          '.collections-media',
+          { scale: 1.08 },
+          {
+            scale: 1,
+            ease: 'none',
+            scrollTrigger: { trigger: root, start: 'top bottom', end: 'bottom top', scrub: true },
+          },
+        );
 
-          const activeImg = () => imgs.current[active];
-          gsap.fromTo(
-            '.collections-media',
-            { scale: 1.1 },
-            {
-              scale: 1,
-              ease: 'none',
-              scrollTrigger: isMobile
-                ? { trigger: root, start: 'top bottom', end: 'top top', scrub: true }
-                : { trigger: root, start: 'top top', end: '+=70%', pin: true, scrub: true },
-            },
-          );
-          void activeImg;
-        },
-      );
+        return () => {
+          st.kill();
+          zoom.scrollTrigger?.kill();
+          zoom.kill();
+        };
+      });
       return () => mm.revert();
     },
     { scope: section, dependencies: [] },
@@ -958,7 +954,7 @@ function CollectionsPreview({
   return (
     <section
       ref={section}
-      className="relative w-full overflow-hidden bg-neutral-900 h-[min(100svh,1000px)] min-h-[720px]"
+      className="relative w-full overflow-hidden bg-neutral-900 h-[min(90svh,900px)] min-h-[520px]"
     >
       <div className="collections-media absolute inset-0" style={{ willChange: 'transform' }}>
         {tabs.map((tab, i) => (
