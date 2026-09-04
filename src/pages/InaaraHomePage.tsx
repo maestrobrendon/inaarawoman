@@ -474,7 +474,7 @@ function withBreaks(text: string) {
 function Hero({ hero }: { hero: HeroContent }) {
   // Figma nodes 20:2543/20:2544 - reference canvas 1440 x 814.
   // Instrument Serif Regular, colour #FEF9F3, tracking -1% of font size.
-  const bigSize = 'text-[clamp(2.55rem,11vw,103.35px)]';
+  const bigSize = 'text-[clamp(2.7rem,7.4vw,74px)]';
   const labelSize = 'text-[clamp(12px,1.44vw,20.67px)]';
 
   const section = useRef<HTMLElement>(null);
@@ -532,7 +532,7 @@ function Hero({ hero }: { hero: HeroContent }) {
   return (
     <section
       ref={section}
-      className="hero-section relative flex w-full flex-col justify-end overflow-hidden bg-neutral-900 h-screen-mobile md:h-[min(56.53vw,90svh)] md:min-h-[560px]"
+      className="hero-section relative flex w-full flex-col justify-end overflow-hidden bg-neutral-900 h-screen-mobile"
     >
       <img
         src={getFullImageUrl(hero.image)}
