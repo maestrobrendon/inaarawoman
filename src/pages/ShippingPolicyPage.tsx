@@ -154,8 +154,8 @@ const accordionData: AccordionItem[] = [
         </div>
         <p className="text-sm text-neutral-700">
           If you haven't received tracking information within 2 business days after your production period ends, please contact us at{' '}
-          <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
-            info@inaarawoman.com
+          <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
+            info.inaarawoman@gmail.com
           </a>
         </p>
       </>
@@ -245,7 +245,7 @@ const accordionData: AccordionItem[] = [
         <ol className="list-decimal pl-6 mb-4 space-y-2">
           <li>Wait 2-3 extra business days beyond the estimated delivery date</li>
           <li>Check your tracking information for updates</li>
-          <li>Contact us at <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">info@inaarawoman.com</a> with your order number</li>
+          <li>Contact us at <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">info.inaarawoman@gmail.com</a> with your order number</li>
           <li>We'll immediately contact the carrier on your behalf</li>
           <li>We'll work with you to find a resolution</li>
         </ol>
@@ -344,8 +344,8 @@ const accordionData: AccordionItem[] = [
 
         <p className="mb-4">
           Once an order has been shipped and is in transit, the order can no longer be cancelled. If you need to cancel, you must contact us immediately at{' '}
-          <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
-            info@inaarawoman.com
+          <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
+            info.inaarawoman@gmail.com
           </a>{' '}
           within <strong>1 hour</strong> of placing your order, before production begins.
         </p>
@@ -493,10 +493,10 @@ export default function ShippingPolicyPage() {
           <p className="text-sm text-neutral-700 text-center">
             For further assistance or questions about shipping, please contact us at{' '}
             <a
-              href="mailto:info@inaarawoman.com"
+              href="mailto:info.inaarawoman@gmail.com"
               className="text-neutral-900 underline hover:text-neutral-600 font-medium transition-colors"
             >
-              info@inaarawoman.com
+              info.inaarawoman@gmail.com
             </a>
           </p>
         </motion.div>

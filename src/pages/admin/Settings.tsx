@@ -188,7 +188,7 @@ export default function Settings() {
                 type="email"
                 value={settings.store_email || ''}
                 onChange={(e) => handleChange('store_email', e.target.value)}
-                placeholder="info@inaarawoman.com"
+                placeholder="info.inaarawoman@gmail.com"
                 helperText="Shows on the Contact page and in the footer."
               />
 

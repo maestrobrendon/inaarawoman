@@ -61,8 +61,8 @@ const accordionData: AccordionItem[] = [
         <div className="bg-neutral-50 border border-neutral-200 p-4 rounded-sm">
           <p className="text-sm">
             We take pride in our commitment to customer satisfaction, and our team is always available to assist you with any questions or concerns you may have. Please don't hesitate to reach out to us at{' '}
-            <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
-              info@inaarawoman.com
+            <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
+              info.inaarawoman@gmail.com
             </a>{' '}
             for any updates or assistance.
           </p>
@@ -96,8 +96,8 @@ const accordionData: AccordionItem[] = [
         <div className="bg-neutral-50 border border-neutral-200 p-4 rounded-sm mb-6">
           <p className="text-sm">
             If you have any queries about a particular garment, please feel free to reach out to our customer support team <strong>before placing your order</strong> via email at{' '}
-            <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
-              info@inaarawoman.com
+            <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
+              info.inaarawoman@gmail.com
             </a>
           </p>
         </div>
@@ -280,8 +280,8 @@ const accordionData: AccordionItem[] = [
         </p>
         <p className="mb-4">
           If you have not received a dispatch/delivery notification within the specified processing time or dispatch date, please notify us by sending an email to{' '}
-          <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
-            info@inaarawoman.com
+          <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
+            info.inaarawoman@gmail.com
           </a>{' '}
           including your order number.
         </p>
@@ -306,8 +306,8 @@ const accordionData: AccordionItem[] = [
         </div>
         <p className="mt-4 text-sm text-neutral-700">
           For assistance with undelivered orders, please contact us at{' '}
-          <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
-            info@inaarawoman.com
+          <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">
+            info.inaarawoman@gmail.com
           </a>
         </p>
       </>
@@ -490,10 +490,10 @@ export default function ShippingReturnsPage() {
             Our customer service team is here to help with any shipping or returns inquiries.
           </p>
           <a
-            href="mailto:info@inaarawoman.com"
+            href="mailto:info.inaarawoman@gmail.com"
             className="inline-block text-sm text-neutral-900 underline hover:text-neutral-600 font-medium transition-colors"
           >
-            info@inaarawoman.com
+            info.inaarawoman@gmail.com
           </a>
         </motion.div>
       </div>
