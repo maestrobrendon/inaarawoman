@@ -4,6 +4,7 @@ import { MapPin, CreditCard, Loader, AlertCircle, Truck } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { useStoreSettings } from '../hooks/useStoreSettings';
 import { supabase } from '../lib/supabase';
 
 // Paystack Public Key
@@ -88,6 +89,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const { formatPrice, currency } = useCurrency();
+  const { settings } = useStoreSettings();
   const [loading, setLoading] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
@@ -125,6 +127,17 @@ export default function CheckoutPage() {
       setShippingFee(0);
     }
   }, [formData.country, formData.state]);
+
+  // Store-settings-driven adjustments (admin » Settings)
+  const freeShippingApplies =
+    settings.free_shipping_threshold > 0 && subtotal >= settings.free_shipping_threshold;
+  const locationChosen =
+    formData.country === 'Nigeria' ? !!formData.state : !!formData.country;
+  const effectiveShipping = freeShippingApplies ? 0 : shippingFee;
+  const taxAmount = settings.enable_tax
+    ? Math.round((subtotal * settings.tax_rate) / 100)
+    : 0;
+  const grandTotal = subtotal + effectiveShipping + taxAmount;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -307,11 +320,12 @@ export default function CheckoutPage() {
       const { data: { user } } = await supabase.auth.getUser();
       console.log('Current user:', user?.id || 'No user logged in');
 
-      const totalAmount = subtotal + shippingFee;
+      const totalAmount = grandTotal;
       const orderNumber = generateOrderNumber();
 
       console.log('Order number generated:', orderNumber);
-      console.log('Shipping fee:', shippingFee);
+      console.log('Shipping fee:', effectiveShipping);
+      console.log('Tax:', taxAmount);
       console.log('Total amount:', totalAmount);
 
       // Step 1: Create customer
@@ -340,7 +354,7 @@ export default function CheckoutPage() {
         shipping_country: formData.country,
         shipping_postal_code: formData.postalCode,
         subtotal: subtotal,
-        shipping_fee: shippingFee,
+        shipping_fee: effectiveShipping,
         total_amount: totalAmount,
         currency: currency.code,
         payment_method: 'paystack',
@@ -420,7 +434,7 @@ export default function CheckoutPage() {
 
   // Paystack config
   const paystackCurrency = getCurrencyForPaystack(currency.code);
-  const totalAmountForPayment = subtotal + shippingFee;
+  const totalAmountForPayment = grandTotal;
   const amountInKobo = convertToPaystackAmount(totalAmountForPayment);
 
   const config = {
@@ -689,7 +703,17 @@ export default function CheckoutPage() {
                           }
                         </p>
                         <p className="text-sm font-bold text-green-900 mt-2">
-                          Shipping Fee: {formatPrice(shippingFee)}
+                          Shipping Fee:{' '}
+                          {freeShippingApplies ? (
+                            <>
+                              <span className="line-through opacity-60">
+                                {formatPrice(shippingFee)}
+                              </span>{' '}
+                              FREE
+                            </>
+                          ) : (
+                            formatPrice(shippingFee)
+                          )}
                         </p>
                       </div>
                     </div>
@@ -760,15 +784,35 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Shipping</span>
-                  <span className={`font-semibold ${shippingFee === 0 ? 'text-neutral-500' : 'text-neutral-900'}`}>
-                    {shippingFee === 0 ? 'Select location' : formatPrice(shippingFee)}
+                  <span
+                    className={`font-semibold ${
+                      effectiveShipping === 0 ? 'text-neutral-500' : 'text-neutral-900'
+                    }`}
+                  >
+                    {freeShippingApplies
+                      ? 'FREE'
+                      : !locationChosen
+                      ? 'Select location'
+                      : formatPrice(shippingFee)}
                   </span>
                 </div>
+                {settings.enable_tax && settings.tax_rate > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-600">Tax ({settings.tax_rate}%)</span>
+                    <span className="text-neutral-900">{formatPrice(taxAmount)}</span>
+                  </div>
+                )}
+                {settings.free_shipping_threshold > 0 && !freeShippingApplies && (
+                  <p className="pt-1 text-xs text-neutral-500">
+                    Add {formatPrice(settings.free_shipping_threshold - subtotal)} more for free
+                    shipping.
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-between text-lg font-bold py-4 border-t border-neutral-200">
                 <span className="text-neutral-900">Total</span>
-                <span className="text-neutral-900">{formatPrice(subtotal + shippingFee)}</span>
+                <span className="text-neutral-900">{formatPrice(grandTotal)}</span>
               </div>
 
               {/* Pay Button */}
@@ -789,7 +833,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <CreditCard size={20} />
-                    Pay {formatPrice(subtotal + shippingFee)}
+                    Pay {formatPrice(grandTotal)}
                   </>
                 )}
               </button>
