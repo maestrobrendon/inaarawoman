@@ -1,21 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Save, Mail, DollarSign, Package, Truck } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Settings as SettingsIcon, Save, DollarSign, Package, Truck, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-
-interface SettingValue {
-  key: string;
-  value: any;
-  category: string;
-  description: string;
-}
+import { useToast } from '../../context/ToastContext';
+import { useUnsavedGuard } from '../../hooks/useUnsavedGuard';
+import { clearStoreSettingsCache } from '../../lib/storeSettings';
 
 export default function Settings() {
+  const { showToast } = useToast();
   const [settings, setSettings] = useState<Record<string, any>>({});
+  const originalRef = useRef<string>('{}');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+
+  const dirty = useMemo(() => JSON.stringify(settings) !== originalRef.current, [settings]);
+  useUnsavedGuard(dirty);
 
   useEffect(() => {
     loadSettings();
@@ -40,8 +41,10 @@ export default function Settings() {
       });
 
       setSettings(settingsMap);
+      originalRef.current = JSON.stringify(settingsMap);
     } catch (error) {
       console.error('Error loading settings:', error);
+      showToast('Could not load settings', 'error');
     } finally {
       setLoading(false);
     }
@@ -69,11 +72,16 @@ export default function Settings() {
         if (error) throw error;
       }
 
-      alert('Settings saved successfully!');
+      originalRef.current = JSON.stringify(settings);
+      clearStoreSettingsCache();
+      showToast('Settings saved', 'success');
       loadSettings();
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings');
+      showToast(
+        error instanceof Error ? error.message : 'Failed to save settings',
+        'error',
+      );
     } finally {
       setSaving(false);
     }
@@ -91,6 +99,9 @@ export default function Settings() {
     const descriptions: Record<string, string> = {
       store_name: 'Store name',
       store_email: 'Store contact email',
+      store_phone: 'Store contact phone',
+      store_whatsapp: 'WhatsApp number for order follow-up',
+      store_address: 'Store address',
       store_currency: 'Store currency',
       tax_rate: 'Default tax rate percentage',
       low_stock_threshold: 'Low stock alert threshold',
@@ -123,11 +134,18 @@ export default function Settings() {
           </h1>
           <p className="text-neutral-600 mt-1">Manage your store configuration</p>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
+        <Button onClick={handleSave} disabled={saving || !dirty} className="gap-2">
           <Save size={16} />
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
+
+      {dirty && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <AlertCircle className="text-amber-600" size={18} />
+          <p className="text-sm text-amber-800">You have unsaved changes</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow">
         <div className="border-b border-neutral-200">
@@ -161,7 +179,8 @@ export default function Settings() {
                 label="Store Name"
                 value={settings.store_name || ''}
                 onChange={(e) => handleChange('store_name', e.target.value)}
-                placeholder="INAARA"
+                placeholder="Inaara Woman"
+                helperText="Shows in the footer copyright line."
               />
 
               <Input
@@ -169,7 +188,8 @@ export default function Settings() {
                 type="email"
                 value={settings.store_email || ''}
                 onChange={(e) => handleChange('store_email', e.target.value)}
-                placeholder="contact@inaara.com"
+                placeholder="info@inaarawoman.com"
+                helperText="Shows on the Contact page and in the footer."
               />
 
               <Input
@@ -177,6 +197,15 @@ export default function Settings() {
                 value={settings.store_phone || ''}
                 onChange={(e) => handleChange('store_phone', e.target.value)}
                 placeholder="+234 XXX XXX XXXX"
+                helperText="Shown on Contact / footer when set. Leave blank to hide."
+              />
+
+              <Input
+                label="WhatsApp Number"
+                value={settings.store_whatsapp || ''}
+                onChange={(e) => handleChange('store_whatsapp', e.target.value)}
+                placeholder="+234 XXX XXX XXXX"
+                helperText="Used in the order-confirmation email's 'Need help?' button (wa.me link) and the footer. Falls back to Store Phone if blank."
               />
 
               <div>
@@ -190,6 +219,9 @@ export default function Settings() {
                   rows={3}
                   placeholder="Enter store address..."
                 />
+                <p className="mt-1 text-xs text-neutral-400">
+                  Shown on the Contact page when set.
+                </p>
               </div>
             </div>
           )}
@@ -212,6 +244,10 @@ export default function Settings() {
                   <option value="GBP">British Pound (£)</option>
                   <option value="EUR">Euro (€)</option>
                 </select>
+                <p className="mt-1 text-xs text-neutral-400">
+                  Storefront currency is chosen by the shopper via the header switcher — this
+                  is a reference default only.
+                </p>
               </div>
 
               <Input
@@ -220,6 +256,7 @@ export default function Settings() {
                 value={settings.tax_rate || 0}
                 onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)}
                 placeholder="0"
+                helperText="Added as a line on checkout when 'Enable tax calculations' is on."
               />
 
               <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-lg">
@@ -295,6 +332,13 @@ export default function Settings() {
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-neutral-900">Shipping Settings</h2>
 
+              <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+                Checkout rates are calculated per delivery zone (Nigerian states +
+                international zones) in code. The <strong>Free Shipping Threshold</strong>{' '}
+                below overrides those to ₦0 for large orders; the other fields here are
+                not yet applied at checkout.
+              </p>
+
               <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-lg">
                 <input
                   type="checkbox"
@@ -314,6 +358,7 @@ export default function Settings() {
                 value={settings.default_shipping_rate || 0}
                 onChange={(e) => handleChange('default_shipping_rate', parseFloat(e.target.value) || 0)}
                 placeholder="0"
+                helperText="Not applied at checkout (zone rates are used instead)."
               />
 
               <Input
@@ -322,7 +367,7 @@ export default function Settings() {
                 value={settings.free_shipping_threshold || 0}
                 onChange={(e) => handleChange('free_shipping_threshold', parseFloat(e.target.value) || 0)}
                 placeholder="0"
-                helperText="Orders above this amount get free shipping"
+                helperText="Orders at/above this subtotal ship free. Set 0 to disable."
               />
 
               <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-lg">

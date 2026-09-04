@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
+import { useStoreSettings } from '../../hooks/useStoreSettings';
 
 const PAGES = [
   { name: 'Home', to: '/' },
@@ -69,8 +70,17 @@ function LinkColumn({
 
 export default function InaaraFooter() {
   const year = new Date().getFullYear();
+  const { settings } = useStoreSettings();
   const [email, setEmail] = useState('');
   const [done, setDone] = useState(false);
+
+  const whatsappDigits = (settings.store_whatsapp || settings.store_phone).replace(/[^\d]/g, '');
+  const contactItems = [
+    settings.store_email && { label: 'Email', value: settings.store_email, href: `mailto:${settings.store_email}` },
+    settings.store_phone && { label: 'Phone', value: settings.store_phone, href: `tel:${settings.store_phone.replace(/\s+/g, '')}` },
+    whatsappDigits && { label: 'WhatsApp', value: 'Chat on WhatsApp', href: `https://wa.me/${whatsappDigits}` },
+    settings.store_address && { label: 'Address', value: settings.store_address },
+  ].filter(Boolean) as { label: string; value: string; href?: string }[];
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +128,33 @@ export default function InaaraFooter() {
               <p className="mt-3 text-[13px] text-white/70">Thanks — you're on the list.</p>
             )}
 
+            {contactItems.length > 0 && (
+              <div className="mt-8">
+                <p className="mb-3 text-[12px] uppercase tracking-[0.12em] text-white/45">
+                  Get in touch
+                </p>
+                <ul className="space-y-1.5">
+                  {contactItems.map((c) => (
+                    <li key={c.label} className="text-[14px] text-white/55">
+                      {c.href ? (
+                        <a
+                          href={c.href}
+                          {...(c.href.startsWith('http')
+                            ? { target: '_blank', rel: 'noopener noreferrer' }
+                            : {})}
+                          className="transition-colors hover:text-white"
+                        >
+                          {c.value}
+                        </a>
+                      ) : (
+                        c.value
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="mt-8">
               <p className="mb-3 text-[12px] uppercase tracking-[0.12em] text-white/45">
                 Payment secured by
@@ -141,7 +178,7 @@ export default function InaaraFooter() {
 
         {/* Bottom row */}
         <div className="flex flex-col gap-1 text-[13px] text-white/50 sm:flex-row sm:items-center sm:gap-2">
-          <span>© {year} Inaara Woman. All rights reserved.</span>
+          <span>© {year} {settings.store_name}. All rights reserved.</span>
           <span className="hidden sm:inline">·</span>
           <a
             href="https://thematrixhq.com"

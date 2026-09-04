@@ -1,33 +1,48 @@
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
+import { gsap, useGSAP } from '../../lib/motion';
 
+/**
+ * Thin top progress bar shown during route transitions. Driven by the
+ * pageTransitionStart / pageTransitionComplete window events dispatched by
+ * PageTransition. Transform-only (scaleX).
+ */
 export default function LoadingBar() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [active, setActive] = useState(false);
+  const bar = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleStart = () => setIsLoading(true);
-    const handleComplete = () => setIsLoading(false);
-
-    window.addEventListener('pageTransitionStart', handleStart);
-    window.addEventListener('pageTransitionComplete', handleComplete);
-
+  useGSAP(() => {
+    const onStart = () => setActive(true);
+    const onDone = () => setActive(false);
+    window.addEventListener('pageTransitionStart', onStart);
+    window.addEventListener('pageTransitionComplete', onDone);
     return () => {
-      window.removeEventListener('pageTransitionStart', handleStart);
-      window.removeEventListener('pageTransitionComplete', handleComplete);
+      window.removeEventListener('pageTransitionStart', onStart);
+      window.removeEventListener('pageTransitionComplete', onDone);
     };
   }, []);
 
-  if (!isLoading) return null;
+  useGSAP(
+    () => {
+      if (!active || !bar.current) return;
+      gsap.fromTo(
+        bar.current,
+        { scaleX: 0, opacity: 1 },
+        { scaleX: 1, duration: 0.5, ease: 'power2.inOut' },
+      );
+      return () => {
+        if (bar.current) gsap.to(bar.current, { opacity: 0, duration: 0.2 });
+      };
+    },
+    { dependencies: [active] },
+  );
+
+  if (!active) return null;
 
   return (
-    <motion.div
-      className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 z-[10000] origin-left"
-      initial={{ scaleX: 0 }}
-      animate={{ scaleX: 1 }}
-      transition={{
-        duration: 0.5,
-        ease: 'easeInOut',
-      }}
+    <div
+      ref={bar}
+      className="fixed left-0 right-0 top-0 z-[10000] h-0.5 origin-left bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500"
+      style={{ willChange: 'transform' }}
     />
   );
 }

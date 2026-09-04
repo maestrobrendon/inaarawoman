@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from '../lib/motion/compat';
 import { Heart, Star, Plus, Minus, ChevronLeft, Truck, Shield, RotateCcw, Package, Ruler } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Review, ColorOption, ProductMeasurements, ModelMeasurements, SizeChart, Product } from '../types';
