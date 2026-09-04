@@ -11,6 +11,7 @@ export interface StoreSettings {
   store_name: string;
   store_email: string;
   store_phone: string;
+  store_whatsapp: string;
   store_address: string;
   /** Order subtotal (in NGN) at/above which shipping is free. 0 = disabled. */
   free_shipping_threshold: number;
@@ -25,6 +26,7 @@ export const STORE_SETTINGS_DEFAULTS: StoreSettings = {
   store_name: 'Inaara Woman',
   store_email: 'info@inaarawoman.com',
   store_phone: '',
+  store_whatsapp: '',
   store_address: '',
   free_shipping_threshold: 0,
   tax_rate: 0,

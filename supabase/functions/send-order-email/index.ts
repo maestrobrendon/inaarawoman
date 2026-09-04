@@ -1,98 +1,150 @@
 // supabase/functions/send-order-email/index.ts
+//
+// Order-confirmation email. Invoked from the storefront on payment success
+// (CheckoutPage + PaystackPayment). Sends the customer their full order
+// breakdown plus follow-up contact details (email, phone, WhatsApp) read from
+// the admin `store_settings` table so they stay editable.
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const RESEND_API_KEY = 're_iaXAyWPi_4MAwpV74xTYisWpbpPHyCu6T'
+// Set with: supabase secrets set RESEND_API_KEY=re_xxx
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface StoreContact {
+  name: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
 }
 
-interface OrderEmail {
-  to: string
-  subject: string
-  template: string
-  data: {
-    customerName: string
-    orderNumber: string
-    orderDate: string
-    items: Array<{
-      product_name: string
-      quantity: number
-      price: number
-      image: string
-      variant?: any
-    }>
-    subtotal: number
-    shippingFee: number
-    total: number
-    currency: string
-    shippingAddress: {
-      address: string
-      city: string
-      state: string
-      country: string
-      postalCode: string
-    }
-    paymentReference: string
+const CONTACT_DEFAULTS: StoreContact = {
+  name: 'Inaara Woman',
+  email: 'info@inaarawoman.com',
+  phone: '',
+  whatsapp: '',
+};
+
+async function loadStoreContact(): Promise<StoreContact> {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return CONTACT_DEFAULTS;
+    const supabase = createClient(url, key);
+    const { data, error } = await supabase
+      .from('store_settings')
+      .select('key, value')
+      .in('key', ['store_name', 'store_email', 'store_phone', 'store_whatsapp']);
+    if (error || !data) return CONTACT_DEFAULTS;
+
+    const get = (k: string) => {
+      const row = data.find((r: { key: string }) => r.key === k);
+      if (!row) return '';
+      const v = row.value;
+      if (typeof v === 'string') {
+        try {
+          const parsed = JSON.parse(v);
+          return typeof parsed === 'string' ? parsed : v;
+        } catch {
+          return v;
+        }
+      }
+      return v == null ? '' : String(v);
+    };
+
+    return {
+      name: get('store_name') || CONTACT_DEFAULTS.name,
+      email: get('store_email') || CONTACT_DEFAULTS.email,
+      phone: get('store_phone'),
+      // Fall back to the phone number if no dedicated WhatsApp number is set.
+      whatsapp: get('store_whatsapp') || get('store_phone'),
+    };
+  } catch (_err) {
+    return CONTACT_DEFAULTS;
   }
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { to, subject, data }: OrderEmail = await req.json()
+    if (!RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not configured for this function');
+    }
+    const { to, subject, data } = await req.json();
+    console.log('Sending order email to:', to);
 
-    // Generate HTML email template
-    const htmlContent = generateOrderEmailHTML(data)
+    const contact = await loadStoreContact();
+    const htmlContent = generateOrderEmailHTML(data, contact);
 
-    // Send email using Resend
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Inaara Woman <info@inaarawoman.com>', // Change this to your verified domain
+        from: `${contact.name} <orders@inaarawoman.com>`,
         to: [to],
-        subject: subject,
+        subject: subject || `Order Confirmation${data?.orderNumber ? ` - ${data.orderNumber}` : ''}`,
         html: htmlContent,
+        reply_to: contact.email,
       }),
-    })
+    });
 
-    const result = await response.json()
-
+    const result = await response.json();
     if (!response.ok) {
-      throw new Error(`Resend API error: ${JSON.stringify(result)}`)
+      console.error('Resend API error:', result);
+      throw new Error(`Resend API error: ${JSON.stringify(result)}`);
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: result }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
+    console.log('Email sent successfully:', result);
+    return new Response(JSON.stringify({ success: true, data: result }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
   } catch (error) {
-    console.error('Error sending email:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    console.error('Error sending email:', error);
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    });
   }
-})
+});
 
-function generateOrderEmailHTML(data: OrderEmail['data']): string {
+interface EmailData {
+  customerName: string;
+  orderNumber: string;
+  orderDate: string;
+  items: Array<{
+    product_name: string;
+    quantity: number;
+    price: number;
+    image: string;
+    variant?: { size?: string; color?: string } | null;
+  }>;
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+  currency: string;
+  shippingAddress: {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+  };
+  paymentReference: string;
+}
+
+function generateOrderEmailHTML(data: EmailData, contact: StoreContact): string {
   const {
     customerName,
     orderNumber,
@@ -104,16 +156,23 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
     currency,
     shippingAddress,
     paymentReference,
-  } = data
+  } = data;
 
-  const currencySymbol = getCurrencySymbol(currency)
+  const currencySymbol = getCurrencySymbol(currency);
+  const waDigits = contact.whatsapp.replace(/[^\d]/g, '');
+  const waHref = waDigits
+    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(
+        `Hi ${contact.name}, I have a question about my order ${orderNumber}.`,
+      )}`
+    : '';
+  const telHref = contact.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : '';
 
   const itemsHTML = items
     .map(
       (item) => `
     <tr>
       <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
-        <div style="display: flex; gap: 15px;">
+        <div style="display: flex; gap: 15px; align-items: center;">
           <img src="${item.image}" alt="${item.product_name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
           <div>
             <p style="margin: 0; font-weight: 600; color: #111827;">${item.product_name}</p>
@@ -126,9 +185,16 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
         ${currencySymbol}${(item.price * item.quantity).toLocaleString()}
       </td>
     </tr>
-  `
+  `,
     )
-    .join('')
+    .join('');
+
+  const contactRows = [
+    `<a href="mailto:${contact.email}" style="color: #D4AF37; text-decoration: none;">${contact.email}</a>`,
+    telHref ? `<a href="${telHref}" style="color: #D4AF37; text-decoration: none;">${contact.phone}</a>` : '',
+  ]
+    .filter(Boolean)
+    .join('&nbsp;&nbsp;·&nbsp;&nbsp;');
 
   return `
 <!DOCTYPE html>
@@ -143,21 +209,19 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
     <tr>
       <td align="center" style="padding: 40px 0;">
         <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-          
+
           <!-- Header -->
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #D4AF37 0%, #B8941F 100%); border-radius: 8px 8px 0 0;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: 2px;">INAARA WOMAN</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: 2px;">${contact.name.toUpperCase()}</h1>
             </td>
           </tr>
 
           <!-- Success Message -->
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center;">
-              <div style="width: 64px; height: 64px; margin: 0 auto 20px; background-color: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
+              <div style="width: 64px; height: 64px; margin: 0 auto 20px; background-color: #10b981; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+                <span style="color: #ffffff; font-size: 32px;">&check;</span>
               </div>
               <h2 style="margin: 0 0 10px 0; color: #111827; font-size: 28px; font-weight: 600;">Order Confirmed!</h2>
               <p style="margin: 0; color: #6b7280; font-size: 16px;">Thank you for your purchase, ${customerName}</p>
@@ -210,7 +274,7 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
                 </tr>
                 <tr>
                   <td style="padding: 10px 0; color: #6b7280; font-size: 16px;">Shipping</td>
-                  <td style="padding: 10px 0; text-align: right; color: #111827; font-size: 16px;">${shippingFee === 0 ? 'FREE' : `${currencySymbol}${shippingFee.toLocaleString()}`}</td>
+                  <td style="padding: 10px 0; text-align: right; color: #10b981; font-size: 16px; font-weight: 600;">${shippingFee === 0 ? 'FREE' : `${currencySymbol}${shippingFee.toLocaleString()}`}</td>
                 </tr>
                 <tr style="border-top: 2px solid #e5e7eb;">
                   <td style="padding: 15px 0 0 0; color: #111827; font-size: 18px; font-weight: 700;">Total</td>
@@ -235,14 +299,21 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
             </td>
           </tr>
 
-          <!-- Delivery Info -->
+          <!-- Need help / follow-up -->
           <tr>
             <td style="padding: 0 40px 30px;">
-              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 4px;">
-                <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-                  <strong>Estimated Delivery:</strong> Your order will be processed and shipped within 2-3 business days. 
-                  You'll receive a tracking number once your order ships.
+              <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 24px; border-radius: 8px; text-align: center;">
+                <h3 style="margin: 0 0 8px 0; color: #065f46; font-size: 16px; font-weight: 700;">Need help with your order?</h3>
+                <p style="margin: 0 0 16px 0; color: #047857; font-size: 14px;">
+                  Quote your order number <strong>${orderNumber}</strong> and our team will assist you.
                 </p>
+                ${
+                  waHref
+                    ? `<a href="${waHref}" style="display: inline-block; padding: 12px 28px; background-color: #25D366; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: 600;">Chat on WhatsApp</a>
+                       <p style="margin: 12px 0 0 0; color: #047857; font-size: 13px;">WhatsApp: ${contact.whatsapp}</p>`
+                    : ''
+                }
+                <p style="margin: 14px 0 0 0; color: #047857; font-size: 13px;">${contactRows}</p>
               </div>
             </td>
           </tr>
@@ -250,8 +321,8 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
           <!-- CTA Button -->
           <tr>
             <td style="padding: 0 40px 40px; text-align: center;">
-              <a href="https://inaarawoman.com/orders" style="display: inline-block; padding: 16px 40px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; letter-spacing: 1px;">
-                VIEW ORDER DETAILS
+              <a href="https://inaarawoman.com/shop" style="display: inline-block; padding: 16px 40px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                CONTINUE SHOPPING
               </a>
             </td>
           </tr>
@@ -260,16 +331,11 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
           <tr>
             <td style="padding: 30px 40px; text-align: center; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
               <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-                Questions? Contact us at <a href="mailto:info@inaarawoman.com" style="color: #D4AF37; text-decoration: none;">info@inaarawoman.com</a>
+                Questions? ${contactRows}
               </p>
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                © 2025 Inaara Woman. All rights reserved.
+                &copy; ${new Date().getFullYear()} ${contact.name}. All rights reserved.
               </p>
-              <div style="margin-top: 20px;">
-                <a href="#" style="color: #9ca3af; text-decoration: none; margin: 0 10px; font-size: 12px;">Privacy Policy</a>
-                <a href="#" style="color: #9ca3af; text-decoration: none; margin: 0 10px; font-size: 12px;">Terms of Service</a>
-                <a href="#" style="color: #9ca3af; text-decoration: none; margin: 0 10px; font-size: 12px;">Shipping Info</a>
-              </div>
             </td>
           </tr>
 
@@ -279,17 +345,17 @@ function generateOrderEmailHTML(data: OrderEmail['data']): string {
   </table>
 </body>
 </html>
-  `
+  `;
 }
 
 function getCurrencySymbol(currency: string): string {
-  const symbols: { [key: string]: string } = {
+  const symbols: Record<string, string> = {
     NGN: '₦',
     USD: '$',
     EUR: '€',
     GBP: '£',
     GHS: '₵',
     ZAR: 'R',
-  }
-  return symbols[currency] || currency
+  };
+  return symbols[currency] || currency;
 }

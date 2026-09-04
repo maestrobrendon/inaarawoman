@@ -74,9 +74,11 @@ export default function InaaraFooter() {
   const [email, setEmail] = useState('');
   const [done, setDone] = useState(false);
 
+  const whatsappDigits = (settings.store_whatsapp || settings.store_phone).replace(/[^\d]/g, '');
   const contactItems = [
     settings.store_email && { label: 'Email', value: settings.store_email, href: `mailto:${settings.store_email}` },
     settings.store_phone && { label: 'Phone', value: settings.store_phone, href: `tel:${settings.store_phone.replace(/\s+/g, '')}` },
+    whatsappDigits && { label: 'WhatsApp', value: 'Chat on WhatsApp', href: `https://wa.me/${whatsappDigits}` },
     settings.store_address && { label: 'Address', value: settings.store_address },
   ].filter(Boolean) as { label: string; value: string; href?: string }[];
 
@@ -135,7 +137,13 @@ export default function InaaraFooter() {
                   {contactItems.map((c) => (
                     <li key={c.label} className="text-[14px] text-white/55">
                       {c.href ? (
-                        <a href={c.href} className="transition-colors hover:text-white">
+                        <a
+                          href={c.href}
+                          {...(c.href.startsWith('http')
+                            ? { target: '_blank', rel: 'noopener noreferrer' }
+                            : {})}
+                          className="transition-colors hover:text-white"
+                        >
                           {c.value}
                         </a>
                       ) : (
