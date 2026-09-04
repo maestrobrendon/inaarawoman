@@ -25,10 +25,15 @@ interface StoreContact {
 
 const CONTACT_DEFAULTS: StoreContact = {
   name: 'Inaara Woman',
-  email: 'info@inaarawoman.com',
+  email: 'info.inaarawoman@gmail.com',
   phone: '',
   whatsapp: '',
 };
+
+// Send-only sender. The mailbox does not need to exist, but the DOMAIN
+// (inaarawoman.com) must be verified in Resend or every send fails.
+// Customer replies are routed to the real inbox via `reply_to` below.
+const FROM_ADDRESS = 'noreply@inaarawoman.com';
 
 async function loadStoreContact(): Promise<StoreContact> {
   try {
@@ -91,7 +96,7 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: `${contact.name} <orders@inaarawoman.com>`,
+        from: `${contact.name} <${FROM_ADDRESS}>`,
         to: [to],
         subject: subject || `Order Confirmation${data?.orderNumber ? ` - ${data.orderNumber}` : ''}`,
         html: htmlContent,

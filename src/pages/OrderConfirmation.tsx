@@ -123,8 +123,8 @@ export default function OrderConfirmationPage() {
           <div className="mt-8 pt-6 border-t border-neutral-200">
             <p className="text-sm text-neutral-600">
               Need help? Contact us at{' '}
-              <a href="mailto:info@inaarawoman.com" className="text-[#D4AF37] hover:underline">
-                info@inaarawoman.com
+              <a href="mailto:info.inaarawoman@gmail.com" className="text-[#D4AF37] hover:underline">
+                info.inaarawoman@gmail.com
               </a>
             </p>
           </div>

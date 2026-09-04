@@ -32,7 +32,7 @@ export default function FAQPage() {
         },
         {
           q: 'How do I initiate a return?',
-          a: 'Contact our customer service team at info@inaarawoman.com with your order number. We will provide you with a prepaid return label and instructions.'
+          a: 'Contact our customer service team at info.inaarawoman@gmail.com with your order number. We will provide you with a prepaid return label and instructions.'
         },
         {
           q: 'Can I exchange an item?',
@@ -158,10 +158,10 @@ export default function FAQPage() {
             Our customer service team is here to help
           </p>
           <a
-            href="mailto:info@inaarawoman.com"
+            href="mailto:info.inaarawoman@gmail.com"
             className="text-neutral-900 font-medium hover:underline"
           >
-            info@inaarawoman.com
+            info.inaarawoman@gmail.com
           </a>
         </div>
       </div>

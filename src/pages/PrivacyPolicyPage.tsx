@@ -186,7 +186,7 @@ const accordionData: AccordionItem[] = [
           <strong>To exercise your rights:</strong>
         </p>
         <ul className="list-disc pl-6 mb-4 space-y-2">
-          <li>Email us at <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600">info@inaarawoman.com</a></li>
+          <li>Email us at <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600">info.inaarawoman@gmail.com</a></li>
           <li>Log into your account to update your information</li>
           <li>Click "unsubscribe" in any marketing email</li>
         </ul>
@@ -220,7 +220,7 @@ const accordionData: AccordionItem[] = [
           Our website and services are not directed to individuals under the age of 18. We do not knowingly collect personal information from children.
         </p>
         <p>
-          If you are a parent or guardian and believe your child has provided us with personal information, please contact us at <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600">info@inaarawoman.com</a>, and we will promptly delete such information from our records.
+          If you are a parent or guardian and believe your child has provided us with personal information, please contact us at <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600">info.inaarawoman@gmail.com</a>, and we will promptly delete such information from our records.
         </p>
       </>
     ),
@@ -255,7 +255,7 @@ const accordionData: AccordionItem[] = [
         </p>
         <div className="bg-neutral-50 border border-neutral-200 p-6 rounded-sm">
           <p className="mb-2"><strong>Inaara Woman Fashion</strong></p>
-          <p className="mb-2">Email: <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600">info@inaarawoman.com</a></p>
+          <p className="mb-2">Email: <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600">info.inaarawoman@gmail.com</a></p>
           <p className="mb-2">Website: <a href="https://www.inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600">www.inaarawoman.com</a></p>
         </div>
         <p className="mt-4">

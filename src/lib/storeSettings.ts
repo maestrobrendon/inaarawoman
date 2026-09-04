@@ -24,7 +24,7 @@ export interface StoreSettings {
 
 export const STORE_SETTINGS_DEFAULTS: StoreSettings = {
   store_name: 'Inaara Woman',
-  store_email: 'info@inaarawoman.com',
+  store_email: 'info.inaarawoman@gmail.com',
   store_phone: '',
   store_whatsapp: '',
   store_address: '',

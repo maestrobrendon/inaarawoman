@@ -237,7 +237,7 @@ const accordionData: AccordionItem[] = [
         </p>
         <div className="bg-neutral-50 border border-neutral-200 p-6 rounded-sm">
           <p className="mb-2"><strong>Inaara Woman Fashion</strong></p>
-          <p className="mb-2">Email: <a href="mailto:info@inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">info@inaarawoman.com</a></p>
+          <p className="mb-2">Email: <a href="mailto:info.inaarawoman@gmail.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">info.inaarawoman@gmail.com</a></p>
           <p className="mb-2">Website: <a href="https://www.inaarawoman.com" className="text-neutral-900 underline hover:text-neutral-600 font-medium">www.inaarawoman.com</a></p>
         </div>
         <p className="mt-4 text-sm text-neutral-700">
@@ -354,10 +354,10 @@ export default function CookiePolicyPage() {
             You can control or delete cookies at any time through your browser settings. 
             If you have questions, just email us at{' '}
             <a
-              href="mailto:info@inaarawoman.com"
+              href="mailto:info.inaarawoman@gmail.com"
               className="text-neutral-900 underline hover:text-neutral-600 font-medium transition-colors"
             >
-              info@inaarawoman.com
+              info.inaarawoman@gmail.com
             </a>
           </p>
         </motion.div>
