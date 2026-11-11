@@ -14,7 +14,9 @@
     "deploy": "node scripts/vercel.mjs deploy --prod",
     "vercel:env": "node scripts/vercel-env-push.mjs",
     "typecheck:api": "tsc -p tsconfig.api.json",
-    "dev:full": "node scripts/vercel.mjs dev"
+    "dev:full": "node scripts/vercel.mjs dev",
+    "neon:copy": "node scripts/neon-migration/copy.mjs",
+    "neon:verify": "node scripts/neon-migration/verify.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
