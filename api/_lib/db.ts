@@ -8,12 +8,14 @@ pg.types.setTypeParser(1700, (v) => (v === null ? null : parseFloat(v))); // num
 pg.types.setTypeParser(20, (v) => (v === null ? null : parseInt(v, 10))); // int8
 pg.types.setTypeParser(1082, (v) => v); // date -> 'YYYY-MM-DD'
 
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+// Neon's URLs say sslmode=require; ask for full certificate verification explicitly
+// (what pg does today anyway, minus the deprecation warning on every cold start).
+const connectionString = (process.env.DATABASE_URL || process.env.POSTGRES_URL)?.replace(/sslmode=require/, 'sslmode=verify-full');
 
 let pool: pg.Pool | undefined;
 export function db(): pg.Pool {
   if (!connectionString) throw new Error('DATABASE_URL is not configured');
-  pool ??= new pg.Pool({ connectionString, max: 3, ssl: { rejectUnauthorized: false } });
+  pool ??= new pg.Pool({ connectionString, max: 3 });
   return pool;
 }
 
