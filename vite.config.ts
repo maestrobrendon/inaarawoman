@@ -18,7 +18,6 @@ export default defineConfig({
           // Split heavy libraries into separate chunks
           vendor: ['react', 'react-dom'],
           lucide: ['lucide-react'],
-          supabase: ['@supabase/supabase-js'],
           router: ['react-router-dom'],
         },
       },
