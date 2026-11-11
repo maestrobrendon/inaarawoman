@@ -8,7 +8,11 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "vc": "node scripts/vercel.mjs",
+    "deploy:preview": "node scripts/vercel.mjs deploy",
+    "deploy": "node scripts/vercel.mjs deploy --prod",
+    "vercel:env": "node scripts/vercel-env-push.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
