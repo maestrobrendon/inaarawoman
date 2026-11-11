@@ -20,6 +20,8 @@ export interface EmailData {
     variant?: { size?: string; color?: string } | null;
   }>;
   subtotal: number;
+  discountCode?: string | null;
+  discountAmount?: number;
   shippingFee: number;
   total: number;
   currency: string;
@@ -40,6 +42,8 @@ export function generateOrderEmailHTML(data: EmailData, contact: StoreContact): 
     orderDate,
     items,
     subtotal,
+    discountCode,
+    discountAmount,
     shippingFee,
     total,
     currency,
@@ -161,6 +165,11 @@ export function generateOrderEmailHTML(data: EmailData, contact: StoreContact): 
                   <td style="padding: 10px 0; color: #6b7280; font-size: 16px;">Subtotal</td>
                   <td style="padding: 10px 0; text-align: right; color: #111827; font-size: 16px;">${currencySymbol}${subtotal.toLocaleString()}</td>
                 </tr>
+                ${discountAmount && discountAmount > 0 ? `
+                <tr>
+                  <td style="padding: 10px 0; color: #047857; font-size: 16px;">Discount${discountCode ? ` (${discountCode})` : ''}</td>
+                  <td style="padding: 10px 0; text-align: right; color: #047857; font-size: 16px;">−${currencySymbol}${discountAmount.toLocaleString()}</td>
+                </tr>` : ''}
                 <tr>
                   <td style="padding: 10px 0; color: #6b7280; font-size: 16px;">Shipping</td>
                   <td style="padding: 10px 0; text-align: right; color: #10b981; font-size: 16px; font-weight: 600;">${shippingFee === 0 ? 'FREE' : `${currencySymbol}${shippingFee.toLocaleString()}`}</td>

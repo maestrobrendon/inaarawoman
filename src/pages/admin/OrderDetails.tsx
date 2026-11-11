@@ -28,6 +28,8 @@ interface Order {
   shipping_country: string;
   shipping_postal_code: string;
   subtotal: number;
+  discount_code?: string | null;
+  discount_amount?: number | null;
   shipping_fee: number;
   total_amount: number;
   currency: string;
@@ -278,6 +280,14 @@ export default function OrderDetails() {
                   {order.currency === 'NGN' ? '₦' : '$'}{order.subtotal?.toLocaleString()}
                 </span>
               </div>
+              {order.discount_code && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-700">Discount ({order.discount_code})</span>
+                  <span className="text-green-700">
+                    −{order.currency === 'NGN' ? '₦' : '$'}{Number(order.discount_amount || 0).toLocaleString()}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600">Shipping</span>
                 <span className="text-neutral-900">

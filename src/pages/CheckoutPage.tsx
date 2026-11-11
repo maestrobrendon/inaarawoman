@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CreditCard, Loader, AlertCircle, Truck } from 'lucide-react';
+import { MapPin, CreditCard, Loader, AlertCircle, Truck, Tag, X } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useStoreSettings } from '../hooks/useStoreSettings';
 import { supabase } from '../lib/supabase';
+import { checkCode, discountAmount, forgetCode, rememberCode, storedCode, type AppliedDiscount } from '../lib/affiliate';
 
 // Paystack Public Key
 const PAYSTACK_PUBLIC_KEY = 'pk_live_6fb4375c586d035dfa541d01357199850e6773fb';
@@ -128,16 +129,54 @@ export default function CheckoutPage() {
     }
   }, [formData.country, formData.state]);
 
+  // Creator / affiliate discount code
+  const [discount, setDiscount] = useState<AppliedDiscount | null>(null);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeMessage, setCodeMessage] = useState<string | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
+
+  // Auto-apply a code that came in through a creator's link
+  useEffect(() => {
+    const saved = storedCode();
+    if (!saved) return;
+    checkCode(saved).then((r) => {
+      if (r.ok) setDiscount(r.discount);
+      else forgetCode();
+    });
+  }, []);
+
+  const applyCode = async () => {
+    if (!codeInput.trim()) return;
+    setCheckingCode(true);
+    setCodeMessage(null);
+    const r = await checkCode(codeInput);
+    setCheckingCode(false);
+    if (r.ok) {
+      setDiscount(r.discount);
+      rememberCode(r.discount.code);
+      setCodeInput('');
+    } else {
+      setCodeMessage(r.message);
+    }
+  };
+
+  const removeCode = () => {
+    setDiscount(null);
+    forgetCode();
+  };
+
   // Store-settings-driven adjustments (admin » Settings)
   const freeShippingApplies =
     settings.free_shipping_threshold > 0 && subtotal >= settings.free_shipping_threshold;
   const locationChosen =
     formData.country === 'Nigeria' ? !!formData.state : !!formData.country;
   const effectiveShipping = freeShippingApplies ? 0 : shippingFee;
+  const discountValue = discount ? discountAmount(subtotal, discount.percent) : 0;
+  const discountedSubtotal = subtotal - discountValue;
   const taxAmount = settings.enable_tax
-    ? Math.round((subtotal * settings.tax_rate) / 100)
+    ? Math.round((discountedSubtotal * settings.tax_rate) / 100)
     : 0;
-  const grandTotal = subtotal + effectiveShipping + taxAmount;
+  const grandTotal = discountedSubtotal + effectiveShipping + taxAmount;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -280,6 +319,8 @@ export default function CheckoutPage() {
           orderDate: new Date().toLocaleDateString(),
           items: orderData.items,
           subtotal: orderData.subtotal,
+          discountCode: orderData.discount_code ?? null,
+          discountAmount: orderData.discount_amount ?? 0,
           shippingFee: orderData.shipping_fee,
           total: orderData.total_amount,
           currency: orderData.currency,
@@ -356,6 +397,7 @@ export default function CheckoutPage() {
         subtotal: subtotal,
         shipping_fee: effectiveShipping,
         total_amount: totalAmount,
+        ...(discount ? { discount_code: discount.code, discount_amount: discountValue } : {}),
         currency: currency.code,
         payment_method: 'paystack',
         payment_status: 'paid',
@@ -378,11 +420,22 @@ export default function CheckoutPage() {
       console.log('=== STEP 3: CREATE ORDER ===');
       let order;
       try {
-        const { data: orderResult, error: orderError } = await supabase
+        let { data: orderResult, error: orderError } = await supabase
           .from('orders')
           .insert([orderData])
           .select()
           .single();
+
+        // Payment has already gone through, so never lose the order over the
+        // discount fields: if the database doesn't know them, save without.
+        if (orderError?.code === '42703' && discount) {
+          const { discount_code: _c, discount_amount: _a, ...withoutDiscount } = orderData as any;
+          ({ data: orderResult, error: orderError } = await supabase
+            .from('orders')
+            .insert([{ ...withoutDiscount, notes: `Discount code ${discount.code} (-${discount.percent}%)` }])
+            .select()
+            .single());
+        }
 
         if (orderError) {
           console.error('ORDER ERROR:', orderError);
@@ -776,12 +829,72 @@ export default function CheckoutPage() {
                 })}
               </div>
 
+              {/* Discount code */}
+              <div className="py-4 border-t border-neutral-200">
+                {discount ? (
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 border border-green-200 px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Tag size={16} className="text-green-700 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-green-800 truncate">
+                          {discount.code} · {discount.percent}% off
+                        </p>
+                        {discount.affiliate && (
+                          <p className="text-xs text-green-700 truncate">Courtesy of {discount.affiliate}</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeCode}
+                      className="p-1 text-green-700 hover:text-green-900 rounded"
+                      aria-label="Remove discount code"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label htmlFor="discount-code" className="block text-sm font-medium text-neutral-700 mb-2">
+                      Discount code
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="discount-code"
+                        type="text"
+                        value={codeInput}
+                        onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeMessage(null); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCode(); } }}
+                        placeholder="Enter code"
+                        autoComplete="off"
+                        className="flex-1 min-w-0 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyCode}
+                        disabled={checkingCode || !codeInput.trim()}
+                        className="px-4 py-2.5 bg-neutral-900 text-white text-sm font-medium rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {checkingCode ? 'Checking…' : 'Apply'}
+                      </button>
+                    </div>
+                    {codeMessage && <p className="mt-2 text-xs text-red-600">{codeMessage}</p>}
+                  </>
+                )}
+              </div>
+
               {/* Totals */}
               <div className="space-y-2 py-4 border-t border-neutral-200">
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Subtotal</span>
                   <span className="text-neutral-900">{formatPrice(subtotal)}</span>
                 </div>
+                {discount && discountValue > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-700">Discount ({discount.percent}%)</span>
+                    <span className="text-green-700 font-medium">−{formatPrice(discountValue)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600">Shipping</span>
                   <span

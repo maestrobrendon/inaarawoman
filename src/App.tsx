@@ -37,6 +37,7 @@ import CustomerDetails from './pages/admin/CustomerDetails';
 import CollectionsList from './pages/admin/CollectionsList';
 import CollectionForm from './pages/admin/CollectionForm';
 import Settings from './pages/admin/Settings';
+import Affiliates from './pages/admin/Affiliates';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Analytics } from "@vercel/analytics/react"
 
@@ -109,6 +110,7 @@ function AdminRoutes() {
         <Route path="/collections" element={<CollectionsList />} />
         <Route path="/collections/new" element={<CollectionForm mode="new" />} />
         <Route path="/collections/edit/:id" element={<CollectionForm mode="edit" />} />
+        <Route path="/affiliates" element={<Affiliates />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>

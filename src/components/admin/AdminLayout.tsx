@@ -11,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  FolderOpen
+  FolderOpen,
+  BadgePercent
 } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
@@ -32,6 +33,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
     { name: 'Customers', icon: Users, path: '/admin/customers' },
     { name: 'Collections', icon: FolderOpen, path: '/admin/collections' },
+    { name: 'Affiliates', icon: BadgePercent, path: '/admin/affiliates' },
     { name: 'Homepage', icon: Home, path: '/admin/homepage' },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
